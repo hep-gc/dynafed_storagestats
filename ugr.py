@@ -20,6 +20,11 @@ from urlparse import urlsplit
 #############
 
 class storageStats(object):
+    def __init__(self, ep={}):
+        self.id = ep['id']
+        self.options = ep['options']
+        self.plugin = ep['plugin']
+        self.url = ep['url']
 
     def upload_to_memcached ( self, memcached_ip='127.0.0.1', memcached_port='11211' ):
         memcached_srv = memcached_ip + ':' + memcached_port
@@ -28,39 +33,37 @@ class storageStats(object):
         mc.set(index, x)
         return 0
 
+    def get_storagestats( self, ep={} ): pass
+
+class s3StorageStats( storageStats ):
+
+    def get_storagestats( self ):
+        for key in ep:
+            quota = 'N/A'
+            free = 'N/A'
+            for option in ep[key]:
+                if option == 's3.ceph_api':
+                    u = urlsplit( ep[key]['url'] )
+                    if ep[key]['s3.alternate']:
+                        api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri = u)
+                        payload = { 'bucket': u.path.strip("/"), 'stats': 'True' }
+                    else:
+                        u_bucket, u_domain = u.hostname.partition('.')[::2]
+                        api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri = u, uri_bucket = u_bucket, uri_domain = u_domain)
+                        payload = { 'bucket': u_bucket, 'stats': 'True' }
+                    auth = AWS4Auth(ep[key]['s3.pub_key'], ep[key]['s3.priv_key'], 'us-east-1', 's3', verify=False )
+                    r = requests.get(api_url, params=payload, auth=auth, verify=False)
+                    stats = json.loads(r.content)
+                    quota = str( stats['bucket_quota']['max_size'] )
+                    free = str( stats['bucket_quota']['max_size'] - stats['usage']['rgw.main']['size_utilized'] )
+
 
 
 ###############
 ## Functions ##
 ###############
 
-def getugrstoragestats( ep={} ):
-
-    storagestats = ''
-    for key in ep:
-        quota = 'N/A'
-        free = 'N/A'
-        for option in ep[key]:
-            if option == 's3.ceph_api':
-                u = urlsplit( ep[key]['url'] )
-                if ep[key]['s3.alternate']:
-                    api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri = u)
-                    payload = { 'bucket': u.path.strip("/"), 'stats': 'True' }
-                else:
-                    u_bucket, u_domain = u.hostname.partition('.')[::2]
-                    api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri = u, uri_bucket = u_bucket, uri_domain = u_domain)
-                    payload = { 'bucket': u_bucket, 'stats': 'True' }
-                auth = AWS4Auth(ep[key]['s3.pub_key'], ep[key]['s3.priv_key'], 'us-east-1', 's3', verify=False )
-                r = requests.get(api_url, params=payload, auth=auth, verify=False)
-                stats = json.loads(r.content)
-                quota = str( stats['bucket_quota']['max_size'] )
-                free = str( stats['bucket_quota']['max_size'] - stats['usage']['rgw.main']['size_utilized'] )
-
-        storagestats += '%%'.join( [key, quota, free] ) + '&&'
-
-    return storagestats
-
-def getugrconf( configs ="/etc/ugr/conf.d/endpoints.conf" ):
+def get_conf( configs ="/etc/ugr/conf.d/endpoints.conf" ):
 #def getugrconf( configs ="./endpoints.conf" ):
     endpoints = {}
 
@@ -76,14 +79,17 @@ def getugrconf( configs ="/etc/ugr/conf.d/endpoints.conf" ):
                 if "glb.locplugin[]" in line:
                     _plugin, _id, _concurrency, _url = line.split(" ")[1::]
                     endpoints.setdefault(_id,{})
+                    endpoints[_id].update({'id':_id.strip()})
                     endpoints[_id].update({'url':_url.strip()})
                     endpoints[_id].update({'url':_url.strip()})
                     endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
 
                 elif "locplugin" in line:
-                    x, val = line.partition(":")[::2]
-                    key, option = x.split(".",2)[1:]
-                    endpoints.setdefault(key,{}).update({option:val.strip()})
+                    key, _val = line.partition(":")[::2]
+                    _id, _option = key.split(".",2)[1:]
+                    endpoints.setdefault(_id,{})
+                    endpoints[_id].setdefault('options',{})
+                    endpoints[_id]['options'].update({_option:_val.strip()})
 
                 else:
                     #print( "I don't know what to do with %s", line)
