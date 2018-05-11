@@ -21,8 +21,10 @@ from urlparse import urlsplit
 
 class storageStats(object):
     def __init__(self, ep={}):
+        self.bytesused = 0
         self.id = ep['id']
         self.options = ep['options']
+        self.quota = -1
         self.plugin = ep['plugin']
         self.url = ep['url']
 
