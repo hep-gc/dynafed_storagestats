@@ -1,7 +1,9 @@
 #!/usr/bin/python
 """
 Set of libraries to interact with UGR's configuration files in order to obtain
-storage status information from various types of endpoints
+storage status information from various types of endpoints.
+
+v0.0.1 Works with cephS3 AdminAPI.
 """
 from __future__ import print_function
 
