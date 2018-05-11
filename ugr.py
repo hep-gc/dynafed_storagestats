@@ -14,6 +14,7 @@ import memcache
 import requests
 import json
 import os
+from lxml import etree
 from requests_aws4auth import AWS4Auth
 from urlparse import urlsplit
 
@@ -96,6 +97,8 @@ class s3StorageStats( storageStats ):
                 payload = { 'list-type': 2 }
             auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=False )
             r = requests.get(api_url, params=payload, auth=auth, verify=False)
+            xml_tree = etree.fromstring(r.content)
+
 #            stats = json.loads(r.content)
 #            self.quota = str( stats['bucket_quota']['max_size'] )
 #            self.bytesused = str( stats['usage']['rgw.main']['size_utilized'] )
