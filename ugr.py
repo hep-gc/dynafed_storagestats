@@ -40,24 +40,28 @@ class storageStats(object):
 class s3StorageStats( storageStats ):
 
     def get_storagestats( self ):
-        for key in ep:
-            quota = 'N/A'
-            free = 'N/A'
-            for option in ep[key]:
-                if option == 's3.ceph_api':
-                    u = urlsplit( ep[key]['url'] )
-                    if ep[key]['s3.alternate']:
-                        api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri = u)
-                        payload = { 'bucket': u.path.strip("/"), 'stats': 'True' }
-                    else:
-                        u_bucket, u_domain = u.hostname.partition('.')[::2]
-                        api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri = u, uri_bucket = u_bucket, uri_domain = u_domain)
-                        payload = { 'bucket': u_bucket, 'stats': 'True' }
-                    auth = AWS4Auth(ep[key]['s3.pub_key'], ep[key]['s3.priv_key'], 'us-east-1', 's3', verify=False )
-                    r = requests.get(api_url, params=payload, auth=auth, verify=False)
-                    stats = json.loads(r.content)
-                    quota = str( stats['bucket_quota']['max_size'] )
-                    free = str( stats['bucket_quota']['max_size'] - stats['usage']['rgw.main']['size_utilized'] )
+        try:
+            's3.region' in self.options
+        except Warning:
+            print ('No s3.region option specified inf config. Trying "us-east-1"')
+        else:
+            print ('\nNo s3.region option specified inf config. Trying "us-east-1"\n')
+            self.options.update({'s3.region': 'us-east-1'})
+
+        if self.options['s3.ceph_api']:
+            u = urlsplit( self.url )
+            if self.options['s3.alternate']:
+                api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri = u)
+                payload = { 'bucket': u.path.strip("/"), 'stats': 'True' }
+            else:
+                u_bucket, u_domain = u.hostname.partition('.')[::2]
+                api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri = u, uri_bucket = u_bucket, uri_domain = u_domain)
+                payload = { 'bucket': u_bucket, 'stats': 'True' }
+            auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=False )
+            r = requests.get(api_url, params=payload, auth=auth, verify=False)
+            stats = json.loads(r.content)
+            self.quota = str( stats['bucket_quota']['max_size'] )
+            self.bytesused = str( stats['usage']['rgw.main']['size_utilized'] )
 
 
 
@@ -98,3 +102,18 @@ def get_conf( configs ="/etc/ugr/conf.d/endpoints.conf" ):
                     pass
 
     return endpoints
+
+#############
+# Self-Test #
+#############
+
+if __name__ == '__main__':
+    import ugr
+    endpoints = ugr.get_conf('./endpoints.conf')
+    for endpoint in endpoints:
+        ep = ugr.s3StorageStats(endpoints[endpoint])
+        print('\n',type(ep),'\n')
+        print('\n',ep.options,'\n')
+        ep.get_storagestats()
+        print('\n',ep.options,'\n')
+        print('\nSE:', ep.id, '\nQuota:', ep.quota, '\nBytes Used"', ep.bytesused,'\n')
