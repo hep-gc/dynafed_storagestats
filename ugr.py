@@ -43,16 +43,51 @@ class s3StorageStats( storageStats ):
 
     def get_storagestats( self ):
         try:
-            's3.region' in self.options
-        except Warning:
+            self.options['s3.region']
+        except KeyError:
             print ('No s3.region option specified inf config. Trying "us-east-1"')
-        else:
-            print ('\nNo s3.region option specified inf config. Trying "us-east-1"\n')
             self.options.update({'s3.region': 'us-east-1'})
 
-        if self.options['s3.ceph_api']:
+        # Check if user specified a specific type of API to use. If not, we will
+        # extract the BytesUsed by listing objects and summing their size.
+        try:
+            self.options['s3.ceph_api']
+        except KeyError:
+            print ('\nNo S3 API specified. Setting both s3.ceph_api and s3.aws_api to "false"')
+            self.options.update({'s3.ceph_api': 'false'})
+
+        try:
+            self.options['s3.aws_api']
+        except KeyError:
+            print ('\nNo s3.aws_api option specified. Setting s3.aws_api to "false"')
+            self.options.update({'s3.aws_api': 'false'})
+
+        try:
+            self.options['s3.alternate']
+        except KeyError:
+            print ('\nNo s3.alternate option specified. Setting s3.alternate to "false"')
+            self.options.update({'s3.alternate': 'false'})
+
+        # Getting the storage Stats CephS3's Admin API
+        if self.options['s3.ceph_api'] == 'true' or self.options['s3.ceph_api'] == 'yes':
             u = urlsplit( self.url )
-            if self.options['s3.alternate']:
+            if self.options['s3.alternate'] == 'true' or self.options['s3.alternate'] == 'yes':
+                api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri = u)
+                payload = { 'bucket': u.path.strip("/"), 'stats': 'True' }
+            else:
+                u_bucket, u_domain = u.hostname.partition('.')[::2]
+                api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri = u, uri_bucket = u_bucket, uri_domain = u_domain)
+                payload = { 'bucket': u_bucket, 'stats': 'True' }
+            auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=False )
+            r = requests.get(api_url, params=payload, auth=auth, verify=False)
+            stats = json.loads(r.content)
+            self.quota = str( stats['bucket_quota']['max_size'] )
+            self.bytesused = str( stats['usage']['rgw.main']['size_utilized'] )
+
+        # Getting the storage Stats AWS S3 API
+        elif self.options['s3.aws_api'] == 'true' or self.options['s3.aws_api'] == 'yes':
+            u = urlsplit( self.url )
+            if self.options['s3.alternate'] == 'true' or self.options['s3.alternate'] == 'yes':
                 api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri = u)
                 payload = { 'bucket': u.path.strip("/"), 'stats': 'True' }
             else:
