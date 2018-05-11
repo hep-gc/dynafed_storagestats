@@ -98,6 +98,13 @@ class s3StorageStats( storageStats ):
             auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=False )
             r = requests.get(api_url, params=payload, auth=auth, verify=False)
             xml_tree = etree.fromstring(r.content)
+            # Gotta extract the namespace "ns" from xml_tree.nsmap
+            contents = xml_tree.findall(ns+'Contents')
+            total_count = 0
+            for content in contents:
+                count = content.find(ns+'Size').text
+                count = int(count)
+                total_count += count
 
 #            stats = json.loads(r.content)
 #            self.quota = str( stats['bucket_quota']['max_size'] )
