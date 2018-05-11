@@ -86,19 +86,19 @@ class s3StorageStats( storageStats ):
 
         # Getting the storage Stats AWS S3 API
         elif self.options['s3.aws_api'] == 'true' or self.options['s3.aws_api'] == 'yes':
-            u = urlsplit( self.url )
+            #This part hasn't been dealt with.
             if self.options['s3.alternate'] == 'true' or self.options['s3.alternate'] == 'yes':
+                u = urlsplit( self.url )
                 api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri = u)
                 payload = { 'bucket': u.path.strip("/"), 'stats': 'True' }
             else:
-                u_bucket, u_domain = u.hostname.partition('.')[::2]
-                api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri = u, uri_bucket = u_bucket, uri_domain = u_domain)
-                payload = { 'bucket': u_bucket, 'stats': 'True' }
+                api_url = self.url
+                payload = { 'list-type': 2 }
             auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=False )
             r = requests.get(api_url, params=payload, auth=auth, verify=False)
-            stats = json.loads(r.content)
-            self.quota = str( stats['bucket_quota']['max_size'] )
-            self.bytesused = str( stats['usage']['rgw.main']['size_utilized'] )
+#            stats = json.loads(r.content)
+#            self.quota = str( stats['bucket_quota']['max_size'] )
+#            self.bytesused = str( stats['usage']['rgw.main']['size_utilized'] )
 
 
 
