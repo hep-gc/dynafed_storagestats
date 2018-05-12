@@ -99,13 +99,18 @@ class s3StorageStats( storageStats ):
             r = requests.get(api_url, params=payload, auth=auth, verify=False)
             xml_tree = etree.fromstring(r.content)
             # Gotta extract the namespace "ns" from xml_tree.nsmap
+            nsmap = 'http://s3.amazonaws.com/doc/2006-03-01/'
+            ns = "{%s}" % nsmap
             contents = xml_tree.findall(ns+'Contents')
-            total_count = 0
+            total_bytes = 0
+            total_files = 0
             for content in contents:
                 count = content.find(ns+'Size').text
                 count = int(count)
-                total_count += count
+                total_bytes += count
+                total_files += 1
 
+            self.bytesused = total_bytes
 #            stats = json.loads(r.content)
 #            self.quota = str( stats['bucket_quota']['max_size'] )
 #            self.bytesused = str( stats['usage']['rgw.main']['size_utilized'] )
