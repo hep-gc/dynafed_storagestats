@@ -149,7 +149,6 @@ def get_conf( configs ="/etc/ugr/conf.d/endpoints.conf" ):
                     endpoints.setdefault(_id,{})
                     endpoints[_id].update({'id':_id.strip()})
                     endpoints[_id].update({'url':_url.strip()})
-                    endpoints[_id].update({'url':_url.strip()})
                     endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
 
                 elif "locplugin" in line:
@@ -178,6 +177,7 @@ if __name__ == '__main__':
 
     for endpoint in endpoints:
         ep = ugr.s3StorageStats(endpoints[endpoint])
+        print('\n',ep.url,'\n')
         #print('\n',type(ep),'\n')
         #print('\n',ep.options,'\n')
         ep.get_storagestats()
