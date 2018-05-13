@@ -154,6 +154,7 @@ def get_conf( configs ="/etc/ugr/conf.d/endpoints.conf" ):
                     endpoints[_id]['options'].update({_option:_val.strip()})
 
                 else:
+                    # Ignore any other lines
                     #print( "I don't know what to do with %s", line)
                     pass
 
