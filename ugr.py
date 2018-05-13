@@ -5,6 +5,7 @@ storage status information from various types of endpoints.
 
 v0.0.1 Works with cephS3 AdminAPI.
 v0.0.2 Added AWS list-type2 API to list all objects in bucket and add object size.
+       Added memcached format and upload each endpoint obtained.
 """
 from __future__ import print_function
 
