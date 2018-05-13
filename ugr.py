@@ -45,6 +45,9 @@ class storageStats(object):
     def get_storagestats( self, ep={} ): pass
 
 class s3StorageStats( storageStats ):
+    """
+    Subclass that defines methods for obtaining storage stats of S3 endpoints.
+    """
 
     def get_storagestats( self ):
         try:
@@ -126,12 +129,15 @@ class s3StorageStats( storageStats ):
 ###############
 
 def get_conf( configs ="/etc/ugr/conf.d/endpoints.conf" ):
-#def getugrconf( configs ="./endpoints.conf" ):
+    """
+    Function that returns a dictrionary with every key representing each of
+    the storage endpoints defined in the ugr configuration file, which by
+    default is "/etc/ugr/conf.d/endpoints.conf".
+    All the glb.locplugin options defined for each are stored as dictionary keys under
+    each parent SE key, and the locplugin as keys for the dictionary "options" under
+    each parent SE key.
+    """
     endpoints = {}
-
-    # Read the configuration file and extract the plugin URL and it's options.
-    # The temp_vals dict will be merged later using the endpoint name as key
-    # as a nested dict, so we can have each enpoints options together.
 
     with open( configs, "r") as f:
         for line in f:
