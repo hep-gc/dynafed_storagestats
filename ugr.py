@@ -4,17 +4,19 @@ Set of libraries to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints.
 
 v0.0.1 Works with cephS3 AdminAPI.
+v0.0.2 Added AWS list-type2 API to list all objects in bucket and add object size.
 """
 from __future__ import print_function
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __author__ = "Fernando Fernandez Galindo"
 
+import os
+
+import json
+from lxml import etree
 import memcache
 import requests
-import json
-import os
-from lxml import etree
 from requests_aws4auth import AWS4Auth
 from urlparse import urlsplit
 
@@ -34,8 +36,9 @@ class storageStats(object):
     def upload_to_memcached ( self, memcached_ip='127.0.0.1', memcached_port='11211' ):
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
-        index = "Ugrstoragestats_" + self.name
-        mc.set(index, x)
+        index = "Ugrstoragestats_" + self.id
+        storagestats = '%%'.join( [self.id, self.quota, self.bytesused] )
+        mc.set(index, storagestats)
         return 0
 
     def get_storagestats( self, ep={} ): pass
@@ -162,10 +165,17 @@ def get_conf( configs ="/etc/ugr/conf.d/endpoints.conf" ):
 if __name__ == '__main__':
     import ugr
     endpoints = ugr.get_conf('./endpoints.conf')
+    memcached_srv = '127.0.0.1:11211'
+    mc = memcache.Client([memcached_srv])
+
     for endpoint in endpoints:
         ep = ugr.s3StorageStats(endpoints[endpoint])
-        print('\n',type(ep),'\n')
-        print('\n',ep.options,'\n')
+        #print('\n',type(ep),'\n')
+        #print('\n',ep.options,'\n')
         ep.get_storagestats()
-        print('\n',ep.options,'\n')
-        print('\nSE:', ep.id, '\nQuota:', ep.quota, '\nBytes Used"', ep.bytesused,'\n')
+        ep.upload_to_memcached()
+        #print('\n',ep.options,'\n')
+        print('\nSE:', ep.id, '\nQuota:', ep.quota, '\nBytes Used:', ep.bytesused,'\n')
+        index = "Ugrstoragestats_" + ep.id
+        print('Probing memcached index:', index)
+        print(mc.get(index), '\n')
