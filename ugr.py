@@ -30,7 +30,7 @@ class StorageStats(object):
         self.bytesused = 0
         self.id = _ep['id']
         self.options = _ep['options']
-        self.quota = -1
+        self.quota = '-1'
         self.plugin = _ep['plugin']
         self.url = _ep['url']
 
@@ -62,7 +62,7 @@ class S3StorageStats(StorageStats):
         try:
             self.options['s3.ceph_api']
         except KeyError:
-            print('\nNo S3 API specified. Setting both s3.ceph_api and s3.aws_api to "false"')
+            print('\nNo s3.ceph_api option specified. Setting s3.ceph_api to "false"')
             self.options.update({'s3.ceph_api': 'false'})
 
         try:
@@ -78,9 +78,9 @@ class S3StorageStats(StorageStats):
             self.options.update({'s3.alternate': 'false'})
 
         # Getting the storage Stats CephS3's Admin API
-        if self.options['s3.ceph_api'] == 'true' or self.options['s3.ceph_api'] == 'yes':
+        if self.options['s3.ceph_api'].lower() == 'true' or self.options['s3.ceph_api'].lower() == 'yes':
             u = urlsplit(self.url)
-            if self.options['s3.alternate'] == 'true' or self.options['s3.alternate'] == 'yes':
+            if self.options['s3.alternate'].lower() == 'true' or self.options['s3.alternate'].lower() == 'yes':
                 api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri=u)
                 payload = {'bucket': u.path.strip("/"), 'stats': 'True'}
             else:
@@ -94,9 +94,9 @@ class S3StorageStats(StorageStats):
             self.bytesused = str(stats['usage']['rgw.main']['size_utilized'])
 
         # Getting the storage Stats AWS S3 API
-        elif self.options['s3.aws_api'] == 'true' or self.options['s3.aws_api'] == 'yes':
+        elif self.options['s3.aws_api'].lower()  == 'true' or self.options['s3.aws_api'].lower() == 'yes':
             #This part hasn't been dealt with.
-            if self.options['s3.alternate'] == 'true' or self.options['s3.alternate'] == 'yes':
+            if self.options['s3.alternate'].lower() == 'true' or self.options['s3.alternate'].lower() == 'yes':
                 u = urlsplit(self.url)
                 api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri=u)
                 payload = {'bucket': u.path.strip("/"), 'stats': 'True'}
@@ -106,19 +106,16 @@ class S3StorageStats(StorageStats):
             auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=False)
             r = requests.get(api_url, params=payload, auth=auth, verify=False)
             xml_tree = etree.fromstring(r.content)
-            # Gotta extract the namespace "ns" from xml_tree.nsmap
-            nsmap = 'http://s3.amazonaws.com/doc/2006-03-01/'
-            ns = "{%s}" % nsmap
-            contents = xml_tree.findall(ns+'Contents')
+            contents = xml_tree.findall('Contents', namespaces=xml_tree.nsmap)
             total_bytes = 0
             total_files = 0
             for content in contents:
-                count = content.find(ns+'Size').text
+                count = content.find('Size', namespaces=xml_tree.nsmap).text
                 count = int(count)
                 total_bytes += count
                 total_files += 1
 
-            self.bytesused = total_bytes
+            self.bytesused = str(total_bytes)
 #            stats = json.loads(r.content)
 #            self.quota = str( stats['bucket_quota']['max_size'] )
 #            self.bytesused = str( stats['usage']['rgw.main']['size_utilized'] )
