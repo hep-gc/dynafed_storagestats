@@ -3,6 +3,13 @@
 Set of libraries to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints.
 
+Prerequisites:
+    Modules:
+    - lxml
+    - memcache
+    - requests
+    - requests_aws4auth
+
 v0.0.1 Works with cephS3 AdminAPI.
 v0.0.2 Added AWS list-type2 API to list all objects in bucket and add object size.
        Added memcached format and upload each endpoint obtained.
@@ -26,10 +33,30 @@ if IS_PYTHON2:
 else:
     from urllib.parse import urlsplit
 
-from lxml import etree
-import memcache
-import requests
-from requests_aws4auth import AWS4Auth
+try:
+    from lxml import etree
+except ImportError:
+    print('ImportError: Please install "lxml" modules')
+    sys.exit(1)
+
+try:
+    import memcache
+except ImportError:
+    print('ImportError: Please install "memcache" modules')
+    sys.exit(1)
+
+try:
+    import requests
+except ImportError:
+    print('ImportError: Please install "requests" modules')
+    sys.exit(1)
+
+try:
+    from requests_aws4auth import AWS4Auth
+except ImportError:
+    print('ImportError: Please install "requests_aws4auth" modules')
+    sys.exit(1)
+
 
 
 #############
