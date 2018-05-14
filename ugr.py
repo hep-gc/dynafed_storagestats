@@ -14,6 +14,8 @@ __version__ = "0.0.3"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
+import os
+import glob
 import json
 
 IS_PYTHON2 = sys.version_info[0] == 2
@@ -132,40 +134,42 @@ class S3StorageStats(StorageStats):
 ## Functions ##
 ###############
 
-def get_conf(configs="/etc/ugr/conf.d/endpoints.conf"):
+def get_conf(config_dir="/etc/ugr/conf.d/"):
     """
-    Function that returns a dictrionary with every key representing each of
-    the storage endpoints defined in the ugr configuration file, which by
-    default is "/etc/ugr/conf.d/endpoints.conf".
+    Function that returns a dictionary in which every key represents a
+    storage endpoint defined in the ugr configuration files. These files will
+    be any *.conf file defined under the config_dir variable.
+    The default directory is "/etc/ugr/conf.d/"
     All the glb.locplugin options defined for each are stored as dictionary keys under
     each parent SE key, and the locplugin as keys for the dictionary "options" under
     each parent SE key.
     """
     _endpoints = {}
+    os.chdir(config_dir)
+    for config_file in glob.glob("*.conf"):
+        with open(config_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line.startswith("#"):
 
-    with open(configs, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line.startswith("#"):
+                    if "glb.locplugin[]" in line:
+                        _plugin, _id, _concurrency, _url = line.split(" ")[1::]
+                        _endpoints.setdefault(_id, {})
+                        _endpoints[_id].update({'id':_id.strip()})
+                        _endpoints[_id].update({'url':_url.strip()})
+                        _endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
 
-                if "glb.locplugin[]" in line:
-                    _plugin, _id, _concurrency, _url = line.split(" ")[1::]
-                    _endpoints.setdefault(_id, {})
-                    _endpoints[_id].update({'id':_id.strip()})
-                    _endpoints[_id].update({'url':_url.strip()})
-                    _endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
+                    elif "locplugin" in line:
+                        key, _val = line.partition(":")[::2]
+                        _id, _option = key.split(".", 2)[1:]
+                        _endpoints.setdefault(_id, {})
+                        _endpoints[_id].setdefault('options', {})
+                        _endpoints[_id]['options'].update({_option:_val.strip()})
 
-                elif "locplugin" in line:
-                    key, _val = line.partition(":")[::2]
-                    _id, _option = key.split(".", 2)[1:]
-                    _endpoints.setdefault(_id, {})
-                    _endpoints[_id].setdefault('options', {})
-                    _endpoints[_id]['options'].update({_option:_val.strip()})
-
-                else:
-                    # Ignore any other lines
-                    #print( "I don't know what to do with %s", line)
-                    pass
+                    else:
+                        # Ignore any other lines
+                        #print( "I don't know what to do with %s", line)
+                        pass
 
     return _endpoints
 
@@ -175,7 +179,7 @@ def get_conf(configs="/etc/ugr/conf.d/endpoints.conf"):
 
 if __name__ == '__main__':
     import ugr
-    endpoints = ugr.get_conf('./endpoints.conf')
+    endpoints = ugr.get_conf('./')
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
