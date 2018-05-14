@@ -60,16 +60,10 @@ class S3StorageStats(StorageStats):
         # Check if user specified a specific type of API to use. If not, we will
         # extract the BytesUsed by listing objects and summing their size.
         try:
-            self.options['s3.ceph_api']
+            self.options['s3.api']
         except KeyError:
-            print('\nNo s3.ceph_api option specified. Setting s3.ceph_api to "false"')
-            self.options.update({'s3.ceph_api': 'false'})
-
-        try:
-            self.options['s3.aws_api']
-        except KeyError:
-            print('\nNo s3.aws_api option specified. Setting s3.aws_api to "false"')
-            self.options.update({'s3.aws_api': 'false'})
+            print('\nNo s3.api option specified. Setting to "generic"')
+            self.options.update({'s3.api': 'generic'})
 
         try:
             self.options['s3.alternate']
@@ -78,7 +72,7 @@ class S3StorageStats(StorageStats):
             self.options.update({'s3.alternate': 'false'})
 
         # Getting the storage Stats CephS3's Admin API
-        if self.options['s3.ceph_api'].lower() == 'true' or self.options['s3.ceph_api'].lower() == 'yes':
+        if self.options['s3.api'].lower() == 'ceph-admin':
             u = urlsplit(self.url)
             if self.options['s3.alternate'].lower() == 'true' or self.options['s3.alternate'].lower() == 'yes':
                 api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri=u)
@@ -94,7 +88,7 @@ class S3StorageStats(StorageStats):
             self.bytesused = str(stats['usage']['rgw.main']['size_utilized'])
 
         # Getting the storage Stats AWS S3 API
-        elif self.options['s3.aws_api'].lower()  == 'true' or self.options['s3.aws_api'].lower() == 'yes':
+        elif self.options['s3.api'].lower()  == 'aws-list':
             #This part hasn't been dealt with.
             if self.options['s3.alternate'].lower() == 'true' or self.options['s3.alternate'].lower() == 'yes':
                 u = urlsplit(self.url)
