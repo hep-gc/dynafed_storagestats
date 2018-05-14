@@ -144,7 +144,7 @@ def get_conf(config_dir="/etc/ugr/conf.d/"):
     each parent SE key, and the locplugin as keys for the dictionary "options" under
     each parent SE key.
     """
-    _endpoints = {}
+    endpoints = {}
     os.chdir(config_dir)
     for config_file in glob.glob("*.conf"):
         with open(config_file, "r") as f:
@@ -154,24 +154,24 @@ def get_conf(config_dir="/etc/ugr/conf.d/"):
 
                     if "glb.locplugin[]" in line:
                         _plugin, _id, _concurrency, _url = line.split(" ")[1::]
-                        _endpoints.setdefault(_id, {})
-                        _endpoints[_id].update({'id':_id.strip()})
-                        _endpoints[_id].update({'url':_url.strip()})
-                        _endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
+                        endpoints.setdefault(_id, {})
+                        endpoints[_id].update({'id':_id.strip()})
+                        endpoints[_id].update({'url':_url.strip()})
+                        endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
 
                     elif "locplugin" in line:
                         key, _val = line.partition(":")[::2]
                         _id, _option = key.split(".", 2)[1:]
-                        _endpoints.setdefault(_id, {})
-                        _endpoints[_id].setdefault('options', {})
-                        _endpoints[_id]['options'].update({_option:_val.strip()})
+                        endpoints.setdefault(_id, {})
+                        endpoints[_id].setdefault('options', {})
+                        endpoints[_id]['options'].update({_option:_val.strip()})
 
                     else:
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
                         pass
 
-    return _endpoints
+    return endpoints
 
 #############
 # Self-Test #
