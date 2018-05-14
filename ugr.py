@@ -15,10 +15,11 @@ v0.0.2 Added AWS list-type2 API to list all objects in bucket and add object siz
        Added memcached format and upload each endpoint obtained.
 v0.0.3 Added support for python3
 v0.0.4 Changed from single configration file to all *.conf files in given directory.
+v0.0.5 Added module import checks.
 """
 from __future__ import print_function
 
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -130,7 +131,7 @@ class S3StorageStats(StorageStats):
             self.bytesused = str(stats['usage']['rgw.main']['size_utilized'])
 
         # Getting the storage Stats AWS S3 API
-        elif self.options['s3.api'].lower()  == 'aws-list':
+        elif self.options['s3.api'].lower() == 'aws-list':
             #This part hasn't been dealt with.
             if self.options['s3.alternate'].lower() == 'true' or self.options['s3.alternate'].lower() == 'yes':
                 u = urlsplit(self.url)
