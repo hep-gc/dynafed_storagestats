@@ -134,7 +134,7 @@ class S3StorageStats(StorageStats):
 ## Functions ##
 ###############
 
-def get_conf(config_dir="/etc/ugr/conf.d/"):
+def get_config(config_dir="/etc/ugr/conf.d/"):
     """
     Function that returns a dictionary in which every key represents a
     storage endpoint defined in the ugr configuration files. These files will
@@ -179,7 +179,7 @@ def get_conf(config_dir="/etc/ugr/conf.d/"):
 
 if __name__ == '__main__':
     import ugr
-    endpoints = ugr.get_conf('./')
+    endpoints = ugr.get_config('./')
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
