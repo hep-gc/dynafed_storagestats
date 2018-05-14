@@ -34,6 +34,10 @@ from requests_aws4auth import AWS4Auth
 #############
 
 class StorageStats(object):
+    """
+    Class that will define how data from UGR's configruation file will be stored
+    for earch storage endpoint. As well as how to obtain stats and output it.
+    """
     def __init__(self, _ep):
         self.bytesused = 0
         self.id = _ep['id']
