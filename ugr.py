@@ -151,11 +151,8 @@ class S3StorageStats(StorageStats):
                 count = int(count)
                 total_bytes += count
                 total_files += 1
-
             self.bytesused = str(total_bytes)
-#            stats = json.loads(r.content)
-#            self.quota = str( stats['bucket_quota']['max_size'] )
-#            self.bytesused = str( stats['usage']['rgw.main']['size_utilized'] )
+
 
 
 
