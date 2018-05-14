@@ -12,8 +12,15 @@ from __future__ import print_function
 __version__ = "0.0.2"
 __author__ = "Fernando Fernandez Galindo"
 
+import sys
 import json
-from urlparse import urlsplit
+
+IS_PYTHON2 = sys.version_info[0] == 2
+
+if IS_PYTHON2:
+    from urlparse import urlsplit
+else:
+    from urllib.parse import urlsplit
 
 from lxml import etree
 import memcache
