@@ -16,10 +16,11 @@ v0.0.2 Added AWS list-type2 API to list all objects in bucket and add object siz
 v0.0.3 Added support for python3
 v0.0.4 Changed from single configration file to all *.conf files in given directory.
 v0.0.5 Added module import checks.
+v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
 """
 from __future__ import print_function
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
