@@ -18,10 +18,11 @@ v0.0.4 Changed from single configration file to all *.conf files in given direct
 v0.0.5 Added module import checks.
 v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
 v.0.0.7 Added options
+v.0.1.0 Changed aws-list to generic and now uses boto3 for generality.
 """
 from __future__ import print_function
 
-__version__ = "0.0.7"
+__version__ = "0.1.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -36,6 +37,12 @@ if IS_PYTHON2:
     from urlparse import urlsplit
 else:
     from urllib.parse import urlsplit
+
+try:
+    import boto3
+except ImportError:
+    print('ImportError: Please install "boto3" modules')
+    sys.exit(1)
 
 try:
     from lxml import etree
@@ -156,29 +163,34 @@ class S3StorageStats(StorageStats):
             self.bytesused = str(stats['usage']['rgw.main']['size_utilized'])
 
         # Getting the storage Stats AWS S3 API
-        elif self.options['s3.api'].lower() == 'aws-list':
-            #This part hasn't been dealt with.
+        #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
+
+        # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
+        # API, should work for any compatible S3 endpoint.
+        elif self.options['s3.api'].lower() == 'generic':
+            u = urlsplit(self.url)
             if self.options['s3.alternate'].lower() == 'true' or self.options['s3.alternate'].lower() == 'yes':
-                u = urlsplit(self.url)
-                api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri=u)
-                payload = {'bucket': u.path.strip("/"), 'stats': 'True'}
+                endpoint_url = '{uri.scheme}://{uri.hostname}'.format(uri=u)
+                bucket = u.path.strip("/")
             else:
-                api_url = self.url
-                payload = {'list-type': 2}
-            auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=False)
-            r = requests.get(api_url, params=payload, auth=auth, verify=False)
-            xml_tree = etree.fromstring(r.content)
-            contents = xml_tree.findall('Contents', namespaces=xml_tree.nsmap)
+                bucket, domain = u.hostname.partition('.')[::2]
+                endpoint_url = '{uri.scheme}://{uri_domain}'.format(uri=u, uri_bucket=bucket, uri_domain=domain)
+                print(endpoint_url)
+
+            connection = boto3.client('s3', region_name=self.options['s3.region'],
+                                            endpoint_url=endpoint_url,
+                                            aws_access_key_id = self.options['s3.pub_key'],
+                                            aws_secret_access_key = self.options['s3.priv_key'],
+                                            use_ssl=False,
+                                            verify=None,
+                                            )
+            response = connection.list_objects_v2(Bucket=bucket,)
             total_bytes = 0
             total_files = 0
-            for content in contents:
-                count = content.find('Size', namespaces=xml_tree.nsmap).text
-                count = int(count)
-                total_bytes += count
+            for content in response['Contents']:
+                total_bytes += content['Size']
                 total_files += 1
             self.bytesused = str(total_bytes)
-
-
 
 
 ###############
