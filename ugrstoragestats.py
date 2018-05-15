@@ -259,8 +259,7 @@ def object_creator(config_dir="/etc/ugr/conf.d/"):
 #############
 
 if __name__ == '__main__':
-    import ugrstoragestats as ugr
-    endpoints = ugr.object_creator(options.directory)
+    endpoints = object_creator(options.directory)
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
