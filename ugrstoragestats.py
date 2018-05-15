@@ -21,7 +21,7 @@ v.0.0.7 Added options
 """
 from __future__ import print_function
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
