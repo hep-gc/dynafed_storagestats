@@ -199,6 +199,18 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
 
     return endpoints
 
+def object_selector(plugin_type):
+    switcher = {
+        libugrlocplugin_dav.so: "HTTPStorageStats",
+        libugrlocplugin_http.so: "HTTPStorageStats",
+        libugrlocplugin_s3.so: "S3StorageStats",
+        libugrlocplugin_azure.so: "AzureStorageStats",
+        libugrlocplugin_davrucio.so: "RucioStorageStats",
+        libugrlocplugin_dmliteclient.so: "DMLiteStorageStats",
+    }
+    return switcher.get(argument, "nothing")
+
+
 #############
 # Self-Test #
 #############
