@@ -139,6 +139,12 @@ class S3StorageStats(StorageStats):
         except KeyError:
             print('\nNo s3.api option specified. Setting to "generic"')
             self.options.update({'s3.api': 'generic'})
+        else:
+            if self.options['s3.api'].lower() not in ['ceph-admin','generic']:
+                print('\nInvalid s3.api option: "%s". Check your configuration.'
+                      % (self.options['s3.api'])
+                     )
+                sys.exit(1)
 
         try:
             self.options['s3.alternate']
