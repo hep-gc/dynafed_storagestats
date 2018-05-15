@@ -199,16 +199,34 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
 
     return endpoints
 
-def object_selector(plugin_type):
+def factory(plugin_type):
+    """
+    Return object class to use based on the plugin specified in the UGR's
+    configuration files.
+    """
     switcher = {
-        libugrlocplugin_dav.so: "HTTPStorageStats",
-        libugrlocplugin_http.so: "HTTPStorageStats",
-        libugrlocplugin_s3.so: "S3StorageStats",
-        libugrlocplugin_azure.so: "AzureStorageStats",
-        libugrlocplugin_davrucio.so: "RucioStorageStats",
-        libugrlocplugin_dmliteclient.so: "DMLiteStorageStats",
+        #'libugrlocplugin_dav.so': HTTPStorageStats,
+        #'libugrlocplugin_http.so': HTTPStorageStats,
+        'libugrlocplugin_s3.so': S3StorageStats,
+        #'libugrlocplugin_azure.so': AzureStorageStats,
+        #'libugrlocplugin_davrucio.so': RucioStorageStats,
+        #'libugrlocplugin_dmliteclient.so': DMLiteStorageStats,
     }
-    return switcher.get(argument, "nothing")
+    return switcher.get(plugin_type, "nothing")
+
+
+def object_creator(config_dir="/etc/ugr/conf.d/"):
+    """
+    Returns list of storage endpoint objects whose class represents each storage
+    endpoint configured in UGR's configuration files.
+    """
+    storage_objects = []
+    endpoints = get_config(config_dir)
+    for endpoint in endpoints:
+        ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
+        storage_objects.append(ep)
+
+    return(storage_objects)
 
 
 #############
@@ -217,19 +235,17 @@ def object_selector(plugin_type):
 
 if __name__ == '__main__':
     import ugr
-    endpoints = ugr.get_config('./')
+    endpoints = ugr.object_creator('./')
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
     for endpoint in endpoints:
-        ep = ugr.S3StorageStats(endpoints[endpoint])
-        print('\n', ep.url, '\n')
-        #print('\n', type(ep), '\n')
+        #print('\n', type(endpoint), '\n')
+        #print('\n', endpoint.options, '\n')
+        endpoint.get_storagestats()
+        endpoint.upload_to_memcached()
         #print('\n', ep.options, '\n')
-        ep.get_storagestats()
-        ep.upload_to_memcached()
-        #print('\n', ep.options, '\n')
-        print('\nSE:', ep.id, '\nQuota:', ep.quota, '\nBytes Used:', ep.bytesused, '\n')
-        index = "Ugrstoragestats_" + ep.id
+        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.quota, '\nBytes Used:', endpoint.bytesused, '\n')
+        index = "Ugrstoragestats_" + endpoint.id
         print('Probing memcached index:', index)
         print(mc.get(index), '\n')
