@@ -17,6 +17,7 @@ v0.0.3 Added support for python3
 v0.0.4 Changed from single configration file to all *.conf files in given directory.
 v0.0.5 Added module import checks.
 v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
+v.0.0.7 Added options
 """
 from __future__ import print_function
 
@@ -25,6 +26,7 @@ __author__ = "Fernando Fernandez Galindo"
 
 import sys
 import os
+from optparse import OptionParser, OptionGroup
 import glob
 import json
 
@@ -59,6 +61,28 @@ except ImportError:
     print('ImportError: Please install "requests_aws4auth" modules')
     sys.exit(1)
 
+
+################
+## Help/Usage ##
+################
+
+usage = "usage: %prog [options] api-hostname"
+parser = OptionParser(usage)
+
+#parser.add_option('-v', '--verbose', dest='verbose', action='count', help='Increase verbosity level for debugging this script (on stderr)')
+parser.add_option('-d', '--dir', dest='directory', action='store', default='/etc/ugr/conf.d', help="Path to UGR's endpoint .conf files.")
+
+group = OptionGroup(parser, "Memcached options")
+group.add_option('--memhost', dest='memhost', action='store', default='127.0.0.1', help="IP or hostname of memcached instance. Default: 127.0.0.1")
+group.add_option('--memport', dest='memport', action='store', default='11211', help="Port tof memcached instance. Default: 11211")
+parser.add_option_group(group)
+
+#group = OptionGroup(parser, "Output options")
+#group.add_option('-m', '--memcached', dest='memcached_ouput', action='store_true', default=False, help="Declare to enable uploading information to memcached.")
+#group.add_option('-o', '--outputfile', dest='out_file', action='store', default=None, help="Change where to ouput the data. Default: None")
+#parser.add_option_group(group)
+
+options, args = parser.parse_args()
 
 
 #############
@@ -236,7 +260,7 @@ def object_creator(config_dir="/etc/ugr/conf.d/"):
 
 if __name__ == '__main__':
     import ugr
-    endpoints = ugr.object_creator('./')
+    endpoints = ugr.object_creator(options.directory)
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
