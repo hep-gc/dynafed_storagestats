@@ -146,6 +146,18 @@ class S3StorageStats(StorageStats):
             print('\nNo s3.alternate option specified. Setting s3.alternate to "false"')
             self.options.update({'s3.alternate': 'false'})
 
+        try:
+            self.options['ssl_check']
+        except KeyError:
+            print('\nNo ssl_check option specified. Setting ssl_check to "True"')
+            self.options.update({'ssl_check': True})
+        else:
+            if self.options['ssl_check'].lower() == 'false' or self.options['ssl_check'].lower() == 'no':
+                self.options.update({'ssl_check': False})
+            else:
+                self.options.update({'ssl_check': True})
+
+
         # Getting the storage Stats CephS3's Admin API
         if self.options['s3.api'].lower() == 'ceph-admin':
             u = urlsplit(self.url)
@@ -156,8 +168,8 @@ class S3StorageStats(StorageStats):
                 u_bucket, u_domain = u.hostname.partition('.')[::2]
                 api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_bucket=u_bucket, uri_domain=u_domain)
                 payload = {'bucket': u_bucket, 'stats': 'True'}
-            auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=False)
-            r = requests.get(api_url, params=payload, auth=auth, verify=False)
+            auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=self.options['ssl_check'])
+            r = requests.get(api_url, params=payload, auth=auth, verify=self.options['ssl_check'])
             stats = json.loads(r.content)
             self.quota = str(stats['bucket_quota']['max_size'])
             self.bytesused = str(stats['usage']['rgw.main']['size_utilized'])
@@ -181,8 +193,8 @@ class S3StorageStats(StorageStats):
                                             endpoint_url=endpoint_url,
                                             aws_access_key_id = self.options['s3.pub_key'],
                                             aws_secret_access_key = self.options['s3.priv_key'],
-                                            use_ssl=False,
-                                            verify=None,
+                                            use_ssl=True,
+                                            verify=self.options['ssl_check'],
                                             )
             response = connection.list_objects_v2(Bucket=bucket,)
             total_bytes = 0
