@@ -20,10 +20,11 @@ v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
 v.0.0.7 Added options
 v.0.1.0 Changed aws-list to generic and now uses boto3 for generality.
 v.0.2.0 Added validators key and 'validate_options' function.
+v.0.2.1 Cleaned up code to PEP8.
 """
 from __future__ import print_function
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -277,7 +278,6 @@ class S3StorageStats(StorageStats):
             else:
                 bucket, domain = u.hostname.partition('.')[::2]
                 endpoint_url = '{uri.scheme}://{uri_domain}'.format(uri=u, uri_domain=domain)
-                print(endpoint_url)
 
             connection = boto3.client('s3',
                                       region_name=self.options['s3.region'],
