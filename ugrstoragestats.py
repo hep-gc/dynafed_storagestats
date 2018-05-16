@@ -119,30 +119,39 @@ class StorageStats(object):
     def get_storagestats(self):
         pass
 
+    def validate_options(self):
+        for option in self.validators:
+            try:
+                self.options[option]
+            except KeyError:
+                if self.validators[option]['required']:
+                    print('Option "%s" is required, please check configuration' % (option))
+                    sys.exit(1)
+                else:
+                    print('No "%s" specified. Setting it to default value "%s"' % (option, self.validators[option]['default']))
+                    self.options.update({option: self.validators[option]['default']})
+
+
 class S3StorageStats(StorageStats):
     """
     Subclass that defines methods for obtaining storage stats of S3 endpoints.
     """
+    def __init__(self, *args, **kwargs):
+        super(S3StorageStats, self).__init__(*args, **kwargs)
+        self.validators = {
+            's3.api': {
+                'default': 'generic',
+                'required': True,
+                'valid': ['ceph-admin','generic']
+            }
+        }
+
     def get_storagestats(self):
         try:
             self.options['s3.region']
         except KeyError:
             print('No s3.region option specified inf config. Trying "us-east-1"')
             self.options.update({'s3.region': 'us-east-1'})
-
-        # Check if user specified a specific type of API to use. If not, we will
-        # extract the BytesUsed by listing objects and summing their size.
-        try:
-            self.options['s3.api']
-        except KeyError:
-            print('\nNo s3.api option specified. Setting to "generic"')
-            self.options.update({'s3.api': 'generic'})
-        else:
-            if self.options['s3.api'].lower() not in ['ceph-admin','generic']:
-                print('\nInvalid s3.api option: "%s". Check your configuration.'
-                      % (self.options['s3.api'])
-                     )
-                sys.exit(1)
 
         try:
             self.options['s3.alternate']
@@ -277,6 +286,7 @@ def object_creator(config_dir="/etc/ugr/conf.d/"):
     endpoints = get_config(config_dir)
     for endpoint in endpoints:
         ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
+        ep.validate_options()
         storage_objects.append(ep)
 
     return(storage_objects)
@@ -293,9 +303,9 @@ if __name__ == '__main__':
 
     for endpoint in endpoints:
 #        print(endpoint.stats)
-#        print(endpoint.options)
+#        print(endpoint.validators)
         #print('\n', type(endpoint), '\n')
-        #print('\n', endpoint.options, '\n')
+#        print('\n', endpoint.options, '\n')
         endpoint.get_storagestats()
         endpoint.upload_to_memcached()
         #print('\n', ep.options, '\n')
