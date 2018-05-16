@@ -102,10 +102,9 @@ class StorageStats(object):
     for earch storage endpoint. As well as how to obtain stats and output it.
     """
     def __init__(self, _ep):
-        self.bytesused = 0
+        self.stats={"bytesused": 0, 'quota': '-1'}
         self.id = _ep['id']
         self.options = _ep['options']
-        self.quota = '-1'
         self.plugin = _ep['plugin']
         self.url = _ep['url']
 
@@ -113,7 +112,7 @@ class StorageStats(object):
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
         index = "Ugrstoragestats_" + self.id
-        storagestats = '%%'.join([self.id, self.quota, self.bytesused])
+        storagestats = '%%'.join([self.id, self.stats['quota'], self.stats['bytesused']])
         mc.set(index, storagestats)
         return 0
 
@@ -124,7 +123,6 @@ class S3StorageStats(StorageStats):
     """
     Subclass that defines methods for obtaining storage stats of S3 endpoints.
     """
-
     def get_storagestats(self):
         try:
             self.options['s3.region']
@@ -177,8 +175,8 @@ class S3StorageStats(StorageStats):
             auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=self.options['ssl_check'])
             r = requests.get(api_url, params=payload, auth=auth, verify=self.options['ssl_check'])
             stats = json.loads(r.content)
-            self.quota = str(stats['bucket_quota']['max_size'])
-            self.bytesused = str(stats['usage']['rgw.main']['size_utilized'])
+            self.stats['quota'] = str(stats['bucket_quota']['max_size'])
+            self.stats['bytesused'] = str(stats['usage']['rgw.main']['size_utilized'])
 
         # Getting the storage Stats AWS S3 API
         #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
@@ -208,7 +206,7 @@ class S3StorageStats(StorageStats):
             for content in response['Contents']:
                 total_bytes += content['Size']
                 total_files += 1
-            self.bytesused = str(total_bytes)
+            self.stats['bytesused'] = str(total_bytes)
 
 
 ###############
@@ -294,12 +292,14 @@ if __name__ == '__main__':
     mc = memcache.Client([memcached_srv])
 
     for endpoint in endpoints:
+#        print(endpoint.stats)
+#        print(endpoint.options)
         #print('\n', type(endpoint), '\n')
         #print('\n', endpoint.options, '\n')
         endpoint.get_storagestats()
         endpoint.upload_to_memcached()
         #print('\n', ep.options, '\n')
-        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.quota, '\nBytes Used:', endpoint.bytesused, '\n')
+        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'], '\n')
         index = "Ugrstoragestats_" + endpoint.id
         print('Probing memcached index:', index)
         print(mc.get(index), '\n')
