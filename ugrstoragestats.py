@@ -19,10 +19,11 @@ v0.0.5 Added module import checks.
 v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
 v.0.0.7 Added options
 v.0.1.0 Changed aws-list to generic and now uses boto3 for generality.
+v.0.2.0 Added validators key and 'validate_options' function.
 """
 from __future__ import print_function
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -77,11 +78,21 @@ usage = "usage: %prog [options] api-hostname"
 parser = OptionParser(usage)
 
 #parser.add_option('-v', '--verbose', dest='verbose', action='count', help='Increase verbosity level for debugging this script (on stderr)')
-parser.add_option('-d', '--dir', dest='directory', action='store', default='/etc/ugr/conf.d', help="Path to UGR's endpoint .conf files.")
+parser.add_option('-d', '--dir',
+                  dest='directory', action='store', default='/etc/ugr/conf.d',
+                  help="Path to UGR's endpoint .conf files."
+                 )
 
 group = OptionGroup(parser, "Memcached options")
-group.add_option('--memhost', dest='memhost', action='store', default='127.0.0.1', help="IP or hostname of memcached instance. Default: 127.0.0.1")
-group.add_option('--memport', dest='memport', action='store', default='11211', help="Port tof memcached instance. Default: 11211")
+group.add_option('--memhost',
+                 dest='memhost', action='store', default='127.0.0.1',
+                 help="IP or hostname of memcached instance. Default: 127.0.0.1"
+                )
+group.add_option('--memport',
+                 dest='memport', action='store', default='11211',
+                 help="Port tof memcached instance. Default: 11211"
+                )
+
 parser.add_option_group(group)
 
 #group = OptionGroup(parser, "Output options")
@@ -102,13 +113,26 @@ class StorageStats(object):
     for earch storage endpoint. As well as how to obtain stats and output it.
     """
     def __init__(self, _ep):
-        self.stats={"bytesused": 0, 'quota': '-1'}
+        self.stats = {"bytesused": 0, 'quota': '-1'}
         self.id = _ep['id']
         self.options = _ep['options']
         self.plugin = _ep['plugin']
         self.url = _ep['url']
 
+        self.validators = {
+            'ssl_check': {
+                'boolean': True,
+                'default': True,
+                'required': False,
+                'valid': ['true', 'false', 'yes', 'no']
+            },
+        }
+
     def upload_to_memcached(self, memcached_ip='127.0.0.1', memcached_port='11211'):
+        """
+        Connects to a memcached instance and uploads the endpoints storage stats:
+        self.id, self.stats['quota'], self.stats['bytesused']
+        """
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
         index = "Ugrstoragestats_" + self.id
@@ -117,19 +141,63 @@ class StorageStats(object):
         return 0
 
     def get_storagestats(self):
+        """
+        Method for obtaining contacting a storage endpoint and obtain storage
+        stats. Will be re-defined for each sub-class as each storage endpoint
+        type requires different API's.
+        """
         pass
 
     def validate_options(self):
+        """
+        Check the endpoints options from UGR's configuration file against the
+        set of default and valid options defined under the self.validators dict.
+        """
         for option in self.validators:
+            # First check if the option has been defined in the config file..
+            # If it is missing, check if it is required, and exit if true
+            # otherwise set it to the default value.
             try:
                 self.options[option]
             except KeyError:
                 if self.validators[option]['required']:
-                    print('Option "%s" is required, please check configuration' % (option))
+                    print('Option "%s" is required, please check configuration\n'
+                          % (option)
+                         )
                     sys.exit(1)
                 else:
-                    print('No "%s" specified. Setting it to default value "%s"' % (option, self.validators[option]['default']))
+                    print('No "%s" specified. Setting it to default value "%s"\n'
+                          % (option, self.validators[option]['default'])
+                         )
                     self.options.update({option: self.validators[option]['default']})
+
+            # If the option has been defined, check against a list of valid
+            # options (if defined, otherwise contiune). Also transform to boolean
+            # form those that have the "boolean" key set as true.
+            else:
+                try:
+                    self.validators[option]['valid']
+                except KeyError:
+                    pass
+                else:
+                    if self.options[option] not in self.validators[option]['valid']:
+                        print('Incorrect value in option "%s". \
+                              \nPlease check configuration. Valid options:\n %s'
+                              % (option, self.validators[option]['valid'])
+                             )
+                        sys.exit(1)
+                    else:
+                        try:
+                            self.validators[option]['boolean']
+                        except KeyError:
+                            pass
+                        else:
+                            if self.options['ssl_check'].lower() == 'false'\
+                            or self.options['ssl_check'].lower() == 'no':
+                                self.options.update({'ssl_check': False})
+                            else:
+                                self.options.update({'ssl_check': True})
+
 
 
 class S3StorageStats(StorageStats):
@@ -137,52 +205,60 @@ class S3StorageStats(StorageStats):
     Subclass that defines methods for obtaining storage stats of S3 endpoints.
     """
     def __init__(self, *args, **kwargs):
+        """
+        Extend the object's validators unique to the storage type to make sure
+        the storage status check can proceed.
+        """
         super(S3StorageStats, self).__init__(*args, **kwargs)
-        self.validators = {
+        self.validators.update({
+            's3.alternate': {
+                'default': 'false',
+                'required': False,
+                'valid': ['true', 'false', 'yes', 'no']
+            },
             's3.api': {
                 'default': 'generic',
                 'required': True,
-                'valid': ['ceph-admin','generic']
-            }
-        }
+                'valid': ['ceph-admin', 'generic'],
+            },
+            's3.priv_key': {
+                'required': True,
+            },
+            's3.pub_key': {
+                'required': True,
+            },
+            's3.region': {
+                'required': True,
+            },
+        })
 
     def get_storagestats(self):
-        try:
-            self.options['s3.region']
-        except KeyError:
-            print('No s3.region option specified inf config. Trying "us-east-1"')
-            self.options.update({'s3.region': 'us-east-1'})
-
-        try:
-            self.options['s3.alternate']
-        except KeyError:
-            print('\nNo s3.alternate option specified. Setting s3.alternate to "false"')
-            self.options.update({'s3.alternate': 'false'})
-
-        try:
-            self.options['ssl_check']
-        except KeyError:
-            print('\nNo ssl_check option specified. Setting ssl_check to "True"')
-            self.options.update({'ssl_check': True})
-        else:
-            if self.options['ssl_check'].lower() == 'false' or self.options['ssl_check'].lower() == 'no':
-                self.options.update({'ssl_check': False})
-            else:
-                self.options.update({'ssl_check': True})
-
-
+        """
+        Connect to the storage endpoint with the defined or generic API's
+        to obtain the storage status.
+        """
         # Getting the storage Stats CephS3's Admin API
         if self.options['s3.api'].lower() == 'ceph-admin':
             u = urlsplit(self.url)
-            if self.options['s3.alternate'].lower() == 'true' or self.options['s3.alternate'].lower() == 'yes':
+            if self.options['s3.alternate'].lower() == 'true'\
+            or self.options['s3.alternate'].lower() == 'yes':
                 api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri=u)
                 payload = {'bucket': u.path.strip("/"), 'stats': 'True'}
             else:
                 u_bucket, u_domain = u.hostname.partition('.')[::2]
                 api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_bucket=u_bucket, uri_domain=u_domain)
                 payload = {'bucket': u_bucket, 'stats': 'True'}
-            auth = AWS4Auth(self.options['s3.pub_key'], self.options['s3.priv_key'], self.options['s3.region'], 's3', verify=self.options['ssl_check'])
-            r = requests.get(api_url, params=payload, auth=auth, verify=self.options['ssl_check'])
+            auth = AWS4Auth(self.options['s3.pub_key'],
+                            self.options['s3.priv_key'],
+                            self.options['s3.region'],
+                            's3',
+                            verify=self.options['ssl_check']
+                           )
+            r = requests.get(api_url,
+                             params=payload,
+                             auth=auth,
+                             verify=self.options['ssl_check']
+                            )
             stats = json.loads(r.content)
             self.stats['quota'] = str(stats['bucket_quota']['max_size'])
             self.stats['bytesused'] = str(stats['usage']['rgw.main']['size_utilized'])
@@ -194,21 +270,23 @@ class S3StorageStats(StorageStats):
         # API, should work for any compatible S3 endpoint.
         elif self.options['s3.api'].lower() == 'generic':
             u = urlsplit(self.url)
-            if self.options['s3.alternate'].lower() == 'true' or self.options['s3.alternate'].lower() == 'yes':
+            if self.options['s3.alternate'].lower() == 'true'\
+            or self.options['s3.alternate'].lower() == 'yes':
                 endpoint_url = '{uri.scheme}://{uri.hostname}'.format(uri=u)
                 bucket = u.path.strip("/")
             else:
                 bucket, domain = u.hostname.partition('.')[::2]
-                endpoint_url = '{uri.scheme}://{uri_domain}'.format(uri=u, uri_bucket=bucket, uri_domain=domain)
+                endpoint_url = '{uri.scheme}://{uri_domain}'.format(uri=u, uri_domain=domain)
                 print(endpoint_url)
 
-            connection = boto3.client('s3', region_name=self.options['s3.region'],
-                                            endpoint_url=endpoint_url,
-                                            aws_access_key_id = self.options['s3.pub_key'],
-                                            aws_secret_access_key = self.options['s3.priv_key'],
-                                            use_ssl=True,
-                                            verify=self.options['ssl_check'],
-                                            )
+            connection = boto3.client('s3',
+                                      region_name=self.options['s3.region'],
+                                      endpoint_url=endpoint_url,
+                                      aws_access_key_id=self.options['s3.pub_key'],
+                                      aws_secret_access_key=self.options['s3.priv_key'],
+                                      use_ssl=True,
+                                      verify=self.options['ssl_check'],
+                                     )
             response = connection.list_objects_v2(Bucket=bucket,)
             total_bytes = 0
             total_files = 0
