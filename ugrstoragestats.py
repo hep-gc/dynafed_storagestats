@@ -374,9 +374,15 @@ def object_creator(config_dir="/etc/ugr/conf.d/"):
     storage_objects = []
     endpoints = get_config(config_dir)
     for endpoint in endpoints:
-        ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
-        ep.validate_options()
-        storage_objects.append(ep)
+        try:
+            ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
+        except TypeError:
+            print('Storage Endpoint Type "%s" not implemented yet. Skipping %s'
+                  % (endpoints[endpoint]['plugin'], endpoint)
+                 )
+        else:
+            ep.validate_options()
+            storage_objects.append(ep)
 
     return(storage_objects)
 
