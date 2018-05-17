@@ -309,6 +309,39 @@ class S3StorageStats(StorageStats):
             self.stats['bytesused'] = str(total_bytes)
 
 
+class DAVStorageStats(StorageStats):
+    """
+    Subclass that defines methods for obtaining storage stats of S3 endpoints.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Extend the object's validators unique to the storage type to make sure
+        the storage status check can proceed.
+        """
+        super(DAVStorageStats, self).__init__(*args, **kwargs)
+        self.validators.update({
+            'cli_certificate': {
+                'required': True,
+            },
+            'cli_private_key': {
+                'required': True,
+            },
+        })
+
+    def get_storagestats(self):
+        headers = {'Depth': '0',}
+        data = create_free_space_request_content()
+        response = requests.request(
+            method="PROPFIND",
+            url=self.url,
+            cert=(self.options['cli_certificate'], self.options['cli_private_key']),
+            headers=headers,
+            verify=self.options['ca_path'],
+            data=data
+        )
+        print (response.content)
+        #print(etree.tostring(response.content))
+
 ###############
 ## Functions ##
 ###############
@@ -358,8 +391,8 @@ def factory(plugin_type):
     configuration files.
     """
     switcher = {
-        #'libugrlocplugin_dav.so': HTTPStorageStats,
-        #'libugrlocplugin_http.so': HTTPStorageStats,
+        'libugrlocplugin_dav.so': DAVStorageStats,
+        #'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
@@ -431,32 +464,18 @@ if __name__ == '__main__':
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
+    endpoint = 'https://srm-test.gridpp.ecdf.ed.ac.uk/dpm/ecdf.ed.ac.uk/home/atlas/'
+
+
     for endpoint in endpoints:
 #        print(endpoint.stats)
 #        print(endpoint.validators)
         #print('\n', type(endpoint), '\n')
 #        print('\n', endpoint.options, '\n')
         endpoint.get_storagestats()
-        endpoint.upload_to_memcached()
+#        endpoint.upload_to_memcached()
         #print('\n', ep.options, '\n')
-        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'], '\n')
-        index = "Ugrstoragestats_" + endpoint.id
-        print('Probing memcached index:', index)
-        print(mc.get(index), '\n')
-
-#DAV
-ucert = '/tmp/x509up_u1000'
-ukey = '/tmp/x509up_u1000'
-ca = '/etc/grid-security/certificates'
-endpoint = 'https://srm-test.gridpp.ecdf.ed.ac.uk/dpm/ecdf.ed.ac.uk/home/atlas/'
-headers = {'Depth': '0',}
-
-data = create_free_space_request_content()
-response = requests.request(
-    method="PROPFIND",
-    url=endpoint,
-    cert=(ucert, ukey),
-    headers=headers,
-    verify=ca,
-    data=data
-)
+#        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'], '\n')
+#        index = "Ugrstoragestats_" + endpoint.id
+#        print('Probing memcached index:', index)
+#        print(mc.get(index), '\n')
