@@ -160,12 +160,14 @@ class StorageStats(object):
             # otherwise set it to the default value.
             try:
                 self.options[option]
+
             except KeyError:
                 if self.validators[option]['required']:
                     print('Option "%s" is required, please check configuration\n'
                           % (option)
                          )
                     sys.exit(1)
+
                 else:
                     print('No "%s" specified. Setting it to default value "%s"\n'
                           % (option, self.validators[option]['default'])
@@ -178,8 +180,10 @@ class StorageStats(object):
             else:
                 try:
                     self.validators[option]['valid']
+
                 except KeyError:
                     pass
+
                 else:
                     if self.options[option] not in self.validators[option]['valid']:
                         print('Incorrect value in option "%s". \
@@ -187,15 +191,19 @@ class StorageStats(object):
                               % (option, self.validators[option]['valid'])
                              )
                         sys.exit(1)
+
                     else:
                         try:
                             self.validators[option]['boolean']
+
                         except KeyError:
                             pass
+
                         else:
                             if self.options['ssl_check'].lower() == 'false'\
                             or self.options['ssl_check'].lower() == 'no':
                                 self.options.update({'ssl_check': False})
+
                             else:
                                 self.options.update({'ssl_check': True})
 
@@ -245,10 +253,12 @@ class S3StorageStats(StorageStats):
             or self.options['s3.alternate'].lower() == 'yes':
                 api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri=u)
                 payload = {'bucket': u.path.strip("/"), 'stats': 'True'}
+
             else:
                 u_bucket, u_domain = u.hostname.partition('.')[::2]
                 api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_bucket=u_bucket, uri_domain=u_domain)
                 payload = {'bucket': u_bucket, 'stats': 'True'}
+
             auth = AWS4Auth(self.options['s3.pub_key'],
                             self.options['s3.priv_key'],
                             self.options['s3.region'],
@@ -275,6 +285,7 @@ class S3StorageStats(StorageStats):
             or self.options['s3.alternate'].lower() == 'yes':
                 endpoint_url = '{uri.scheme}://{uri.hostname}'.format(uri=u)
                 bucket = u.path.strip("/")
+
             else:
                 bucket, domain = u.hostname.partition('.')[::2]
                 endpoint_url = '{uri.scheme}://{uri_domain}'.format(uri=u, uri_domain=domain)
