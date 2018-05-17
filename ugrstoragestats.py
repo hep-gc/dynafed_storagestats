@@ -21,10 +21,11 @@ v.0.0.7 Added options
 v.0.1.0 Changed aws-list to generic and now uses boto3 for generality.
 v.0.2.0 Added validators key and 'validate_options' function.
 v.0.2.1 Cleaned up code to PEP8.
+v.0.2.2 Exception for plugint types not yet implemented.
 """
 from __future__ import print_function
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
