@@ -30,6 +30,7 @@ __author__ = "Fernando Fernandez Galindo"
 
 import sys
 import os
+from io import BytesIO
 from optparse import OptionParser, OptionGroup
 import glob
 import json
@@ -387,6 +388,39 @@ def object_creator(config_dir="/etc/ugr/conf.d/"):
 
     return(storage_objects)
 
+def create_free_space_request_content():
+    """Creates an XML for requesting of free space on remote WebDAV server.
+
+    :return: the XML string of request content.
+    """
+    root = etree.Element("propfind", xmlns="DAV:")
+    prop = etree.SubElement(root, "prop")
+    etree.SubElement(prop, "quota-available-bytes")
+    etree.SubElement(prop, "quota-used-bytes")
+    tree = etree.ElementTree(root)
+    buff = BytesIO()
+    tree.write(buff, xml_declaration=True, encoding='UTF-8')
+    return buff.getvalue()
+
+def parse_free_space_response(content, hostname):
+    """Parses of response content XML from WebDAV server and extract an amount of free space.
+
+    :param content: the XML content of HTTP response from WebDAV server for getting free space.
+    :param hostname: the server hostname.
+    :return: an amount of free space in bytes.
+    """
+    try:
+        tree = etree.fromstring(content)
+        node = tree.find('.//{DAV:}quota-available-bytes')
+        if node is not None:
+            return int(node.text)
+        else:
+            raise MethodNotSupported(name='free', server=hostname)
+    except TypeError:
+        raise MethodNotSupported(name='free', server=hostname)
+    except etree.XMLSyntaxError:
+        return str()
+
 
 #############
 # Self-Test #
@@ -409,3 +443,20 @@ if __name__ == '__main__':
         index = "Ugrstoragestats_" + endpoint.id
         print('Probing memcached index:', index)
         print(mc.get(index), '\n')
+
+#DAV
+ucert = '/tmp/x509up_u1000'
+ukey = '/tmp/x509up_u1000'
+ca = '/etc/grid-security/certificates'
+endpoint = 'https://srm-test.gridpp.ecdf.ed.ac.uk/dpm/ecdf.ed.ac.uk/home/atlas/'
+headers = {'Depth': '0',}
+
+data = create_free_space_request_content()
+response = requests.request(
+    method="PROPFIND",
+    url=endpoint,
+    cert=(ucert, ukey),
+    headers=headers,
+    verify=ca,
+    data=data
+)
