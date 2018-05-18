@@ -253,12 +253,13 @@ class S3StorageStats(StorageStats):
             if self.options['s3.alternate'].lower() == 'true'\
             or self.options['s3.alternate'].lower() == 'yes':
                 api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri=u)
-                payload = {'bucket': u.path.strip("/"), 'stats': 'True'}
+                bucket = u.path.rpartition("/")[-1]
+                payload = {'bucket': bucket, 'stats': 'True'}
 
             else:
-                u_bucket, u_domain = u.hostname.partition('.')[::2]
-                api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_bucket=u_bucket, uri_domain=u_domain)
-                payload = {'bucket': u_bucket, 'stats': 'True'}
+                bucket, domain = u.hostname.partition('.')[::2]
+                api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_bucket=bucket, uri_domain=domain)
+                payload = {'bucket': bucket, 'stats': 'True'}
 
             auth = AWS4Auth(self.options['s3.pub_key'],
                             self.options['s3.priv_key'],
@@ -285,7 +286,7 @@ class S3StorageStats(StorageStats):
             if self.options['s3.alternate'].lower() == 'true'\
             or self.options['s3.alternate'].lower() == 'yes':
                 endpoint_url = '{uri.scheme}://{uri.hostname}'.format(uri=u)
-                bucket = u.path.strip("/")
+                bucket = u.path.rpartition("/")[-1]
 
             else:
                 bucket, domain = u.hostname.partition('.')[::2]
