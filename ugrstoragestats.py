@@ -24,10 +24,11 @@ v.0.2.1 Cleaned up code to PEP8.
 v.0.2.2 Exception for plugint types not yet implemented.
 v.0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
         S3 endpoints.
+v.0.2.4 Added URL schema validator function and updated code. Works for dav,davs.
 """
 from __future__ import print_function
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
