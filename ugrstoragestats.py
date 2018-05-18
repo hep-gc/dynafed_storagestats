@@ -252,13 +252,13 @@ class S3StorageStats(StorageStats):
             u = urlsplit(self.url)
             if self.options['s3.alternate'].lower() == 'true'\
             or self.options['s3.alternate'].lower() == 'yes':
-                api_url = '{uri.scheme}://{uri.hostname}/admin/bucket?format=json'.format(uri=u)
+                endpoint_url = '{uri.scheme}://{uri.netloc}/admin/bucket?format=json'.format(uri=u)
                 bucket = u.path.rpartition("/")[-1]
                 payload = {'bucket': bucket, 'stats': 'True'}
 
             else:
-                bucket, domain = u.hostname.partition('.')[::2]
-                api_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_bucket=bucket, uri_domain=domain)
+                bucket, domain = u.netloc.partition('.')[::2]
+                endpoint_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_bucket=bucket, uri_domain=domain)
                 payload = {'bucket': bucket, 'stats': 'True'}
 
             auth = AWS4Auth(self.options['s3.pub_key'],
@@ -267,7 +267,7 @@ class S3StorageStats(StorageStats):
                             's3',
                             verify=self.options['ssl_check']
                            )
-            r = requests.get(api_url,
+            r = requests.get(endpoint_url,
                              params=payload,
                              auth=auth,
                              verify=self.options['ssl_check']
@@ -285,11 +285,11 @@ class S3StorageStats(StorageStats):
             u = urlsplit(self.url)
             if self.options['s3.alternate'].lower() == 'true'\
             or self.options['s3.alternate'].lower() == 'yes':
-                endpoint_url = '{uri.scheme}://{uri.hostname}'.format(uri=u)
+                endpoint_url = '{uri.scheme}://{uri.netloc}'.format(uri=u)
                 bucket = u.path.rpartition("/")[-1]
 
             else:
-                bucket, domain = u.hostname.partition('.')[::2]
+                bucket, domain = u.netloc.partition('.')[::2]
                 endpoint_url = '{uri.scheme}://{uri_domain}'.format(uri=u, uri_domain=domain)
 
             connection = boto3.client('s3',
