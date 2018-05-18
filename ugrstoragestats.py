@@ -250,18 +250,22 @@ class S3StorageStats(StorageStats):
         Connect to the storage endpoint with the defined or generic API's
         to obtain the storage status.
         """
+        # Split the URL in the configuration file for validation and proper
+        # formatting according to the method's needs.
+        u = urlsplit(self.url)
+        scheme = validate_schema(u.scheme)
+
         # Getting the storage Stats CephS3's Admin API
         if self.options['s3.api'].lower() == 'ceph-admin':
-            u = urlsplit(self.url)
             if self.options['s3.alternate'].lower() == 'true'\
             or self.options['s3.alternate'].lower() == 'yes':
-                endpoint_url = '{uri.scheme}://{uri.netloc}/admin/bucket?format=json'.format(uri=u)
+                endpoint_url = '{uri_scheme}://{uri.netloc}/admin/bucket?format=json'.format(uri=u, uri_scheme=scheme)
                 bucket = u.path.rpartition("/")[-1]
                 payload = {'bucket': bucket, 'stats': 'True'}
 
             else:
                 bucket, domain = u.netloc.partition('.')[::2]
-                endpoint_url = '{uri.scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_bucket=bucket, uri_domain=domain)
+                endpoint_url = '{uri_scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_scheme=scheme, uri_bucket=bucket, uri_domain=domain)
                 payload = {'bucket': bucket, 'stats': 'True'}
 
             auth = AWS4Auth(self.options['s3.pub_key'],
@@ -285,15 +289,14 @@ class S3StorageStats(StorageStats):
         # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
         # API, should work for any compatible S3 endpoint.
         elif self.options['s3.api'].lower() == 'generic':
-            u = urlsplit(self.url)
             if self.options['s3.alternate'].lower() == 'true'\
             or self.options['s3.alternate'].lower() == 'yes':
-                endpoint_url = '{uri.scheme}://{uri.netloc}'.format(uri=u)
+                endpoint_url = '{uri_scheme}://{uri.netloc}'.format(uri=u, uri_scheme=scheme)
                 bucket = u.path.rpartition("/")[-1]
 
             else:
                 bucket, domain = u.netloc.partition('.')[::2]
-                endpoint_url = '{uri.scheme}://{uri_domain}'.format(uri=u, uri_domain=domain)
+                endpoint_url = '{uri_scheme}://{uri_domain}'.format(uri=u, uri_scheme=scheme, uri_domain=domain)
 
             connection = boto3.client('s3',
                                       region_name=self.options['s3.region'],
@@ -332,11 +335,15 @@ class DAVStorageStats(StorageStats):
         })
 
     def get_storagestats(self):
+        u = urlsplit(self.url)
+        scheme = validate_schema(u.scheme)
+        endpoint_url = '{uri_scheme}://{uri.netloc}{uri.path}'.format(uri=u, uri_scheme=scheme)
+
         headers = {'Depth': '0',}
         data = create_free_space_request_content()
         response = requests.request(
             method="PROPFIND",
-            url=self.url,
+            url=endpoint_url,
             cert=(self.options['cli_certificate'], self.options['cli_private_key']),
             headers=headers,
             verify=self.options['ca_path'],
@@ -459,13 +466,12 @@ def parse_free_space_response(content, hostname):
     except etree.XMLSyntaxError:
         return str()
 
-def validate_schema(url):
+def validate_schema(scheme):
     schema_translator = {'dav': 'http','davs': 'https',}
-    u = urlsplit(url)
-    if u.scheme in schema_translator:
-        return (schema_translator[u.scheme])
+    if scheme in schema_translator:
+        return (schema_translator[scheme])
     else:
-        return (u.scheme)
+        return (scheme)
 
 
 
