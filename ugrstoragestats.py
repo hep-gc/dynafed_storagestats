@@ -22,14 +22,17 @@ v.0.1.0 Changed aws-list to generic and now uses boto3 for generality.
 v.0.2.0 Added validators key and 'validate_options' function.
 v.0.2.1 Cleaned up code to PEP8.
 v.0.2.2 Exception for plugint types not yet implemented.
+v.0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
+        S3 endpoints.
 """
 from __future__ import print_function
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
 import os
+from io import BytesIO
 from optparse import OptionParser, OptionGroup
 import glob
 import json
@@ -309,6 +312,41 @@ class S3StorageStats(StorageStats):
             self.stats['bytesused'] = str(total_bytes)
 
 
+class DAVStorageStats(StorageStats):
+    """
+    Subclass that defines methods for obtaining storage stats of S3 endpoints.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Extend the object's validators unique to the storage type to make sure
+        the storage status check can proceed.
+        """
+        super(DAVStorageStats, self).__init__(*args, **kwargs)
+        self.validators.update({
+            'cli_certificate': {
+                'required': True,
+            },
+            'cli_private_key': {
+                'required': True,
+            },
+        })
+
+    def get_storagestats(self):
+        headers = {'Depth': '0',}
+        data = create_free_space_request_content()
+        response = requests.request(
+            method="PROPFIND",
+            url=self.url,
+            cert=(self.options['cli_certificate'], self.options['cli_private_key']),
+            headers=headers,
+            verify=self.options['ca_path'],
+            data=data
+        )
+
+        tree = etree.fromstring(response.content)
+        #self. = tree.find('.//{DAV:}quota-available-bytes').text
+        self.stats['bytesused'] = tree.find('.//{DAV:}quota-used-bytes').text
+
 ###############
 ## Functions ##
 ###############
@@ -358,8 +396,8 @@ def factory(plugin_type):
     configuration files.
     """
     switcher = {
-        #'libugrlocplugin_dav.so': HTTPStorageStats,
-        #'libugrlocplugin_http.so': HTTPStorageStats,
+        'libugrlocplugin_dav.so': DAVStorageStats,
+        #'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
@@ -388,6 +426,39 @@ def object_creator(config_dir="/etc/ugr/conf.d/"):
 
     return(storage_objects)
 
+def create_free_space_request_content():
+    """Creates an XML for requesting of free space on remote WebDAV server.
+
+    :return: the XML string of request content.
+    """
+    root = etree.Element("propfind", xmlns="DAV:")
+    prop = etree.SubElement(root, "prop")
+    etree.SubElement(prop, "quota-available-bytes")
+    etree.SubElement(prop, "quota-used-bytes")
+    tree = etree.ElementTree(root)
+    buff = BytesIO()
+    tree.write(buff, xml_declaration=True, encoding='UTF-8')
+    return buff.getvalue()
+
+def parse_free_space_response(content, hostname):
+    """Parses of response content XML from WebDAV server and extract an amount of free space.
+
+    :param content: the XML content of HTTP response from WebDAV server for getting free space.
+    :param hostname: the server hostname.
+    :return: an amount of free space in bytes.
+    """
+    try:
+        tree = etree.fromstring(content)
+        node = tree.find('.//{DAV:}quota-available-bytes')
+        if node is not None:
+            return int(node.text)
+        else:
+            raise MethodNotSupported(name='free', server=hostname)
+    except TypeError:
+        raise MethodNotSupported(name='free', server=hostname)
+    except etree.XMLSyntaxError:
+        return str()
+
 
 #############
 # Self-Test #
@@ -398,15 +469,18 @@ if __name__ == '__main__':
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
+    endpoint = 'https://srm-test.gridpp.ecdf.ed.ac.uk/dpm/ecdf.ed.ac.uk/home/atlas/'
+
+
     for endpoint in endpoints:
 #        print(endpoint.stats)
 #        print(endpoint.validators)
         #print('\n', type(endpoint), '\n')
 #        print('\n', endpoint.options, '\n')
         endpoint.get_storagestats()
-        endpoint.upload_to_memcached()
+#        endpoint.upload_to_memcached()
         #print('\n', ep.options, '\n')
         print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'], '\n')
-        index = "Ugrstoragestats_" + endpoint.id
-        print('Probing memcached index:', index)
-        print(mc.get(index), '\n')
+#        index = "Ugrstoragestats_" + endpoint.id
+#        print('Probing memcached index:', index)
+#        print(mc.get(index), '\n')
