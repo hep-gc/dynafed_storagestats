@@ -211,6 +211,16 @@ class StorageStats(object):
 
                             else:
                                 self.options.update({'ssl_check': True})
+    def validate_schema(self, scheme):
+        schema_translator = {
+            'dav': 'http',
+            'davs': 'https',
+        }
+
+        if scheme in schema_translator:
+            return (schema_translator[scheme])
+        else:
+            return (scheme)
 
 
 
@@ -254,7 +264,7 @@ class S3StorageStats(StorageStats):
         # Split the URL in the configuration file for validation and proper
         # formatting according to the method's needs.
         u = urlsplit(self.url)
-        scheme = validate_schema(u.scheme)
+        scheme = self.validate_schema(u.scheme)
 
         # Getting the storage Stats CephS3's Admin API
         if self.options['s3.api'].lower() == 'ceph-admin':
@@ -315,6 +325,15 @@ class S3StorageStats(StorageStats):
                 total_files += 1
             self.stats['bytesused'] = str(total_bytes)
 
+    def validate_schema(self, scheme):
+        if scheme == 's3':
+            if self.options['ssl_check']:
+                return ('https')
+            else:
+                return ('http')
+        else:
+            return (scheme)
+
 
 class DAVStorageStats(StorageStats):
     """
@@ -337,7 +356,7 @@ class DAVStorageStats(StorageStats):
 
     def get_storagestats(self):
         u = urlsplit(self.url)
-        scheme = validate_schema(u.scheme)
+        scheme = self.validate_schema(u.scheme)
         endpoint_url = '{uri_scheme}://{uri.netloc}{uri.path}'.format(uri=u, uri_scheme=scheme)
 
         headers = {'Depth': '0',}
@@ -354,6 +373,7 @@ class DAVStorageStats(StorageStats):
         tree = etree.fromstring(response.content)
         #self. = tree.find('.//{DAV:}quota-available-bytes').text
         self.stats['bytesused'] = tree.find('.//{DAV:}quota-used-bytes').text
+
 
 ###############
 ## Functions ##
@@ -467,16 +487,6 @@ def parse_free_space_response(content, hostname):
     except etree.XMLSyntaxError:
         return str()
 
-def validate_schema(scheme):
-    schema_translator = {'dav': 'http','davs': 'https',}
-    if scheme in schema_translator:
-        return (schema_translator[scheme])
-    else:
-        return (scheme)
-
-
-
-
 
 #############
 # Self-Test #
@@ -494,7 +504,7 @@ if __name__ == '__main__':
 #        print(endpoint.stats)
 #        print(endpoint.validators)
         #print('\n', type(endpoint), '\n')
-#        print('\n', endpoint.options, '\n')
+        #print('\n', endpoint.options, '\n')
         endpoint.get_storagestats()
 #        endpoint.upload_to_memcached()
         #print('\n', ep.options, '\n')
