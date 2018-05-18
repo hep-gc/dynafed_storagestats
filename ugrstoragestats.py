@@ -339,8 +339,10 @@ class DAVStorageStats(StorageStats):
             verify=self.options['ca_path'],
             data=data
         )
-        print (response.content)
-        #print(etree.tostring(response.content))
+
+        tree = etree.fromstring(response.content)
+        #self. = tree.find('.//{DAV:}quota-available-bytes').text
+        self.stats['bytesused'] = tree.find('.//{DAV:}quota-used-bytes').text
 
 ###############
 ## Functions ##
@@ -475,7 +477,7 @@ if __name__ == '__main__':
         endpoint.get_storagestats()
 #        endpoint.upload_to_memcached()
         #print('\n', ep.options, '\n')
-#        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'], '\n')
+        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'], '\n')
 #        index = "Ugrstoragestats_" + endpoint.id
 #        print('Probing memcached index:', index)
 #        print(mc.get(index), '\n')
