@@ -459,6 +459,17 @@ def parse_free_space_response(content, hostname):
     except etree.XMLSyntaxError:
         return str()
 
+def validate_schema(url):
+    schema_translator = {'dav': 'http','davs': 'https',}
+    u = urlsplit(url)
+    if u.scheme in schema_translator:
+        return (schema_translator[u.scheme])
+    else:
+        return (u.scheme)
+
+
+
+
 
 #############
 # Self-Test #
