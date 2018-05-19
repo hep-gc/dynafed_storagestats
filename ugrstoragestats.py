@@ -26,10 +26,11 @@ v.0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
         S3 endpoints.
 v.0.2.4 Added URL schema validator function and updated code. Works for dav,davs.
 v.0.2.5 Moved schema validator from fuction to class method. Added for S3.
+v.0.2.6 Tested with Minio
 """
 from __future__ import print_function
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
