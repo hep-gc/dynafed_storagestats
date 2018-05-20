@@ -322,10 +322,16 @@ class S3StorageStats(StorageStats):
             response = connection.list_objects_v2(Bucket=bucket,)
             total_bytes = 0
             total_files = 0
-            for content in response['Contents']:
-                total_bytes += content['Size']
-                total_files += 1
-            self.stats['bytesused'] = str(total_bytes)
+            #Maybe this is wrong.
+            try:
+                response['Contents']
+            except:
+                self.stats['bytesused'] = '0'
+            else:
+                for content in response['Contents']:
+                    total_bytes += content['Size']
+                    total_files += 1
+                self.stats['bytesused'] = str(total_bytes)
 
     def validate_schema(self, scheme):
         if scheme == 's3':
@@ -436,7 +442,7 @@ def factory(plugin_type):
     return switcher.get(plugin_type, "nothing")
 
 
-def object_creator(config_dir="/etc/ugr/conf.d/"):
+def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
     Returns list of storage endpoint objects whose class represents each storage
     endpoint configured in UGR's configuration files.
@@ -495,7 +501,7 @@ def parse_free_space_response(content, hostname):
 #############
 
 if __name__ == '__main__':
-    endpoints = object_creator(options.directory)
+    endpoints = get_endpoints(options.directory)
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
