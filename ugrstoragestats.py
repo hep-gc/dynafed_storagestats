@@ -111,9 +111,27 @@ parser.add_option_group(group)
 options, args = parser.parse_args()
 
 
-#############
-## Classes ##
-#############
+#######################
+## Exception Classes ##
+#######################
+
+class StorageStatsError(Exception):
+    def __init__(self,*args,**kwargs):
+        Exception.__init__(self,*args,**kwargs)
+
+class S3StatsError(StorageStatsError):
+    def __init__(self,*args,**kwargs):
+        StorageStatsError.__init__(self,*args,**kwargs)
+
+class S3EmptyBucketWarning(S3StatsError):
+    def __init__(self,*args,**kwargs):
+        S3StatsError.__init__(self,*args,**kwargs)
+    #print('hello')
+
+
+#####################
+## Storage Classes ##
+#####################
 
 class StorageStats(object):
     """
@@ -325,7 +343,7 @@ class S3StorageStats(StorageStats):
             #Maybe this is wrong.
             try:
                 response['Contents']
-            except:
+            except KeyError:
                 self.stats['bytesused'] = '0'
             else:
                 for content in response['Contents']:
