@@ -231,6 +231,7 @@ class StorageStats(object):
 
                             else:
                                 self.options.update({'ssl_check': True})
+                                
     def validate_schema(self, scheme):
         schema_translator = {
             'dav': 'http',
@@ -340,7 +341,7 @@ class S3StorageStats(StorageStats):
             response = connection.list_objects_v2(Bucket=bucket,)
             total_bytes = 0
             total_files = 0
-            #Maybe this is wrong.
+            #If no contents attribute, the bucket is empty..
             try:
                 response['Contents']
             except KeyError:
