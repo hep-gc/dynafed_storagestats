@@ -139,7 +139,7 @@ class StorageStats(object):
     for earch storage endpoint. As well as how to obtain stats and output it.
     """
     def __init__(self, _ep):
-        self.stats = {"bytesused": 0, 'quota': '10000000000000'}
+        self.stats = {'bytesused': 0, 'files': 0, 'quota': '10000000000000'}
         self.id = _ep['id']
         self.options = _ep['options']
         self.plugin = _ep['plugin']
@@ -231,7 +231,7 @@ class StorageStats(object):
 
                             else:
                                 self.options.update({'ssl_check': True})
-                                
+
     def validate_schema(self, scheme):
         schema_translator = {
             'dav': 'http',
@@ -351,6 +351,7 @@ class S3StorageStats(StorageStats):
                     total_bytes += content['Size']
                     total_files += 1
                 self.stats['bytesused'] = str(total_bytes)
+                self.stats['files'] = str(total_files)
 
     def validate_schema(self, scheme):
         if scheme == 's3':
@@ -535,7 +536,7 @@ if __name__ == '__main__':
         endpoint.get_storagestats()
 #        endpoint.upload_to_memcached()
         #print('\n', ep.options, '\n')
-        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'], '\n')
+        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'],'\n Number of Files:', endpoint.stats['files'], '\n')
 #        index = "Ugrstoragestats_" + endpoint.id
 #        print('Probing memcached index:', index)
 #        print(mc.get(index), '\n')
