@@ -28,10 +28,14 @@ v0.2.4 Added URL schema validator function and updated code. Works for dav,davs.
 v0.2.5 Moved schema validator from fuction to class method. Added for S3.
 v0.2.6 Tested with Minio
 v0.2.7 Added files counted to S3 Generic.
+v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
+       doesn't have the "NextContinuationToken" directive and thus would only
+       list the first 1000. This needs to be updated one Ceph has this as
+       v1 is sort of deprecated.
 """
 from __future__ import print_function
 
-__version__ = "0.2.7"
+__version__ = "0.2.8"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -339,20 +343,29 @@ class S3StorageStats(StorageStats):
                                       use_ssl=True,
                                       verify=self.options['ssl_check'],
                                      )
-            response = connection.list_objects_v2(Bucket=bucket,)
+
             total_bytes = 0
             total_files = 0
-            #If no contents attribute, the bucket is empty..
-            try:
-                response['Contents']
-            except KeyError:
-                self.stats['bytesused'] = '0'
-            else:
-                for content in response['Contents']:
-                    total_bytes += content['Size']
-                    total_files += 1
-                self.stats['bytesused'] = str(total_bytes)
-                self.stats['files'] = str(total_files)
+            kwargs = {'Bucket': bucket}
+            while True:
+                response = connection.list_objects(**kwargs)
+                try:
+                    response['Contents']
+                except KeyError:
+                    self.stats['bytesused'] = '0'
+                    break
+                else:
+                    for content in response['Contents']:
+                        total_bytes += content['Size']
+                        total_files += 1
+
+                try:
+                    kwargs['Marker'] = response['NextMarker']
+                except KeyError:
+                    break
+
+            self.stats['bytesused'] = str(total_bytes)
+            self.stats['files'] = str(total_files)
 
     def validate_schema(self, scheme):
         if scheme == 's3':
