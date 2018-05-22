@@ -111,9 +111,27 @@ parser.add_option_group(group)
 options, args = parser.parse_args()
 
 
-#############
-## Classes ##
-#############
+#######################
+## Exception Classes ##
+#######################
+
+class StorageStatsError(Exception):
+    def __init__(self,*args,**kwargs):
+        Exception.__init__(self,*args,**kwargs)
+
+class S3StatsError(StorageStatsError):
+    def __init__(self,*args,**kwargs):
+        StorageStatsError.__init__(self,*args,**kwargs)
+
+class S3EmptyBucketWarning(S3StatsError):
+    def __init__(self,*args,**kwargs):
+        S3StatsError.__init__(self,*args,**kwargs)
+    #print('hello')
+
+
+#####################
+## Storage Classes ##
+#####################
 
 class StorageStats(object):
     """
@@ -213,6 +231,7 @@ class StorageStats(object):
 
                             else:
                                 self.options.update({'ssl_check': True})
+                                
     def validate_schema(self, scheme):
         schema_translator = {
             'dav': 'http',
@@ -322,10 +341,10 @@ class S3StorageStats(StorageStats):
             response = connection.list_objects_v2(Bucket=bucket,)
             total_bytes = 0
             total_files = 0
-            #Maybe this is wrong.
+            #If no contents attribute, the bucket is empty..
             try:
                 response['Contents']
-            except:
+            except KeyError:
                 self.stats['bytesused'] = '0'
             else:
                 for content in response['Contents']:
