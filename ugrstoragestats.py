@@ -32,10 +32,11 @@ v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
        doesn't have the "NextContinuationToken" directive and thus would only
        list the first 1000. This needs to be updated one Ceph has this as
        v1 is sort of deprecated.
+v0.2.9 Added ability to specify S3 signature version.
 """
 from __future__ import print_function
 
-__version__ = "0.2.8"
+__version__ = "0.2.9"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
