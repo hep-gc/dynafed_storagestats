@@ -32,10 +32,11 @@ v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
        doesn't have the "NextContinuationToken" directive and thus would only
        list the first 1000. This needs to be updated one Ceph has this as
        v1 is sort of deprecated.
+v0.2.9 Added ability to specify S3 signature version.
 """
 from __future__ import print_function
 
-__version__ = "0.2.8"
+__version__ = "0.2.9"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -57,6 +58,8 @@ try:
 except ImportError:
     print('ImportError: Please install "boto3" modules')
     sys.exit(1)
+else:
+    from botocore.client import Config
 
 try:
     from lxml import etree
@@ -280,6 +283,11 @@ class S3StorageStats(StorageStats):
             's3.region': {
                 'required': True,
             },
+            's3.signature_ver': {
+                'default': 's3v4',
+                'required': False,
+                'valid': ['s3', 's3v4'],
+            },
         })
 
     def get_storagestats(self):
@@ -342,6 +350,7 @@ class S3StorageStats(StorageStats):
                                       aws_secret_access_key=self.options['s3.priv_key'],
                                       use_ssl=True,
                                       verify=self.options['ssl_check'],
+                                      config=Config(signature_version=self.options['s3.signature_ver']),
                                      )
 
             total_bytes = 0
