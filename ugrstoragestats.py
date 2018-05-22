@@ -57,6 +57,8 @@ try:
 except ImportError:
     print('ImportError: Please install "boto3" modules')
     sys.exit(1)
+else:
+    from botocore.client import Config
 
 try:
     from lxml import etree
@@ -280,6 +282,11 @@ class S3StorageStats(StorageStats):
             's3.region': {
                 'required': True,
             },
+            's3.signature_ver': {
+                'default': 's3v4',
+                'required': False,
+                'valid': ['s3', 's3v4'],
+            },
         })
 
     def get_storagestats(self):
@@ -342,6 +349,7 @@ class S3StorageStats(StorageStats):
                                       aws_secret_access_key=self.options['s3.priv_key'],
                                       use_ssl=True,
                                       verify=self.options['ssl_check'],
+                                      config=Config(signature_version=self.options['s3.signature_ver']),
                                      )
 
             total_bytes = 0
