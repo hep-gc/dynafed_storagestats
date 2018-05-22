@@ -548,9 +548,6 @@ if __name__ == '__main__':
     memcached_srv = '127.0.0.1:11211'
     mc = memcache.Client([memcached_srv])
 
-    endpoint = 'https://srm-test.gridpp.ecdf.ed.ac.uk/dpm/ecdf.ed.ac.uk/home/atlas/'
-
-
     for endpoint in endpoints:
 #        print(endpoint.stats)
 #        print(endpoint.validators)
