@@ -17,20 +17,21 @@ v0.0.3 Added support for python3
 v0.0.4 Changed from single configration file to all *.conf files in given directory.
 v0.0.5 Added module import checks.
 v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
-v.0.0.7 Added options
-v.0.1.0 Changed aws-list to generic and now uses boto3 for generality.
-v.0.2.0 Added validators key and 'validate_options' function.
-v.0.2.1 Cleaned up code to PEP8.
-v.0.2.2 Exception for plugint types not yet implemented.
-v.0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
+v0.0.7 Added options
+v0.1.0 Changed aws-list to generic and now uses boto3 for generality.
+v0.2.0 Added validators key and 'validate_options' function.
+v0.2.1 Cleaned up code to PEP8.
+v0.2.2 Exception for plugint types not yet implemented.
+v0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
         S3 endpoints.
-v.0.2.4 Added URL schema validator function and updated code. Works for dav,davs.
-v.0.2.5 Moved schema validator from fuction to class method. Added for S3.
-v.0.2.6 Tested with Minio
+v0.2.4 Added URL schema validator function and updated code. Works for dav,davs.
+v0.2.5 Moved schema validator from fuction to class method. Added for S3.
+v0.2.6 Tested with Minio
+v0.2.7 Added files counted to S3 Generic.
 """
 from __future__ import print_function
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
