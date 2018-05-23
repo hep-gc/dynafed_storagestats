@@ -20,11 +20,11 @@ be added to the endpoints.conf configuration file:
 locplugin.<ID>.s3.api: [generic, ceph-admin]
 ```
 
-#### generic
+**generic**
 This option will list all objects behind the bucket and add the individual
 sizes.
 
-#### ceph-admin
+**ceph-admin**
 Use this option if Ceph's Admin API is to be used. The credentials of the
 configured user should have the "bucket read" caps enabled.
 
