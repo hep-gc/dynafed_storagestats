@@ -29,7 +29,7 @@ Use this option if Ceph's Admin API is to be used. The credentials of the
 configured user should have the "bucket read" caps enabled.
 
 ```
-locplugin.cceastw.<ID>.signature_ver: [s3, s3v4]
+locplugin.<ID>.s3.signature_ver: [s3, s3v4]
 ```
 Most S3 endpoints should use the s3v4 signature auth version, and is used as
 default, but use s3 in case is needed.
