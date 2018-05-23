@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Set of libraries to interact with UGR's configuration files in order to obtain
+Module to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints.
 
 Prerequisites:
