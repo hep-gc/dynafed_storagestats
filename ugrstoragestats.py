@@ -19,7 +19,7 @@ v0.0.5 Added module import checks.
 v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
 v0.0.7 Added options
 v0.1.0 Changed aws-list to generic and now uses boto3 for generality.
-v0.2.0 Added validators key and 'validate_options' function.
+v0.2.0 Added validators key and 'validate_ep_options' function.
 v0.2.1 Cleaned up code to PEP8.
 v0.2.2 Exception for plugint types not yet implemented.
 v0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
@@ -33,6 +33,7 @@ v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
        list the first 1000. This needs to be updated one Ceph has this as
        v1 is sort of deprecated.
 v0.2.9 Added ability to specify S3 signature version.
+v0.3.10 Added options for memcached, stdoutput and some debugging.
 """
 from __future__ import print_function
 
@@ -90,31 +91,46 @@ except ImportError:
 ## Help/Usage ##
 ################
 
-usage = "usage: %prog [options] api-hostname"
+usage = "usage: %prog [options]"
 parser = OptionParser(usage)
 
 #parser.add_option('-v', '--verbose', dest='verbose', action='count', help='Increase verbosity level for debugging this script (on stderr)')
 parser.add_option('-d', '--dir',
-                  dest='directory', action='store', default='/etc/ugr/conf.d',
+                  dest='configs_directory', action='store', default='/etc/ugr/conf.d',
                   help="Path to UGR's endpoint .conf files."
                  )
 
 group = OptionGroup(parser, "Memcached options")
 group.add_option('--memhost',
-                 dest='memhost', action='store', default='127.0.0.1',
-                 help="IP or hostname of memcached instance. Default: 127.0.0.1"
+                 dest='memcached_ip', action='store', default='127.0.0.1',
+                 help='IP or hostname of memcached instance. Default: 127.0.0.1'
                 )
 group.add_option('--memport',
-                 dest='memport', action='store', default='11211',
-                 help="Port tof memcached instance. Default: 11211"
+                 dest='memcached_port', action='store', default='11211',
+                 help='Port where memcached instances listens on. Default: 11211'
                 )
 
 parser.add_option_group(group)
 
-#group = OptionGroup(parser, "Output options")
-#group.add_option('-m', '--memcached', dest='memcached_ouput', action='store_true', default=False, help="Declare to enable uploading information to memcached.")
-#group.add_option('-o', '--outputfile', dest='out_file', action='store', default=None, help="Change where to ouput the data. Default: None")
-#parser.add_option_group(group)
+group = OptionGroup(parser, "Output options")
+group.add_option('--debug',
+                 dest='debug', action='store_true', default=False,
+                 help='Declare to enable debug output on stdout.'
+                )
+group.add_option('-m', '--memcached',
+                 dest='output_memcached', action='store_true', default=False,
+                 help='Declare to enable uploading information to memcached.'
+                )
+group.add_option('--stdout',
+                 dest='output_stdout', action='store_true', default=False,
+                 help='Set to output stats on stdout. If no other output option is set, this is enabled by default.'
+                )
+
+#group.add_option('-o', '--outputfile',
+#                 dest='out_file', action='store', default=None,
+#                 help='Change where to ouput the data. Default: None'
+#                )
+parser.add_option_group(group)
 
 options, args = parser.parse_args()
 
@@ -182,52 +198,53 @@ class StorageStats(object):
         """
         pass
 
-    def validate_options(self):
+    def validate_ep_options(self,options):
         """
         Check the endpoints options from UGR's configuration file against the
         set of default and valid options defined under the self.validators dict.
         """
-        for option in self.validators:
+        for ep_option in self.validators:
             # First check if the option has been defined in the config file..
             # If it is missing, check if it is required, and exit if true
             # otherwise set it to the default value.
             try:
-                self.options[option]
+                self.options[ep_option]
 
             except KeyError:
-                if self.validators[option]['required']:
+                if self.validators[ep_option]['required']:
                     print('Option "%s" is required, please check configuration\n'
-                          % (option)
+                          % (ep_option)
                          )
                     sys.exit(1)
 
                 else:
-                    print('No "%s" specified. Setting it to default value "%s"\n'
-                          % (option, self.validators[option]['default'])
-                         )
-                    self.options.update({option: self.validators[option]['default']})
+                    if options.debug:
+                        print('No "%s" specified. Setting it to default value "%s"\n'
+                              % (ep_option, self.validators[ep_option]['default'])
+                             )
+                    self.options.update({ep_option: self.validators[ep_option]['default']})
 
-            # If the option has been defined, check against a list of valid
+            # If the ep_option has been defined, check against a list of valid
             # options (if defined, otherwise contiune). Also transform to boolean
             # form those that have the "boolean" key set as true.
             else:
                 try:
-                    self.validators[option]['valid']
+                    self.validators[ep_option]['valid']
 
                 except KeyError:
                     pass
 
                 else:
-                    if self.options[option] not in self.validators[option]['valid']:
+                    if self.options[ep_option] not in self.validators[ep_option]['valid']:
                         print('Incorrect value in option "%s". \
                               \nPlease check configuration. Valid options:\n %s'
-                              % (option, self.validators[option]['valid'])
+                              % (ep_option, self.validators[ep_option]['valid'])
                              )
                         sys.exit(1)
 
                     else:
                         try:
-                            self.validators[option]['boolean']
+                            self.validators[ep_option]['boolean']
 
                         except KeyError:
                             pass
@@ -485,13 +502,13 @@ def factory(plugin_type):
     return switcher.get(plugin_type, "nothing")
 
 
-def get_endpoints(config_dir="/etc/ugr/conf.d/"):
+def get_endpoints(options):
     """
     Returns list of storage endpoint objects whose class represents each storage
     endpoint configured in UGR's configuration files.
     """
     storage_objects = []
-    endpoints = get_config(config_dir)
+    endpoints = get_config(options.configs_directory)
     for endpoint in endpoints:
         try:
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
@@ -500,7 +517,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
                   % (endpoints[endpoint]['plugin'], endpoint)
                  )
         else:
-            ep.validate_options()
+            ep.validate_ep_options(options)
             storage_objects.append(ep)
 
     return(storage_objects)
@@ -544,9 +561,7 @@ def parse_free_space_response(content, hostname):
 #############
 
 if __name__ == '__main__':
-    endpoints = get_endpoints(options.directory)
-    memcached_srv = '127.0.0.1:11211'
-    mc = memcache.Client([memcached_srv])
+    endpoints = get_endpoints(options)
 
     for endpoint in endpoints:
 #        print(endpoint.stats)
@@ -554,9 +569,27 @@ if __name__ == '__main__':
         #print('\n', type(endpoint), '\n')
         #print('\n', endpoint.options, '\n')
         endpoint.get_storagestats()
-#        endpoint.upload_to_memcached()
-        #print('\n', ep.options, '\n')
-        print('\nSE:', endpoint.id, '\nURL:', endpoint.url, '\nQuota:', endpoint.stats['quota'], '\nBytes Used:', endpoint.stats['bytesused'],'\n Number of Files:', endpoint.stats['files'], '\n')
-#        index = "Ugrstoragestats_" + endpoint.id
-#        print('Probing memcached index:', index)
-#        print(mc.get(index), '\n')
+        if options.output_memcached:
+            endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
+
+            if options.debug:
+                # Print out the contents of each index created to check stats
+                # were uploaded.
+                mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+                index = "Ugrstoragestats_" + endpoint.id
+                print('Probing memcached index:', index)
+                index_contents = mc.get(index)
+                if index_contents is None:
+                    print('No content found at index: %s\n' %(index))
+                else:
+                    print(index_contents, '\n')
+        else:
+            options.output_stdout = True
+
+        if options.output_stdout:
+            print('\nSE:', endpoint.id, '\nURL:', endpoint.url, \
+                  '\nQuota:', endpoint.stats['quota'], \
+                  '\nBytes Used:', endpoint.stats['bytesused'], \
+                  '\nNumber of Files:', endpoint.stats['files'],
+                  '\n'
+                 )
