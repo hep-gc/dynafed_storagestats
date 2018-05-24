@@ -163,7 +163,12 @@ class StorageStats(object):
     for earch storage endpoint. As well as how to obtain stats and output it.
     """
     def __init__(self, _ep):
-        self.stats = {'bytesused': 0, 'files': 0, 'quota': '10000000000000'}
+        self.stats = {
+                      'bytesused': 0,
+                      'bytesfree': 0,
+                      'files': 0,
+                      'quota': '10000000000000',
+                     }
         self.id = _ep['id']
         self.options = _ep['options']
         self.plugin = _ep['plugin']
