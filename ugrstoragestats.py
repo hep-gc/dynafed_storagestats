@@ -33,11 +33,11 @@ v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
        list the first 1000. This needs to be updated one Ceph has this as
        v1 is sort of deprecated.
 v0.2.9 Added ability to specify S3 signature version.
-v0.3.10 Added options for memcached, stdoutput and some debugging.
+v0.2.10 Added options for memcached, stdoutput and some debugging.
 """
 from __future__ import print_function
 
-__version__ = "0.2.9"
+__version__ = "0.2.10"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
