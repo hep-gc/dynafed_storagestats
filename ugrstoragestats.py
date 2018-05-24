@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Set of libraries to interact with UGR's configuration files in order to obtain
+Module to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints.
 
 Prerequisites:
@@ -143,6 +143,10 @@ class StorageStatsError(Exception):
     def __init__(self,*args,**kwargs):
         Exception.__init__(self,*args,**kwargs)
 
+class DAVStatsError(StorageStatsError):
+    def __init__(self,*args,**kwargs):
+        StorageStatsError.__init__(self,*args,**kwargs)
+
 class S3StatsError(StorageStatsError):
     def __init__(self,*args,**kwargs):
         StorageStatsError.__init__(self,*args,**kwargs)
@@ -163,7 +167,12 @@ class StorageStats(object):
     for earch storage endpoint. As well as how to obtain stats and output it.
     """
     def __init__(self, _ep):
-        self.stats = {'bytesused': 0, 'files': 0, 'quota': '10000000000000'}
+        self.stats = {
+                      'bytesused': 0,
+                      'bytesfree': 0,
+                      'files': 0,
+                      'quota': '10000000000000',
+                     }
         self.id = _ep['id']
         self.options = _ep['options']
         self.plugin = _ep['plugin']
@@ -186,7 +195,7 @@ class StorageStats(object):
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
         index = "Ugrstoragestats_" + self.id
-        storagestats = '%%'.join([self.id, self.stats['quota'], self.stats['bytesused']])
+        storagestats = '%%'.join([self.id, str(self.stats['quota']), str(self.stats['bytesused'])])
         mc.set(index, storagestats)
         return 0
 
@@ -342,8 +351,8 @@ class S3StorageStats(StorageStats):
                              verify=self.options['ssl_check']
                             )
             stats = json.loads(r.content)
-            self.stats['quota'] = str(stats['bucket_quota']['max_size'])
-            self.stats['bytesused'] = str(stats['usage']['rgw.main']['size_utilized'])
+            self.stats['quota'] = stats['bucket_quota']['max_size']
+            self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
 
         # Getting the storage Stats AWS S3 API
         #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
@@ -390,8 +399,8 @@ class S3StorageStats(StorageStats):
                 except KeyError:
                     break
 
-            self.stats['bytesused'] = str(total_bytes)
-            self.stats['files'] = str(total_files)
+            self.stats['bytesused'] = total_bytes
+            self.stats['files'] = total_files
 
     def validate_schema(self, scheme):
         if scheme == 's3':
@@ -439,8 +448,27 @@ class DAVStorageStats(StorageStats):
         )
 
         tree = etree.fromstring(response.content)
-        #self. = tree.find('.//{DAV:}quota-available-bytes').text
-        self.stats['bytesused'] = tree.find('.//{DAV:}quota-used-bytes').text
+        try:
+            node = tree.find('.//{DAV:}quota-available-bytes').text
+            print(node)
+            if node is not None:
+                pass
+            else:
+                raise DAVStatsError #(name='free', server=self.id)
+        except DAVStatsError:
+            print("Method not supportd")
+        else:
+            self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
+            self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
+
+            # If quota-available-bytes is reported as '0' is because no quota is
+            # provided, so we use the one from the config file or default.
+            if self.stats['bytesfree'] != 0:
+                self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+#        except TypeError:
+#            raise MethodNotSupported(name='free', server=hostname)
+#        except etree.XMLSyntaxError:
+#            return str()
 
 
 ###############
@@ -492,7 +520,7 @@ def factory(plugin_type):
     configuration files.
     """
     switcher = {
-        #'libugrlocplugin_dav.so': DAVStorageStats,
+        'libugrlocplugin_dav.so': DAVStorageStats,
         #'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
@@ -590,6 +618,7 @@ if __name__ == '__main__':
             print('\nSE:', endpoint.id, '\nURL:', endpoint.url, \
                   '\nQuota:', endpoint.stats['quota'], \
                   '\nBytes Used:', endpoint.stats['bytesused'], \
+                  '\nBytes Free:', endpoint.stats['bytesfree'], \
                   '\nNumber of Files:', endpoint.stats['files'],
                   '\n'
                  )
