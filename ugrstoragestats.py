@@ -35,10 +35,11 @@ v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
 v0.2.9 Added ability to specify S3 signature version.
 v0.2.10 Added options for memcached, stdoutput and some debugging.
 v0.2.11 Fixed issue with ID names with multiple "."
+v0.3.0 Added DAV/Http support.
 """
 from __future__ import print_function
 
-__version__ = "0.2.11"
+__version__ = "0.3.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -457,13 +458,12 @@ class DAVStorageStats(StorageStats):
         tree = etree.fromstring(response.content)
         try:
             node = tree.find('.//{DAV:}quota-available-bytes').text
-            print(node)
             if node is not None:
                 pass
             else:
                 raise DAVStatsError #(name='free', server=self.id)
         except DAVStatsError:
-            print("Method not supportd")
+            print('WebDAV Quota Method not supported by: "%s"' % (self.id))
         else:
             self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
             self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
@@ -536,8 +536,8 @@ def factory(plugin_type):
     configuration files.
     """
     switcher = {
-        #'libugrlocplugin_dav.so': DAVStorageStats,
-        #'libugrlocplugin_http.so': DAVStorageStats,
+        'libugrlocplugin_dav.so': DAVStorageStats,
+        'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
@@ -555,6 +555,8 @@ def get_endpoints(options):
     endpoints = get_config(options.configs_directory)
     for endpoint in endpoints:
         try:
+            if options.debug:
+                print("Working on endpoint %s" % (endpoint))
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
         except TypeError:
             print('Storage Endpoint Type "%s" not implemented yet. Skipping %s'
