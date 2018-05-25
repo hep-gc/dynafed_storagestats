@@ -37,10 +37,12 @@ v0.2.10 Added options for memcached, stdoutput and some debugging.
 v0.2.11 Fixed issue with ID names with multiple "."
 v0.3.0 Added DAV/Http support.
 v0.3.1 Added exceptions and logic when ceph-admin option fails.
+v0.3.2 Added bytesfree counts for S3 endpoints and exception for aws
+       ceph-admin error.
 """
 from __future__ import print_function
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -184,7 +186,7 @@ class StorageStats(object):
                       'bytesused': 0,
                       'bytesfree': 0,
                       'files': 0,
-                      'quota': '10000000000000',
+                      'quota': 10000000000000,
                      }
         self.id = _ep['id']
         self.options = _ep['options']
@@ -364,17 +366,25 @@ class S3StorageStats(StorageStats):
                              verify=self.options['ssl_check']
                             )
 
-            stats = json.loads(r.content)
+            # If ceph-admin is accidentally requested for AWS, no JSON content
+            # is passed, so we check for that.
+            try:
+                stats = json.loads(r.content)
+            except ValueError:
+                stats = {'Code': r.content}
+
+            # Make sure we get a 200 "OK" from the endpoint.
             try:
                 if r.status_code != 200:
                     raise S3MethodError
             except S3StatsError:
-                print('Endpoint "%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n'
+                print('ERROR: Endpoint "%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n'
                       % (self.id, self.options['s3.api'], r.status_code, stats['Code'])
                      )
             else:
                 self.stats['quota'] = stats['bucket_quota']['max_size']
                 self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
+                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
         # Getting the storage Stats AWS S3 API
         #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
@@ -423,6 +433,7 @@ class S3StorageStats(StorageStats):
 
             self.stats['bytesused'] = total_bytes
             self.stats['files'] = total_files
+            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
     def validate_schema(self, scheme):
         if scheme == 's3':
@@ -477,7 +488,9 @@ class DAVStorageStats(StorageStats):
             else:
                 raise DAVStatsError
         except DAVStatsError:
-            print('WebDAV Quota Method not supported by: "%s"' % (self.id))
+            print('ERROR: Endpoint "%s" does not support "WebDAV Quota Method".\n'
+                  % (self.id)
+                 )
         else:
             self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
             self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
@@ -533,7 +546,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                             else:
                                 raise ConfigFileError(_id, line)
                         except ConfigFileError, ERR:
-                            print ('Failed to match ID "%s" in line "%s". Check your configuration.'
+                            print ('ERROR: Failed to match ID "%s" in line "%s". Check your configuration.'
                                     % (ERR.id, ERR.line)
                                   )
                             sys.exit(1)
