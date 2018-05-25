@@ -457,13 +457,12 @@ class DAVStorageStats(StorageStats):
         tree = etree.fromstring(response.content)
         try:
             node = tree.find('.//{DAV:}quota-available-bytes').text
-            print(node)
             if node is not None:
                 pass
             else:
                 raise DAVStatsError #(name='free', server=self.id)
         except DAVStatsError:
-            print("Method not supportd")
+            print('WebDAV Quota Method not supported by: "%s"' % (self.id))
         else:
             self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
             self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
@@ -536,7 +535,7 @@ def factory(plugin_type):
     configuration files.
     """
     switcher = {
-        #'libugrlocplugin_dav.so': DAVStorageStats,
+        'libugrlocplugin_dav.so': DAVStorageStats,
         #'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
@@ -555,6 +554,8 @@ def get_endpoints(options):
     endpoints = get_config(options.configs_directory)
     for endpoint in endpoints:
         try:
+            if options.debug:
+                print("Working on endpoint %s" % (endpoint))
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
         except TypeError:
             print('Storage Endpoint Type "%s" not implemented yet. Skipping %s'
