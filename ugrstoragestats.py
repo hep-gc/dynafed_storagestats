@@ -35,10 +35,11 @@ v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
 v0.2.9 Added ability to specify S3 signature version.
 v0.2.10 Added options for memcached, stdoutput and some debugging.
 v0.2.11 Fixed issue with ID names with multiple "."
+v0.3.0 Added DAV/Http support.
 """
 from __future__ import print_function
 
-__version__ = "0.2.11"
+__version__ = "0.3.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -536,7 +537,7 @@ def factory(plugin_type):
     """
     switcher = {
         'libugrlocplugin_dav.so': DAVStorageStats,
-        #'libugrlocplugin_http.so': DAVStorageStats,
+        'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
