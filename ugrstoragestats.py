@@ -164,6 +164,10 @@ class S3EmptyBucketWarning(S3StatsError):
         S3StatsError.__init__(self,*args,**kwargs)
     #print('hello')
 
+class S3MethodError(S3StatsError):
+    def __init__(self,*args,**kwargs):
+        S3StatsError.__init__(self,*args,**kwargs)
+
 
 #####################
 ## Storage Classes ##
@@ -358,9 +362,18 @@ class S3StorageStats(StorageStats):
                              auth=auth,
                              verify=self.options['ssl_check']
                             )
+
             stats = json.loads(r.content)
-            self.stats['quota'] = stats['bucket_quota']['max_size']
-            self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
+            try:
+                if r.status_code != 200:
+                    raise S3MethodError
+            except S3StatsError:
+                print('Endpoint "%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n'
+                      % (self.id, self.options['s3.api'], r.status_code, stats['Code'])
+                     )
+            else:
+                self.stats['quota'] = stats['bucket_quota']['max_size']
+                self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
 
         # Getting the storage Stats AWS S3 API
         #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
@@ -461,7 +474,7 @@ class DAVStorageStats(StorageStats):
             if node is not None:
                 pass
             else:
-                raise DAVStatsError #(name='free', server=self.id)
+                raise DAVStatsError
         except DAVStatsError:
             print('WebDAV Quota Method not supported by: "%s"' % (self.id))
         else:
