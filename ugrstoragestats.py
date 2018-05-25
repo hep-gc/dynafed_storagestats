@@ -143,6 +143,12 @@ class StorageStatsError(Exception):
     def __init__(self,*args,**kwargs):
         Exception.__init__(self,*args,**kwargs)
 
+class ConfigFileError(StorageStatsError):
+    def __init__(self,*args,**kwargs):
+        StorageStatsError.__init__(self,*args,**kwargs)
+        self.id = args[0]
+        self.line = args[1]
+
 class DAVStatsError(StorageStatsError):
     def __init__(self,*args,**kwargs):
         StorageStatsError.__init__(self,*args,**kwargs)
@@ -502,11 +508,20 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
 
                     elif "locplugin" in line:
                         key, _val = line.partition(":")[::2]
-                        _id, _option = key.split(".", 2)[1:]
-                        endpoints.setdefault(_id, {})
-                        endpoints[_id].setdefault('options', {})
-                        endpoints[_id]['options'].update({_option:_val.strip()})
-
+                        # Match an _id in key
+                        try:
+                            if _id in key:
+                                _option = key.split(_id+'.')[-1]
+                                endpoints.setdefault(_id, {})
+                                endpoints[_id].setdefault('options', {})
+                                endpoints[_id]['options'].update({_option:_val.strip()})
+                            else:
+                                raise ConfigFileError(_id, line)
+                        except ConfigFileError, ERR:
+                            print ('Failed to match ID "%s" in line "%s". Check your configuration.'
+                                    % (ERR.id, ERR.line)
+                                  )
+                            sys.exit(1)
                     else:
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
