@@ -364,7 +364,14 @@ class S3StorageStats(StorageStats):
                              verify=self.options['ssl_check']
                             )
 
-            stats = json.loads(r.content)
+            # If ceph-admin is accidentally requested for AWS, no JSON content
+            # is passed, so we check for that.
+            try:
+                stats = json.loads(r.content)
+            except ValueError:
+                stats = {'Code': r.content}
+
+            # Make sure we get a 200 "OK" from the endpoint.
             try:
                 if r.status_code != 200:
                     raise S3MethodError
