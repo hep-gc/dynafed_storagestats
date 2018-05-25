@@ -37,10 +37,12 @@ v0.2.10 Added options for memcached, stdoutput and some debugging.
 v0.2.11 Fixed issue with ID names with multiple "."
 v0.3.0 Added DAV/Http support.
 v0.3.1 Added exceptions and logic when ceph-admin option fails.
+v0.3.2 Added bytesfree counts for S3 endpoints and exception for aws
+       ceph-admin error.
 """
 from __future__ import print_function
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
