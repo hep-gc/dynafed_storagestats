@@ -34,10 +34,11 @@ v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
        v1 is sort of deprecated.
 v0.2.9 Added ability to specify S3 signature version.
 v0.2.10 Added options for memcached, stdoutput and some debugging.
+v0.2.11 Fixed issue with ID names with multiple "."
 """
 from __future__ import print_function
 
-__version__ = "0.2.10"
+__version__ = "0.2.11"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -142,6 +143,12 @@ options, args = parser.parse_args()
 class StorageStatsError(Exception):
     def __init__(self,*args,**kwargs):
         Exception.__init__(self,*args,**kwargs)
+
+class ConfigFileError(StorageStatsError):
+    def __init__(self,*args,**kwargs):
+        StorageStatsError.__init__(self,*args,**kwargs)
+        self.id = args[0]
+        self.line = args[1]
 
 class DAVStatsError(StorageStatsError):
     def __init__(self,*args,**kwargs):
@@ -502,11 +509,20 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
 
                     elif "locplugin" in line:
                         key, _val = line.partition(":")[::2]
-                        _id, _option = key.split(".", 2)[1:]
-                        endpoints.setdefault(_id, {})
-                        endpoints[_id].setdefault('options', {})
-                        endpoints[_id]['options'].update({_option:_val.strip()})
-
+                        # Match an _id in key
+                        try:
+                            if _id in key:
+                                _option = key.split(_id+'.')[-1]
+                                endpoints.setdefault(_id, {})
+                                endpoints[_id].setdefault('options', {})
+                                endpoints[_id]['options'].update({_option:_val.strip()})
+                            else:
+                                raise ConfigFileError(_id, line)
+                        except ConfigFileError, ERR:
+                            print ('Failed to match ID "%s" in line "%s". Check your configuration.'
+                                    % (ERR.id, ERR.line)
+                                  )
+                            sys.exit(1)
                     else:
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
@@ -563,25 +579,6 @@ def create_free_space_request_content():
     buff = BytesIO()
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
-
-def parse_free_space_response(content, hostname):
-    """Parses of response content XML from WebDAV server and extract an amount of free space.
-
-    :param content: the XML content of HTTP response from WebDAV server for getting free space.
-    :param hostname: the server hostname.
-    :return: an amount of free space in bytes.
-    """
-    try:
-        tree = etree.fromstring(content)
-        node = tree.find('.//{DAV:}quota-available-bytes')
-        if node is not None:
-            return int(node.text)
-        else:
-            raise MethodNotSupported(name='free', server=hostname)
-    except TypeError:
-        raise MethodNotSupported(name='free', server=hostname)
-    except etree.XMLSyntaxError:
-        return str()
 
 
 #############
