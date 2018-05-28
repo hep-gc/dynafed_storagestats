@@ -456,6 +456,10 @@ class DAVStorageStats(StorageStats):
         """
         super(DAVStorageStats, self).__init__(*args, **kwargs)
         self.validators.update({
+            'ca_path': {
+                'default': False,
+                'required': False,
+            },
             'cli_certificate': {
                 'required': True,
             },
