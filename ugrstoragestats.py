@@ -39,10 +39,11 @@ v0.3.0 Added DAV/Http support.
 v0.3.1 Added exceptions and logic when ceph-admin option fails.
 v0.3.2 Added bytesfree counts for S3 endpoints and exception for aws
        ceph-admin error.
+v0.3.3 Fixed exception handling for python3 syntax.
 """
 from __future__ import print_function
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
@@ -549,7 +550,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                 endpoints[_id]['options'].update({_option:_val.strip()})
                             else:
                                 raise ConfigFileError(_id, line)
-                        except ConfigFileError, ERR:
+                        except ConfigFileError as ERR:
                             print ('ERROR: Failed to match ID "%s" in line "%s". Check your configuration.'
                                     % (ERR.id, ERR.line)
                                   )
