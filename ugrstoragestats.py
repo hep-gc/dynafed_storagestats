@@ -40,10 +40,12 @@ v0.3.1 Added exceptions and logic when ceph-admin option fails.
 v0.3.2 Added bytesfree counts for S3 endpoints and exception for aws
        ceph-admin error.
 v0.3.3 Fixed exception handling for python3 syntax.
+v0.3.4 Fixed json parsing from requests using it's native json function to
+       solve issue with json module of python 3.4.
 """
 from __future__ import print_function
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 __author__ = "Fernando Fernandez Galindo"
 
 import sys
