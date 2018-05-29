@@ -370,7 +370,7 @@ class S3StorageStats(StorageStats):
             # If ceph-admin is accidentally requested for AWS, no JSON content
             # is passed, so we check for that.
             try:
-                stats = json.loads(r.content)
+                stats = r.json()
             except ValueError:
                 stats = {'Code': r.content}
 
