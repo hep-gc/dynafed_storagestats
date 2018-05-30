@@ -478,38 +478,42 @@ class DAVStorageStats(StorageStats):
 
         headers = {'Depth': '0',}
         data = create_free_space_request_content()
-        response = requests.request(
-            method="PROPFIND",
-            url=endpoint_url,
-            cert=(self.options['cli_certificate'], self.options['cli_private_key']),
-            headers=headers,
-            verify=self.options['ca_path'],
-            data=data
-        )
-
-        tree = etree.fromstring(response.content)
         try:
-            node = tree.find('.//{DAV:}quota-available-bytes').text
-            if node is not None:
-                pass
-            else:
-                raise DAVStatsError
-        except DAVStatsError:
-            print('ERROR: Endpoint "%s" does not support "WebDAV Quota Method".\n'
-                  % (self.id)
-                 )
+            print("Trying to connect to: ", self.id)
+            response = requests.request(
+                method="PROPFIND",
+                url=endpoint_url,
+                cert=(self.options['cli_certificate'], self.options['cli_private_key']),
+                headers=headers,
+                verify=self.options['ca_path'],
+                data=data
+            )
+        except requests.exceptions.SSLError:
+            print("Some SSL Error")
         else:
-            self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
-            self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
+            tree = etree.fromstring(response.content)
+            try:
+                node = tree.find('.//{DAV:}quota-available-bytes').text
+                if node is not None:
+                    pass
+                else:
+                    raise DAVStatsError
+            except DAVStatsError:
+                print('ERROR: Endpoint "%s" does not support "WebDAV Quota Method".\n'
+                      % (self.id)
+                     )
+            else:
+                self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
+                self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
 
-            # If quota-available-bytes is reported as '0' is because no quota is
-            # provided, so we use the one from the config file or default.
-            if self.stats['bytesfree'] != 0:
-                self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
-#        except TypeError:
-#            raise MethodNotSupported(name='free', server=hostname)
-#        except etree.XMLSyntaxError:
-#            return str()
+                # If quota-available-bytes is reported as '0' is because no quota is
+                # provided, so we use the one from the config file or default.
+                if self.stats['bytesfree'] != 0:
+                    self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+    #        except TypeError:
+    #            raise MethodNotSupported(name='free', server=hostname)
+    #        except etree.XMLSyntaxError:
+    #            return str()
 
 
 ###############
