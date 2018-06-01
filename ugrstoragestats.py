@@ -518,7 +518,6 @@ class DAVStorageStats(StorageStats):
         headers = {'Depth': '0',}
         data = create_free_space_request_content()
         try:
-            print("Trying to connect to: ", self.id)
             response = requests.request(
                 method="PROPFIND",
                 url=endpoint_url,
@@ -631,8 +630,6 @@ def get_endpoints(options):
     endpoints = get_config(options.configs_directory)
     for endpoint in endpoints:
         try:
-            if options.debug:
-                print("Working on endpoint %s" % (endpoint))
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
         except TypeError:
             print('Storage Endpoint Type "%s" not implemented yet. Skipping %s'
