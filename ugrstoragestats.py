@@ -152,63 +152,67 @@ class UGRBaseException(Exception):
     def __init__(self, message=None):
         if message is None:
             # Set some default useful error message
-            message = "[ERROR] An unkown exception occured processing"
-        super(UGRBaseException, self).__init__(message)
+            self.message = "[ERROR] An unkown exception occured processing"
+        else:
+            self.message = message
+        super(UGRBaseException, self).__init__(self.message)
 
 ### Defining Error Exception Classes
 class UGRBaseError(UGRBaseException):
     def __init__(self, message=None):
         if message is None:
             # Set some default useful error message
-            message = "[ERROR] A unkown error occured."
+            self.message = "[ERROR] A unkown error occured."
         else:
-            message = "[ERROR] " + message
-        super(UGRBaseError, self).__init__(message)
+            self.message = "[ERROR] " + message
+        super(UGRBaseError, self).__init__(self.message)
 
 class UGRConfigFileError(UGRBaseError):
     def __init__(self, message=None):
         if message is None:
             # Set some default useful error message
-            message = "An unkown error occured reading a configuration file."
-        super(UGRConfigFileError, self).__init__(message)
+            self.message = "An unkown error occured reading a configuration file."
+        super(UGRConfigFileError, self).__init__(self.message)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     def __init__(self, endpoint, line):
-        message ='Failed to match ID "%s" in line "%s". Check your configuration.\n' \
+        self.message ='Failed to match ID "%s" in line "%s". Check your configuration.\n' \
                   % (endpoint, line)
-        super(UGRConfigFileErrorIDMismatch, self).__init__(message)
+        super(UGRConfigFileErrorIDMismatch, self).__init__(self.message)
 
 
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
     def __init__(self, endpoint, option):
-        message = 'Option "%s" is required, please check configuration for "%s"\n' \
+        self.message = 'Option "%s" is required, please check configuration for "%s"\n' \
                   % (option, endpoint)
-        super(UGRConfigFileErrorMissingRequiredOption, self).__init__(message)
+        super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message)
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
     def __init__(self, endpoint, option, valid_options):
-        message = 'Incorrect value given in option "%s" for "%s". Please check configuration.\nValid options: %s' \
+        self.message = 'Incorrect value given in option "%s" for "%s". Please check configuration.\nValid options: %s' \
                   % (option, endpoint, valid_options)
-        super(UGRConfigFileErrorInvalidOption, self).__init__(message)
+        super(UGRConfigFileErrorInvalidOption, self).__init__(self.message)
 
 class UGRStorageStatsError(UGRBaseError):
     def __init__(self, message=None):
         if message is None:
             # Set some default useful error message
-            message = "An unkown error occured obtaning storage stats."
-        super(UGRStorageStatsError, self).__init__(message)
+            self.message = "An unkown error occured obtaning storage stats."
+        else:
+            self.message = message
+        super(UGRStorageStatsError, self).__init__(self.message)
 
 class UGRStorageStatsErrorS3Method(UGRStorageStatsError):
     def __init__(self, endpoint, option, status_code, error):
-        message = '"%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n' \
+        self.message = '"%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n' \
                   % (endpoint, option, status_code, error)
-        super(UGRStorageStatsErrorS3Method, self).__init__(message)
+        super(UGRStorageStatsErrorS3Method, self).__init__(self.message)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     def __init__(self, endpoint):
-        message = '"%s" does not support "WebDAV Quota Method".' \
+        self.message = '"%s" does not support "WebDAV Quota Method".' \
                   % (endpoint)
-        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(message)
+        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message)
 
 
 #####################
