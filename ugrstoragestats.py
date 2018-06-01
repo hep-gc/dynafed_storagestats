@@ -172,46 +172,43 @@ class UGRConfigFileError(UGRBaseError):
             message = "An unkown error occured reading a configuration file."
         super(UGRConfigFileError, self).__init__(message)
 
+class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
+    def __init__(self, endpoint, line):
+        message ='Failed to match ID "%s" in line "%s". Check your configuration.\n' \
+                  % (endpoint, line)
+        super(UGRConfigFileErrorIDMismatch, self).__init__(message)
+
+
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
     def __init__(self, endpoint, option):
         message = 'Option "%s" is required, please check configuration for "%s"\n' \
                   % (option, endpoint)
         super(UGRConfigFileErrorMissingRequiredOption, self).__init__(message)
 
+class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
+    def __init__(self, endpoint, option, valid_options):
+        message = 'Incorrect value given in option "%s" for "%s". Please check configuration.\nValid options: %s' \
+                  % (option, endpoint, valid_options)
+        super(UGRConfigFileErrorInvalidOption, self).__init__(message)
 
-### Old
-class StorageStatsError(Exception):
-    def __init__(self,*args,**kwargs):
-        Exception.__init__(self,*args,**kwargs)
+class UGRStorageStatsError(UGRBaseError):
+    def __init__(self, message=None):
+        if message is None:
+            # Set some default useful error message
+            message = "An unkown error occured obtaning storage stats."
+        super(UGRStorageStatsError, self).__init__(message)
 
-class ConfigFileError(StorageStatsError):
-    def __init__(self,*args,**kwargs):
-        StorageStatsError.__init__(self,*args,**kwargs)
-        self.id = args[0]
-        self.line = args[1]
+class UGRStorageStatsErrorS3Method(UGRStorageStatsError):
+    def __init__(self, endpoint, option, status_code, error):
+        message = '"%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n' \
+                  % (endpoint, option, status_code, error)
+        super(UGRStorageStatsErrorS3Method, self).__init__(message)
 
-class ConfigFileError(StorageStatsError):
-    def __init__(self,*args,**kwargs):
-        StorageStatsError.__init__(self,*args,**kwargs)
-        self.id = args[0]
-        self.line = args[1]
-
-class DAVStatsError(StorageStatsError):
-    def __init__(self,*args,**kwargs):
-        StorageStatsError.__init__(self,*args,**kwargs)
-
-class S3StatsError(StorageStatsError):
-    def __init__(self,*args,**kwargs):
-        StorageStatsError.__init__(self,*args,**kwargs)
-
-class S3EmptyBucketWarning(S3StatsError):
-    def __init__(self,*args,**kwargs):
-        S3StatsError.__init__(self,*args,**kwargs)
-    #print('hello')
-
-class S3MethodError(S3StatsError):
-    def __init__(self,*args,**kwargs):
-        S3StatsError.__init__(self,*args,**kwargs)
+class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
+    def __init__(self, endpoint):
+        message = '"%s" does not support "WebDAV Quota Method".' \
+                  % (endpoint)
+        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(message)
 
 
 #####################
@@ -272,17 +269,16 @@ class StorageStats(object):
         for ep_option in self.validators:
             # First check if the option has been defined in the config file..
             # If it is missing, check if it is required, and exit if true
-            # otherwise set it to the default value.
+            # otherwise set it to the default value and print a warning.
             try:
                 self.options[ep_option]
 
             except KeyError:
                 if self.validators[ep_option]['required']:
                     raise UGRConfigFileErrorMissingRequiredOption(
-                           endpoint = self.id,
-                           option = ep_option,
+                              endpoint=self.id,
+                              option=ep_option,
                           )
-
                 else:
                     warnings.warn('No "%s" specified for "%s". Setting it to default value "%s"\n' \
                                    % (ep_option, self.id, self.validators[ep_option]['default']),
@@ -295,30 +291,25 @@ class StorageStats(object):
             else:
                 try:
                     self.validators[ep_option]['valid']
-
                 except KeyError:
                     pass
-
                 else:
                     if self.options[ep_option] not in self.validators[ep_option]['valid']:
-                        print('Incorrect value in option "%s". \
-                              \nPlease check configuration. Valid options:\n %s'
-                              % (ep_option, self.validators[ep_option]['valid'])
-                             )
-                        sys.exit(1)
-
+                        raise UGRConfigFileErrorInvalidOption(
+                                  endpoint=self.id,
+                                  option=ep_option,
+                                  valid_options=self.validators[ep_option]['valid']
+                              )
                     else:
                         try:
                             self.validators[ep_option]['boolean']
-
                         except KeyError:
                             pass
-
                         else:
+                            ### Review this!
                             if self.options['ssl_check'].lower() == 'false'\
                             or self.options['ssl_check'].lower() == 'no':
                                 self.options.update({'ssl_check': False})
-
                             else:
                                 self.options.update({'ssl_check': True})
 
@@ -409,6 +400,7 @@ class S3StorageStats(StorageStats):
 
             # If ceph-admin is accidentally requested for AWS, no JSON content
             # is passed, so we check for that.
+            # Review this!
             try:
                 stats = r.json()
             except ValueError:
@@ -417,11 +409,14 @@ class S3StorageStats(StorageStats):
             # Make sure we get a 200 "OK" from the endpoint.
             try:
                 if r.status_code != 200:
-                    raise S3MethodError
-            except S3StatsError:
-                print('ERROR: Endpoint "%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n'
-                      % (self.id, self.options['s3.api'], r.status_code, stats['Code'])
-                     )
+                    raise UGRStorageStatsErrorS3Method(
+                            endpoint=self.id,
+                            option=self.options['s3.api'],
+                            status_code=r.status_code,
+                            error=stats['Code'],
+                    )
+            except UGRStorageStatsError as ERR:
+                warnings.warn(ERR.message)
             else:
                 self.stats['quota'] = stats['bucket_quota']['max_size']
                 self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
@@ -530,6 +525,7 @@ class DAVStorageStats(StorageStats):
             print("Some SSL Error")
         except IOError:
             print("Issue reading credential/proxy/cert file")
+
         else:
             tree = etree.fromstring(response.content)
             try:
@@ -537,11 +533,10 @@ class DAVStorageStats(StorageStats):
                 if node is not None:
                     pass
                 else:
-                    raise DAVStatsError
-            except DAVStatsError:
-                print('ERROR: Endpoint "%s" does not support "WebDAV Quota Method".\n'
-                      % (self.id)
-                     )
+                    raise UGRStorageStatsErrorDAVQuotaMethod(endpoint=self.id)
+            except UGRStorageStatsError as ERR:
+                warnings.warn(ERR.message)
+
             else:
                 self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
                 self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
@@ -595,12 +590,9 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                 endpoints[_id].setdefault('options', {})
                                 endpoints[_id]['options'].update({_option:_val.strip()})
                             else:
-                                raise ConfigFileError(_id, line)
-                        except ConfigFileError as ERR:
-                            print ('ERROR: Failed to match ID "%s" in line "%s". Check your configuration.'
-                                    % (ERR.id, ERR.line)
-                                  )
-                            sys.exit(1)
+                                raise UGRConfigFileErrorIDMismatch(endpoint=_id, line=line)
+                        except UGRConfigFileError as ERR:
+                            warnings.warn(ERR.message)
                     else:
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
@@ -704,6 +696,5 @@ if __name__ == '__main__':
                   '\nQuota:', endpoint.stats['quota'], \
                   '\nBytes Used:', endpoint.stats['bytesused'], \
                   '\nBytes Free:', endpoint.stats['bytesfree'], \
-                  '\nNumber of Files:', endpoint.stats['files'],
                   '\n'
                  )
