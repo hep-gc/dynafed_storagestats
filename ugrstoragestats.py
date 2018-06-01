@@ -42,10 +42,12 @@ v0.3.2 Added bytesfree counts for S3 endpoints and exception for aws
 v0.3.3 Fixed exception handling for python3 syntax.
 v0.3.4 Fixed json parsing from requests using it's native json function to
        solve issue with json module of python 3.4.
+v0.4.0 Re-wrote the exception classes and how they are treated in code. Added
+       warnings.
 """
 from __future__ import print_function
 
-__version__ = "0.3.4"
+__version__ = "v0.4.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import warnings
