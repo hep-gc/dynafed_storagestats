@@ -147,6 +147,27 @@ options, args = parser.parse_args()
 ## Exception Classes ##
 #######################
 
+class UGRBaseException(Exception):
+    def __init__(self,message=None):
+        if message is None:
+            # Set some default useful error message
+            message = "[ERROR] An unkown exception occured processing"
+        super(UGRBaseException, self).__init__(message)
+
+
+### Defining Warning Exception Classes
+class UGRBaseWarning(UGRBaseException):
+    def __init__(self,message=None):
+        if message is None:
+            # Set some default useful error message
+            message = "[WARN] A unkown non-critical error occured."
+        else:
+            message = "[WARN] " + message
+        super(UGRBaseWarning, self).__init__(message)
+
+
+### Defining Error Exception Classes
+
 class StorageStatsError(Exception):
     def __init__(self,*args,**kwargs):
         Exception.__init__(self,*args,**kwargs)
@@ -490,6 +511,8 @@ class DAVStorageStats(StorageStats):
             )
         except requests.exceptions.SSLError:
             print("Some SSL Error")
+        except IOError:
+            print("Issue reading credential/proxy/cert file")
         else:
             tree = etree.fromstring(response.content)
             try:
