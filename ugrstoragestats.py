@@ -48,6 +48,7 @@ from __future__ import print_function
 __version__ = "0.3.4"
 __author__ = "Fernando Fernandez Galindo"
 
+import warnings
 import sys
 import os
 from io import BytesIO
@@ -148,29 +149,46 @@ options, args = parser.parse_args()
 #######################
 
 class UGRBaseException(Exception):
-    def __init__(self,message=None):
+    def __init__(self, message=None):
         if message is None:
             # Set some default useful error message
             message = "[ERROR] An unkown exception occured processing"
         super(UGRBaseException, self).__init__(message)
 
-
-### Defining Warning Exception Classes
-class UGRBaseWarning(UGRBaseException):
-    def __init__(self,message=None):
+### Defining Error Exception Classes
+class UGRBaseError(UGRBaseException):
+    def __init__(self, message=None):
         if message is None:
             # Set some default useful error message
-            message = "[WARN] A unkown non-critical error occured."
+            message = "[ERROR] A unkown error occured."
         else:
-            message = "[WARN] " + message
-        super(UGRBaseWarning, self).__init__(message)
+            message = "[ERROR] " + message
+        super(UGRBaseError, self).__init__(message)
+
+class UGRConfigFileError(UGRBaseError):
+    def __init__(self, message=None):
+        if message is None:
+            # Set some default useful error message
+            message = "An unkown error occured reading a configuration file."
+        super(UGRConfigFileError, self).__init__(message)
+
+class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
+    def __init__(self, endpoint, option):
+        message = 'Option "%s" is required, please check configuration for "%s"\n' \
+                  % (option, endpoint)
+        super(UGRConfigFileErrorMissingRequiredOption, self).__init__(message)
 
 
-### Defining Error Exception Classes
-
+### Old
 class StorageStatsError(Exception):
     def __init__(self,*args,**kwargs):
         Exception.__init__(self,*args,**kwargs)
+
+class ConfigFileError(StorageStatsError):
+    def __init__(self,*args,**kwargs):
+        StorageStatsError.__init__(self,*args,**kwargs)
+        self.id = args[0]
+        self.line = args[1]
 
 class ConfigFileError(StorageStatsError):
     def __init__(self,*args,**kwargs):
@@ -260,16 +278,15 @@ class StorageStats(object):
 
             except KeyError:
                 if self.validators[ep_option]['required']:
-                    print('Option "%s" is required, please check configuration\n'
-                          % (ep_option)
-                         )
-                    sys.exit(1)
+                    raise UGRConfigFileErrorMissingRequiredOption(
+                           endpoint = self.id,
+                           option = ep_option,
+                          )
 
                 else:
-                    if options.debug:
-                        print('No "%s" specified. Setting it to default value "%s"\n'
-                              % (ep_option, self.validators[ep_option]['default'])
-                             )
+                    warnings.warn('No "%s" specified for "%s". Setting it to default value "%s"\n' \
+                                   % (ep_option, self.id, self.validators[ep_option]['default']),
+                                 )
                     self.options.update({ep_option: self.validators[ep_option]['default']})
 
             # If the ep_option has been defined, check against a list of valid
@@ -643,12 +660,20 @@ def create_free_space_request_content():
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
 
+def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+    #return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
+    return '%s: %s\n' % (category.__name__, message)
 
 #############
 # Self-Test #
 #############
 
 if __name__ == '__main__':
+    # Warning messages are disabled by default.
+    if options.debug is False:
+        warnings.simplefilter("ignore")
+    warnings.formatwarning = warning_on_one_line
+
     endpoints = get_endpoints(options)
 
     for endpoint in endpoints:
