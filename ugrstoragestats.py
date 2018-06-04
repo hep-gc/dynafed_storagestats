@@ -174,6 +174,8 @@ class UGRConfigFileError(UGRBaseError):
         if message is None:
             # Set some default useful error message
             self.message = "An unkown error occured reading a configuration file."
+        else:
+            self.message = message
         super(UGRConfigFileError, self).__init__(self.message)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
@@ -190,7 +192,7 @@ class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
     def __init__(self, endpoint, option, valid_options):
-        self.message = 'Incorrect value given in option "%s" for "%s". Please check configuration.\nValid options: %s' \
+        self.message = 'Incorrect value given in option "%s" for "%s". Please check configuration. Valid options: %s' \
                   % (option, endpoint, valid_options)
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message)
 
@@ -324,16 +326,11 @@ class StorageStats(object):
             # form those that have the "boolean" key set as true.
             else:
                 try:
-                    self.validators[ep_option]['valid']
-                except KeyError:
-                    # This 'valid' key is not required to exist.
-                    pass
-                else:
                     if self.options[ep_option] not in self.validators[ep_option]['valid']:
                         raise UGRConfigFileErrorInvalidOption(
-                                  endpoint=self.id,
-                                  option=ep_option,
-                                  valid_options=self.validators[ep_option]['valid']
+                              endpoint=self.id,
+                              option=ep_option,
+                              valid_options=self.validators[ep_option]['valid']
                               )
                     else:
                         try:
@@ -347,6 +344,12 @@ class StorageStats(object):
                                 self.options.update({'ssl_check': False})
                             else:
                                 self.options.update({'ssl_check': True})
+                except KeyError:
+                    # This 'valid' key is not required to exist.
+                    pass
+                except UGRConfigFileError as ERR:
+                    warnings.warn(ERR.message)
+
 
     def validate_schema(self, scheme):
         schema_translator = {
