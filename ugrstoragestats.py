@@ -182,7 +182,6 @@ class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
                   % (endpoint, line)
         super(UGRConfigFileErrorIDMismatch, self).__init__(self.message)
 
-
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
     def __init__(self, endpoint, option):
         self.message = 'Option "%s" is required, please check configuration for "%s"\n' \
@@ -216,6 +215,29 @@ class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
                   % (endpoint)
         super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message)
 
+
+### Defining Warning Exception Classes
+class UGRBaseWarning(UGRBaseException):
+    def __init__(self, message=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = "[WARN] A unkown error occured."
+        else:
+            self.message = "[WARN] " + message
+        super(UGRBaseWarning, self).__init__(self.message)
+
+class UGRConfigFileWarning(UGRBaseWarning):
+    def __init__(self, message=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = "An unkown error occured reading a configuration file."
+        super(UGRConfigFileWarning, self).__init__(self.message)
+
+class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
+    def __init__(self, endpoint, option, option_default):
+        self.message = 'No "%s" specified for "%s". Setting it to default value "%s"\n' \
+                  % (option, endpoint, option_default)
+        super(UGRConfigFileWarningMissingOption, self).__init__(self.message)
 
 #####################
 ## Storage Classes ##
@@ -280,16 +302,22 @@ class StorageStats(object):
                 self.options[ep_option]
 
             except KeyError:
-                if self.validators[ep_option]['required']:
-                    raise UGRConfigFileErrorMissingRequiredOption(
-                              endpoint=self.id,
-                              option=ep_option,
-                          )
-                else:
-                    warnings.warn('No "%s" specified for "%s". Setting it to default value "%s"\n' \
-                                   % (ep_option, self.id, self.validators[ep_option]['default']),
-                                 )
+                try:
+                    if self.validators[ep_option]['required']:
+                        raise UGRConfigFileErrorMissingRequiredOption(
+                                  endpoint=self.id,
+                                  option=ep_option,
+                              )
+                    else:
+                        raise UGRConfigFileWarningMissingOption(
+                                  endpoint=self.id,
+                                  option=ep_option,
+                                  option_default=self.validators[ep_option]['default'],
+                              )
+                except UGRBaseWarning as WARN:
+                    warnings.warn(WARN.message)
                     self.options.update({ep_option: self.validators[ep_option]['default']})
+
 
             # If the ep_option has been defined, check against a list of valid
             # options (if defined, otherwise contiune). Also transform to boolean
@@ -298,6 +326,7 @@ class StorageStats(object):
                 try:
                     self.validators[ep_option]['valid']
                 except KeyError:
+                    # This 'valid' key is not required to exist.
                     pass
                 else:
                     if self.options[ep_option] not in self.validators[ep_option]['valid']:
