@@ -328,9 +328,9 @@ class StorageStats(object):
                 try:
                     if self.options[ep_option] not in self.validators[ep_option]['valid']:
                         raise UGRConfigFileErrorInvalidOption(
-                              endpoint=self.id,
-                              option=ep_option,
-                              valid_options=self.validators[ep_option]['valid']
+                                endpoint=self.id,
+                                option=ep_option,
+                                valid_options=self.validators[ep_option]['valid']
                               )
                     else:
                         try:
@@ -339,11 +339,11 @@ class StorageStats(object):
                             pass
                         else:
                             ### Review this!
-                            if self.options['ssl_check'].lower() == 'false'\
-                            or self.options['ssl_check'].lower() == 'no':
-                                self.options.update({'ssl_check': False})
+                            if self.options[ep_option].lower() == 'false'\
+                            or self.options[ep_option].lower() == 'no':
+                                self.options.update({ep_option: False})
                             else:
-                                self.options.update({'ssl_check': True})
+                                self.options.update({ep_option: True})
                 except KeyError:
                     # This 'valid' key is not required to exist.
                     pass
