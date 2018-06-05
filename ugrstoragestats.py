@@ -468,6 +468,7 @@ class S3StorageStats(StorageStats):
                 #Review Maybe not userwarning?
                 warnings.warn(ERR.message)
             else:
+                #Review If no quota is set, we get a '-1'
                 self.stats['quota'] = stats['bucket_quota']['max_size']
                 self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
@@ -575,6 +576,7 @@ class DAVStorageStats(StorageStats):
                 data=data
             )
         except requests.exceptions.SSLError:
+            #Review
             print("Some SSL Error")
         except IOError:
             print("Issue reading credential/proxy/cert file")
