@@ -207,9 +207,15 @@ class UGRStorageStatsError(UGRBaseError):
 
 class UGRStorageStatsErrorS3Method(UGRStorageStatsError):
     def __init__(self, endpoint, option, status_code, error):
-        self.message = '"%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n' \
+        self.message = '"%s" does not support option "%s". Connection Code: "%s" Connection Error: "%s".\n' \
                   % (endpoint, option, status_code, error)
         super(UGRStorageStatsErrorS3Method, self).__init__(self.message)
+
+class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
+    def __init__(self, endpoint, status_code):
+        self.message = '"%s" did not provide bucket usage. Connection Code: "%s". This is normal in new Rados buckets.' \
+                  % (endpoint, status_code)
+        super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     def __init__(self, endpoint):
@@ -453,7 +459,13 @@ class S3StorageStats(StorageStats):
                             status_code=r.status_code,
                             error=stats['Code'],
                     )
+                elif len(stats['usage']) == 0:
+                    raise UGRStorageStatsErrorS3MissingBucketUsage(
+                            endpoint=self.id,
+                            status_code=r.status_code,
+                    )
             except UGRStorageStatsError as ERR:
+                #Review Maybe not userwarning?
                 warnings.warn(ERR.message)
             else:
                 self.stats['quota'] = stats['bucket_quota']['max_size']
