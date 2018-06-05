@@ -488,6 +488,10 @@ class S3StorageStats(StorageStats):
             total_bytes = 0
             total_files = 0
             kwargs = {'Bucket': bucket}
+            # This loop is needed to obtain all objects as the API can only
+            # server 1,000 objects per request. The 'NextMarker' tells where
+            # to start the next 1,000. If no 'NextMarker' is received, all
+            # objects have been obtained.
             while True:
                 response = connection.list_objects(**kwargs)
                 try:
