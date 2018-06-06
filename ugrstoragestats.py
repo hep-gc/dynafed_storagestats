@@ -205,6 +205,15 @@ class UGRStorageStatsError(UGRBaseError):
             self.message = message
         super(UGRStorageStatsError, self).__init__(self.message)
 
+class UGRStorageStatsConnectionError(UGRStorageStatsError):
+    def __init__(self, endpoint, message=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = "An unkown error occured obtaning storage stats."
+        else:
+            self.message = '[%s] %s' % (endpoint,message)
+        super(UGRStorageStatsConnectionError, self).__init__(self.message)
+
 class UGRStorageStatsErrorS3Method(UGRStorageStatsError):
     def __init__(self, endpoint, option, status_code, error):
         self.message = '"%s" does not support option "%s". Connection Code: "%s" Connection Error: "%s".\n' \
@@ -444,7 +453,7 @@ class S3StorageStats(StorageStats):
                                 )
             except requests.RequestException as ERR:
                 #Review Maybe not userwarning?
-                warnings.warn(ERR.message.message)
+                warnings.warn('[ERROR][%s] %s' %(self.id, ERR.message.message))
 
             else:
                 # If ceph-admin is accidentally requested for AWS, no JSON content
