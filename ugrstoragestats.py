@@ -523,6 +523,7 @@ class S3StorageStats(StorageStats):
                 try:
                     response = connection.list_objects(**kwargs)
                 except botoConnectionError as ERR:
+                    #Review Maybe not userwarning?
                     warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.message))
                     break
 
@@ -542,9 +543,9 @@ class S3StorageStats(StorageStats):
                     except KeyError:
                         break
 
-                        self.stats['bytesused'] = total_bytes
-                        self.stats['files'] = total_files
-                        self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+            self.stats['bytesused'] = total_bytes
+            self.stats['files'] = total_files
+            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
     def validate_schema(self, scheme):
         if scheme == 's3':
