@@ -72,7 +72,8 @@ except ImportError:
     sys.exit(1)
 else:
     from botocore.client import Config
-    from botocore.vendored.requests import ConnectionError as botoConnectionError
+    import botocore.vendored.requests.exceptions as botoRequestsExceptions
+    import botocore.exceptions as botoExceptions
 
 try:
     from lxml import etree
@@ -522,7 +523,8 @@ class S3StorageStats(StorageStats):
             while True:
                 try:
                     response = connection.list_objects(**kwargs)
-                except botoConnectionError as ERR:
+                except (botoRequestsExceptions.RequestException,
+                        botoExceptions.ClientError) as ERR:
                     #Review Maybe not userwarning?
                     warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.message))
                     break
