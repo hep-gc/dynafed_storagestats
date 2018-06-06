@@ -180,20 +180,20 @@ class UGRConfigFileError(UGRBaseError):
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     def __init__(self, endpoint, line):
-        self.message ='Failed to match ID "%s" in line "%s". Check your configuration.\n' \
+        self.message ='[%s] Failed to match ID in line "%s". Check your configuration.' \
                   % (endpoint, line)
         super(UGRConfigFileErrorIDMismatch, self).__init__(self.message)
 
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
     def __init__(self, endpoint, option):
-        self.message = 'Option "%s" is required, please check configuration for "%s"\n' \
-                  % (option, endpoint)
+        self.message = '[%s] Option "%s" is required. Check your configuration.' \
+                  % (endpoint, option)
         super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message)
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
     def __init__(self, endpoint, option, valid_options):
-        self.message = 'Incorrect value given in option "%s" for "%s". Please check configuration. Valid options: %s' \
-                  % (option, endpoint, valid_options)
+        self.message = '[%s] Incorrect value given in option "%s". Please check configuration. Valid options: %s' \
+                  % (endpoint, option, valid_options)
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message)
 
 class UGRStorageStatsError(UGRBaseError):
@@ -205,30 +205,30 @@ class UGRStorageStatsError(UGRBaseError):
             self.message = message
         super(UGRStorageStatsError, self).__init__(self.message)
 
-class UGRStorageStatsConnectionError(UGRStorageStatsError):
-    def __init__(self, endpoint, message=None):
-        if message is None:
-            # Set some default useful error message
-            self.message = "An unkown error occured obtaning storage stats."
-        else:
-            self.message = '[%s] %s' % (endpoint,message)
-        super(UGRStorageStatsConnectionError, self).__init__(self.message)
+# class UGRStorageStatsConnectionError(UGRStorageStatsError):
+#     def __init__(self, endpoint, message=None):
+#         if message is None:
+#             # Set some default useful error message
+#             self.message = "An unkown error occured obtaning storage stats."
+#         else:
+#             self.message = '[%s] %s' % (endpoint,message)
+#         super(UGRStorageStatsConnectionError, self).__init__(self.message)
 
 class UGRStorageStatsErrorS3Method(UGRStorageStatsError):
     def __init__(self, endpoint, option, status_code, error):
-        self.message = '"%s" does not support option "%s". Connection Code: "%s" Connection Error: "%s".\n' \
+        self.message = '[%s] does not support option "%s". Connection Code: "%s" Connection Error: "%s".\n' \
                   % (endpoint, option, status_code, error)
         super(UGRStorageStatsErrorS3Method, self).__init__(self.message)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     def __init__(self, endpoint, status_code):
-        self.message = '"%s" did not provide bucket usage. Connection Code: "%s". This is normal in new Rados buckets.' \
+        self.message = '[%s] did not provide bucket usage. Connection Code: "%s". This is normal in new Rados buckets.' \
                   % (endpoint, status_code)
         super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     def __init__(self, endpoint):
-        self.message = '"%s" does not support "WebDAV Quota Method".' \
+        self.message = '[%s] does not support "WebDAV Quota Method".' \
                   % (endpoint)
         super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message)
 
@@ -252,8 +252,8 @@ class UGRConfigFileWarning(UGRBaseWarning):
 
 class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
     def __init__(self, endpoint, option, option_default):
-        self.message = 'No "%s" specified for "%s". Setting it to default value "%s"\n' \
-                  % (option, endpoint, option_default)
+        self.message = '[%s] Unspecified "%s" option. Setting it to default value "%s"\n' \
+                  % (endpoint, option, option_default)
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message)
 
 #####################
