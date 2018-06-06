@@ -217,9 +217,10 @@ class UGRStorageStatsError(UGRBaseError):
 #         super(UGRStorageStatsConnectionError, self).__init__(self.message)
 
 class UGRStorageStatsErrorS3Method(UGRStorageStatsError):
-    def __init__(self, endpoint, option, status_code, error):
-        self.message = '[%s] does not support option "%s". Connection Code: "%s" Connection Error: "%s".\n' \
-                  % (endpoint, option, status_code, error)
+    def __init__(self, endpoint, status_code, error):
+        self.message = '[%s] Error requesting stats. Connection Code: "%s"' \
+                  % (endpoint, status_code)
+        self.debug = error
         super(UGRStorageStatsErrorS3Method, self).__init__(self.message)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
@@ -471,7 +472,6 @@ class S3StorageStats(StorageStats):
                     if r.status_code != 200:
                         raise UGRStorageStatsErrorS3Method(
                                 endpoint=self.id,
-                                option=self.options['s3.api'],
                                 status_code=r.status_code,
                                 error=stats['Code'],
                         )
@@ -524,7 +524,8 @@ class S3StorageStats(StorageStats):
                 try:
                     response = connection.list_objects(**kwargs)
                 except (botoRequestsExceptions.RequestException,
-                        botoExceptions.ClientError) as ERR:
+                        botoExceptions.ClientError,
+                        botoExceptions.BotoCoreError) as ERR:
                     #Review Maybe not userwarning?
                     warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.message))
                     break
