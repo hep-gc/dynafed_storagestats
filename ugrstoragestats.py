@@ -436,42 +436,47 @@ class S3StorageStats(StorageStats):
                             's3',
                             verify=self.options['ssl_check']
                            )
-            r = requests.get(endpoint_url,
-                             params=payload,
-                             auth=auth,
-                             verify=self.options['ssl_check']
-                            )
-
-            # If ceph-admin is accidentally requested for AWS, no JSON content
-            # is passed, so we check for that.
-            # Review this!
             try:
-                stats = r.json()
-            except ValueError:
-                stats = {'Code': r.content}
-
-            # Make sure we get a 200 "OK" from the endpoint.
-            try:
-                if r.status_code != 200:
-                    raise UGRStorageStatsErrorS3Method(
-                            endpoint=self.id,
-                            option=self.options['s3.api'],
-                            status_code=r.status_code,
-                            error=stats['Code'],
-                    )
-                elif len(stats['usage']) == 0:
-                    raise UGRStorageStatsErrorS3MissingBucketUsage(
-                            endpoint=self.id,
-                            status_code=r.status_code,
-                    )
-            except UGRStorageStatsError as ERR:
+                r = requests.get(endpoint_url,
+                                 params=payload,
+                                 auth=auth,
+                                 verify=self.options['ssl_check']
+                                )
+            except requests.RequestException as ERR:
                 #Review Maybe not userwarning?
-                warnings.warn(ERR.message)
+                warnings.warn(ERR.message.message)
+
             else:
-                #Review If no quota is set, we get a '-1'
-                self.stats['quota'] = stats['bucket_quota']['max_size']
-                self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
-                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                # If ceph-admin is accidentally requested for AWS, no JSON content
+                # is passed, so we check for that.
+                # Review this!
+                try:
+                    stats = r.json()
+                except ValueError:
+                    stats = {'Code': r.content}
+
+                # Make sure we get a 200 "OK" from the endpoint.
+                try:
+                    if r.status_code != 200:
+                        raise UGRStorageStatsErrorS3Method(
+                                endpoint=self.id,
+                                option=self.options['s3.api'],
+                                status_code=r.status_code,
+                                error=stats['Code'],
+                        )
+                    elif len(stats['usage']) == 0:
+                        raise UGRStorageStatsErrorS3MissingBucketUsage(
+                                endpoint=self.id,
+                                status_code=r.status_code,
+                        )
+                except UGRStorageStatsError as ERR:
+                    #Review Maybe not userwarning?
+                    warnings.warn(ERR.message)
+                else:
+                    #Review If no quota is set, we get a '-1'
+                    self.stats['quota'] = stats['bucket_quota']['max_size']
+                    self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
+                    self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
         # Getting the storage Stats AWS S3 API
         #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
