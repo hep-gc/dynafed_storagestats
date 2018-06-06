@@ -453,7 +453,7 @@ class S3StorageStats(StorageStats):
                                 )
             except requests.RequestException as ERR:
                 #Review Maybe not userwarning?
-                warnings.warn('[ERROR][%s] %s' %(self.id, ERR.message.message))
+                warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.message.message))
 
             else:
                 # If ceph-admin is accidentally requested for AWS, no JSON content
