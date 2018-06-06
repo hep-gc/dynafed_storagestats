@@ -72,6 +72,7 @@ except ImportError:
     sys.exit(1)
 else:
     from botocore.client import Config
+    from botocore.vendored.requests import ConnectionError as botoConnectionError
 
 try:
     from lxml import etree
@@ -511,7 +512,6 @@ class S3StorageStats(StorageStats):
                                       verify=self.options['ssl_check'],
                                       config=Config(signature_version=self.options['s3.signature_ver']),
                                      )
-
             total_bytes = 0
             total_files = 0
             kwargs = {'Bucket': bucket}
@@ -520,25 +520,31 @@ class S3StorageStats(StorageStats):
             # to start the next 1,000. If no 'NextMarker' is received, all
             # objects have been obtained.
             while True:
-                response = connection.list_objects(**kwargs)
                 try:
-                    response['Contents']
-                except KeyError:
-                    self.stats['bytesused'] = '0'
+                    response = connection.list_objects(**kwargs)
+                except botoConnectionError as ERR:
+                    warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.message))
                     break
+
                 else:
-                    for content in response['Contents']:
-                        total_bytes += content['Size']
-                        total_files += 1
+                    try:
+                        response['Contents']
+                    except KeyError:
+                        self.stats['bytesused'] = '0'
+                        break
+                    else:
+                        for content in response['Contents']:
+                            total_bytes += content['Size']
+                            total_files += 1
 
-                try:
-                    kwargs['Marker'] = response['NextMarker']
-                except KeyError:
-                    break
+                    try:
+                        kwargs['Marker'] = response['NextMarker']
+                    except KeyError:
+                        break
 
-            self.stats['bytesused'] = total_bytes
-            self.stats['files'] = total_files
-            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                        self.stats['bytesused'] = total_bytes
+                        self.stats['files'] = total_files
+                        self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
     def validate_schema(self, scheme):
         if scheme == 's3':
