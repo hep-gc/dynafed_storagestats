@@ -527,7 +527,7 @@ class S3StorageStats(StorageStats):
                         botoExceptions.ClientError,
                         botoExceptions.BotoCoreError) as ERR:
                     #Review Maybe not userwarning?
-                    warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.message))
+                    warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.response))
                     break
 
                 else:
@@ -684,7 +684,7 @@ def factory(plugin_type):
     Return object class to use based on the plugin specified in the UGR's
     configuration files.
     """
-    switcher = {
+    plugin_dict = {
         'libugrlocplugin_dav.so': DAVStorageStats,
         'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
@@ -692,7 +692,7 @@ def factory(plugin_type):
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
         #'libugrlocplugin_dmliteclient.so': DMLiteStorageStats,
     }
-    return switcher.get(plugin_type, "nothing")
+    return plugin_dict.get(plugin_type, "nothing")
 
 
 def get_endpoints(options):
