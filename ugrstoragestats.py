@@ -44,6 +44,7 @@ v0.3.4 Fixed json parsing from requests using it's native json function to
        solve issue with json module of python 3.4.
 v0.4.0 Re-wrote the exception classes and how they are treated in code. Added
        warnings.
+v0.4.1 Added exceptions and error handling for S3 storagestats.
 """
 from __future__ import print_function
 
