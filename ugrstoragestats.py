@@ -44,10 +44,11 @@ v0.3.4 Fixed json parsing from requests using it's native json function to
        solve issue with json module of python 3.4.
 v0.4.0 Re-wrote the exception classes and how they are treated in code. Added
        warnings.
+v0.4.1 Added exceptions and error handling for S3 storagestats.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.0"
+__version__ = "v0.4.1"
 __author__ = "Fernando Fernandez Galindo"
 
 import warnings
@@ -72,6 +73,8 @@ except ImportError:
     sys.exit(1)
 else:
     from botocore.client import Config
+    import botocore.vendored.requests.exceptions as botoRequestsExceptions
+    import botocore.exceptions as botoExceptions
 
 try:
     from lxml import etree
@@ -174,25 +177,26 @@ class UGRConfigFileError(UGRBaseError):
         if message is None:
             # Set some default useful error message
             self.message = "An unkown error occured reading a configuration file."
+        else:
+            self.message = message
         super(UGRConfigFileError, self).__init__(self.message)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     def __init__(self, endpoint, line):
-        self.message ='Failed to match ID "%s" in line "%s". Check your configuration.\n' \
+        self.message ='[%s] Failed to match ID in line "%s". Check your configuration.' \
                   % (endpoint, line)
         super(UGRConfigFileErrorIDMismatch, self).__init__(self.message)
 
-
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
     def __init__(self, endpoint, option):
-        self.message = 'Option "%s" is required, please check configuration for "%s"\n' \
-                  % (option, endpoint)
+        self.message = '[%s] Option "%s" is required. Check your configuration.' \
+                  % (endpoint, option)
         super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message)
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
     def __init__(self, endpoint, option, valid_options):
-        self.message = 'Incorrect value given in option "%s" for "%s". Please check configuration.\nValid options: %s' \
-                  % (option, endpoint, valid_options)
+        self.message = '[%s] Incorrect value given in option "%s". Please check configuration. Valid options: %s' \
+                  % (endpoint, option, valid_options)
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message)
 
 class UGRStorageStatsError(UGRBaseError):
@@ -204,18 +208,57 @@ class UGRStorageStatsError(UGRBaseError):
             self.message = message
         super(UGRStorageStatsError, self).__init__(self.message)
 
+# class UGRStorageStatsConnectionError(UGRStorageStatsError):
+#     def __init__(self, endpoint, message=None):
+#         if message is None:
+#             # Set some default useful error message
+#             self.message = "An unkown error occured obtaning storage stats."
+#         else:
+#             self.message = '[%s] %s' % (endpoint,message)
+#         super(UGRStorageStatsConnectionError, self).__init__(self.message)
+
 class UGRStorageStatsErrorS3Method(UGRStorageStatsError):
-    def __init__(self, endpoint, option, status_code, error):
-        self.message = '"%s" does not support option "%s".\nConnection Code: "%s"\nConnection Error: "%s".\n' \
-                  % (endpoint, option, status_code, error)
+    def __init__(self, endpoint, status_code, error):
+        self.message = '[%s] Error requesting stats. Connection Code: "%s"' \
+                  % (endpoint, status_code)
+        self.debug = error
         super(UGRStorageStatsErrorS3Method, self).__init__(self.message)
+
+class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
+    def __init__(self, endpoint, status_code):
+        self.message = '[%s] did not provide bucket usage. Connection Code: "%s". This is normal in new Rados buckets.' \
+                  % (endpoint, status_code)
+        super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     def __init__(self, endpoint):
-        self.message = '"%s" does not support "WebDAV Quota Method".' \
+        self.message = '[%s] does not support "WebDAV Quota Method".' \
                   % (endpoint)
         super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message)
 
+
+### Defining Warning Exception Classes
+class UGRBaseWarning(UGRBaseException):
+    def __init__(self, message=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = "[WARN] A unkown error occured."
+        else:
+            self.message = "[WARN] " + message
+        super(UGRBaseWarning, self).__init__(self.message)
+
+class UGRConfigFileWarning(UGRBaseWarning):
+    def __init__(self, message=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = "An unkown error occured reading a configuration file."
+        super(UGRConfigFileWarning, self).__init__(self.message)
+
+class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
+    def __init__(self, endpoint, option, option_default):
+        self.message = '[%s] Unspecified "%s" option. Setting it to default value "%s"\n' \
+                  % (endpoint, option, option_default)
+        super(UGRConfigFileWarningMissingOption, self).__init__(self.message)
 
 #####################
 ## Storage Classes ##
@@ -280,31 +323,33 @@ class StorageStats(object):
                 self.options[ep_option]
 
             except KeyError:
-                if self.validators[ep_option]['required']:
-                    raise UGRConfigFileErrorMissingRequiredOption(
-                              endpoint=self.id,
-                              option=ep_option,
-                          )
-                else:
-                    warnings.warn('No "%s" specified for "%s". Setting it to default value "%s"\n' \
-                                   % (ep_option, self.id, self.validators[ep_option]['default']),
-                                 )
+                try:
+                    if self.validators[ep_option]['required']:
+                        raise UGRConfigFileErrorMissingRequiredOption(
+                                  endpoint=self.id,
+                                  option=ep_option,
+                              )
+                    else:
+                        raise UGRConfigFileWarningMissingOption(
+                                  endpoint=self.id,
+                                  option=ep_option,
+                                  option_default=self.validators[ep_option]['default'],
+                              )
+                except UGRBaseWarning as WARN:
+                    warnings.warn(WARN.message)
                     self.options.update({ep_option: self.validators[ep_option]['default']})
+
 
             # If the ep_option has been defined, check against a list of valid
             # options (if defined, otherwise contiune). Also transform to boolean
             # form those that have the "boolean" key set as true.
             else:
                 try:
-                    self.validators[ep_option]['valid']
-                except KeyError:
-                    pass
-                else:
                     if self.options[ep_option] not in self.validators[ep_option]['valid']:
                         raise UGRConfigFileErrorInvalidOption(
-                                  endpoint=self.id,
-                                  option=ep_option,
-                                  valid_options=self.validators[ep_option]['valid']
+                                endpoint=self.id,
+                                option=ep_option,
+                                valid_options=self.validators[ep_option]['valid']
                               )
                     else:
                         try:
@@ -313,11 +358,17 @@ class StorageStats(object):
                             pass
                         else:
                             ### Review this!
-                            if self.options['ssl_check'].lower() == 'false'\
-                            or self.options['ssl_check'].lower() == 'no':
-                                self.options.update({'ssl_check': False})
+                            if self.options[ep_option].lower() == 'false'\
+                            or self.options[ep_option].lower() == 'no':
+                                self.options.update({ep_option: False})
                             else:
-                                self.options.update({'ssl_check': True})
+                                self.options.update({ep_option: True})
+                except KeyError:
+                    # This 'valid' key is not required to exist.
+                    pass
+                except UGRConfigFileError as ERR:
+                    warnings.warn(ERR.message)
+
 
     def validate_schema(self, scheme):
         schema_translator = {
@@ -398,35 +449,46 @@ class S3StorageStats(StorageStats):
                             's3',
                             verify=self.options['ssl_check']
                            )
-            r = requests.get(endpoint_url,
-                             params=payload,
-                             auth=auth,
-                             verify=self.options['ssl_check']
-                            )
-
-            # If ceph-admin is accidentally requested for AWS, no JSON content
-            # is passed, so we check for that.
-            # Review this!
             try:
-                stats = r.json()
-            except ValueError:
-                stats = {'Code': r.content}
+                r = requests.get(endpoint_url,
+                                 params=payload,
+                                 auth=auth,
+                                 verify=self.options['ssl_check']
+                                )
+            except requests.RequestException as ERR:
+                #Review Maybe not userwarning?
+                warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.message.message))
 
-            # Make sure we get a 200 "OK" from the endpoint.
-            try:
-                if r.status_code != 200:
-                    raise UGRStorageStatsErrorS3Method(
-                            endpoint=self.id,
-                            option=self.options['s3.api'],
-                            status_code=r.status_code,
-                            error=stats['Code'],
-                    )
-            except UGRStorageStatsError as ERR:
-                warnings.warn(ERR.message)
             else:
-                self.stats['quota'] = stats['bucket_quota']['max_size']
-                self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
-                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                # If ceph-admin is accidentally requested for AWS, no JSON content
+                # is passed, so we check for that.
+                # Review this!
+                try:
+                    stats = r.json()
+                except ValueError:
+                    stats = {'Code': r.content}
+
+                # Make sure we get a 200 "OK" from the endpoint.
+                try:
+                    if r.status_code != 200:
+                        raise UGRStorageStatsErrorS3Method(
+                                endpoint=self.id,
+                                status_code=r.status_code,
+                                error=stats['Code'],
+                        )
+                    elif len(stats['usage']) == 0:
+                        raise UGRStorageStatsErrorS3MissingBucketUsage(
+                                endpoint=self.id,
+                                status_code=r.status_code,
+                        )
+                except UGRStorageStatsError as ERR:
+                    #Review Maybe not userwarning?
+                    warnings.warn(ERR.message)
+                else:
+                    #Review If no quota is set, we get a '-1'
+                    self.stats['quota'] = stats['bucket_quota']['max_size']
+                    self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
+                    self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
         # Getting the storage Stats AWS S3 API
         #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
@@ -452,26 +514,38 @@ class S3StorageStats(StorageStats):
                                       verify=self.options['ssl_check'],
                                       config=Config(signature_version=self.options['s3.signature_ver']),
                                      )
-
             total_bytes = 0
             total_files = 0
             kwargs = {'Bucket': bucket}
+            # This loop is needed to obtain all objects as the API can only
+            # server 1,000 objects per request. The 'NextMarker' tells where
+            # to start the next 1,000. If no 'NextMarker' is received, all
+            # objects have been obtained.
             while True:
-                response = connection.list_objects(**kwargs)
                 try:
-                    response['Contents']
-                except KeyError:
-                    self.stats['bytesused'] = '0'
+                    response = connection.list_objects(**kwargs)
+                except (botoRequestsExceptions.RequestException,
+                        botoExceptions.ClientError,
+                        botoExceptions.BotoCoreError) as ERR:
+                    #Review Maybe not userwarning?
+                    warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.response))
                     break
-                else:
-                    for content in response['Contents']:
-                        total_bytes += content['Size']
-                        total_files += 1
 
-                try:
-                    kwargs['Marker'] = response['NextMarker']
-                except KeyError:
-                    break
+                else:
+                    try:
+                        response['Contents']
+                    except KeyError:
+                        self.stats['bytesused'] = '0'
+                        break
+                    else:
+                        for content in response['Contents']:
+                            total_bytes += content['Size']
+                            total_files += 1
+
+                    try:
+                        kwargs['Marker'] = response['NextMarker']
+                    except KeyError:
+                        break
 
             self.stats['bytesused'] = total_bytes
             self.stats['files'] = total_files
@@ -518,7 +592,6 @@ class DAVStorageStats(StorageStats):
         headers = {'Depth': '0',}
         data = create_free_space_request_content()
         try:
-            print("Trying to connect to: ", self.id)
             response = requests.request(
                 method="PROPFIND",
                 url=endpoint_url,
@@ -528,6 +601,7 @@ class DAVStorageStats(StorageStats):
                 data=data
             )
         except requests.exceptions.SSLError:
+            #Review
             print("Some SSL Error")
         except IOError:
             print("Issue reading credential/proxy/cert file")
@@ -611,7 +685,7 @@ def factory(plugin_type):
     Return object class to use based on the plugin specified in the UGR's
     configuration files.
     """
-    switcher = {
+    plugin_dict = {
         'libugrlocplugin_dav.so': DAVStorageStats,
         'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
@@ -619,7 +693,7 @@ def factory(plugin_type):
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
         #'libugrlocplugin_dmliteclient.so': DMLiteStorageStats,
     }
-    return switcher.get(plugin_type, "nothing")
+    return plugin_dict.get(plugin_type, "nothing")
 
 
 def get_endpoints(options):
@@ -631,8 +705,6 @@ def get_endpoints(options):
     endpoints = get_config(options.configs_directory)
     for endpoint in endpoints:
         try:
-            if options.debug:
-                print("Working on endpoint %s" % (endpoint))
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
         except TypeError:
             print('Storage Endpoint Type "%s" not implemented yet. Skipping %s'
