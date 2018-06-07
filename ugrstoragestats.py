@@ -48,7 +48,7 @@ v0.4.1 Added exceptions and error handling for S3 storagestats.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.0"
+__version__ = "v0.4.1"
 __author__ = "Fernando Fernandez Galindo"
 
 import warnings
