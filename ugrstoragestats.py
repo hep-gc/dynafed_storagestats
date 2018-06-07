@@ -51,6 +51,7 @@ from __future__ import print_function
 __version__ = "v0.4.1"
 __author__ = "Fernando Fernandez Galindo"
 
+import re
 import warnings
 import sys
 import os
@@ -154,32 +155,35 @@ options, args = parser.parse_args()
 #######################
 
 class UGRBaseException(Exception):
-    def __init__(self, message=None):
+    def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
             self.message = "[ERROR] An unkown exception occured processing"
         else:
             self.message = message
         super(UGRBaseException, self).__init__(self.message)
+        self.debug = debug
 
 ### Defining Error Exception Classes
 class UGRBaseError(UGRBaseException):
-    def __init__(self, message=None):
+    def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
             self.message = "[ERROR] A unkown error occured."
         else:
             self.message = "[ERROR] " + message
         super(UGRBaseError, self).__init__(self.message)
+        self.debug=None
 
 class UGRConfigFileError(UGRBaseError):
-    def __init__(self, message=None):
+    def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
             self.message = "An unkown error occured reading a configuration file."
         else:
             self.message = message
         super(UGRConfigFileError, self).__init__(self.message)
+        self.debug = debug
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     def __init__(self, endpoint, line):
@@ -200,35 +204,38 @@ class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message)
 
 class UGRStorageStatsError(UGRBaseError):
-    def __init__(self, message=None):
+    def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
             self.message = "An unkown error occured obtaning storage stats."
         else:
             self.message = message
         super(UGRStorageStatsError, self).__init__(self.message)
+        self.debug = debug
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
-    def __init__(self, endpoint, message=None):
+    def __init__(self, endpoint, status_code=None, message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "An unkown error occured obtaning storage stats."
+            self.message = '[%s] An unkown error occured while trying to connect.' % (endpoint)
         else:
-            self.message = '[%s] %s' % (endpoint,message)
+            self.message = '[%s] [%s] %s.' % (endpoint, status_code, message)
         super(UGRStorageStatsConnectionError, self).__init__(self.message)
+        self.debug = debug
 
-class UGRStorageStatsErrorS3API(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code=None, error=None, api=None, content=None):
-        self.message = '[%s] Error requesting stats using API: %s. %s. Connection Code: "%s".' \
-                  % (endpoint, api, error, status_code)
-        self.debug = content
-        super(UGRStorageStatsErrorS3API, self).__init__(self.message)
+class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
+    def __init__(self, endpoint, status_code=None, error=None, api=None, debug=None):
+        self.message = '[%s] [%s] Error requesting stats using API: %s. %s.' \
+                  % (endpoint, status_code, api, error)
+        super(UGRStorageStatsConnectionErrorS3API, self).__init__(self.message)
+        self.debug = debug
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code, error=None):
-        self.message = '[%s] did not provide bucket usage information. %s. Connection Code: "%s"' \
-                  % (endpoint, error, status_code)
+    def __init__(self, endpoint, status_code=None, error=None, debug=None):
+        self.message = '[%s] [%s] Failed to get bucket usage information. %s.' \
+                  % (endpoint, status_code, error)
         super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message)
+        self.debug = debug
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     def __init__(self, endpoint):
@@ -456,10 +463,15 @@ class S3StorageStats(StorageStats):
                                  auth=auth,
                                  verify=self.options['ssl_check']
                                 )
-            except requests.RequestException as ERR:
+            except requests.ConnectionError as ERR:
+                #We do some regex magic to get the simple cause of error
+                pattern = '(?<=Caused by )(\w+)'
+                status_code = re.findall('(?<=Caused by )(\w+)', str(ERR))[0]
                 raise UGRStorageStatsConnectionError(
                                                      endpoint=self.id,
-                                                     message=str(ERR),
+                                                     message="Failed to establish a connection",
+                                                     status_code=status_code,
+                                                     debug=str(ERR),
                                                     )
             else:
                 # If ceph-admin is accidentally requested for AWS, no JSON content
@@ -468,12 +480,12 @@ class S3StorageStats(StorageStats):
                 try:
                     stats = r.json()
                 except ValueError:
-                    raise UGRStorageStatsErrorS3API(
+                    raise UGRStorageStatsConnectionErrorS3API(
                                                        endpoint=self.id,
                                                        status_code=r.status_code,
                                                        error="No JSON content",
                                                        api=self.options['s3.api'],
-                                                       content=r.content,
+                                                       debug=r.content,
                                                       )
 
                 # Make sure we get a Bucket Usage information.
@@ -482,17 +494,20 @@ class S3StorageStats(StorageStats):
                     stats['usage']
 
                 except KeyError as ERR:
+
                     raise UGRStorageStatsErrorS3MissingBucketUsage(
                                                                     endpoint=self.id,
                                                                     status_code=r.status_code,
-                                                                    error=stats['Code']
+                                                                    error=stats['Code'],
+                                                                    debug=stats
                                                                    )
                 else:
                     if len(stats['usage']) == 0:
                         raise UGRStorageStatsErrorS3MissingBucketUsage(
                                                                         endpoint=self.id,
                                                                         status_code=r.status_code,
-                                                                        error="Possibly a new/empty bucket"
+                                                                        error="Possibly a new/empty bucket",
+                                                                        debug=stats
                                                                        )
                     #Review If no quota is set, we get a '-1'
                     self.stats['quota'] = stats['bucket_quota']['max_size']
@@ -537,6 +552,8 @@ class S3StorageStats(StorageStats):
                         botoExceptions.ClientError,
                         botoExceptions.BotoCoreError) as ERR:
                     #Review Maybe not userwarning?
+                    print('hello')
+
                     warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.response))
                     break
 
@@ -764,6 +781,10 @@ if __name__ == '__main__':
             endpoint.get_storagestats()
         except UGRStorageStatsError as ERR:
             warnings.warn(ERR.message)
+
+            print("\n######Testing Debug#########")
+            print(ERR.debug)
+            print("######Testing Debug#########")
         # finally: # Here add code to tadd the logs/debut attributes.
 
         if options.output_memcached:
