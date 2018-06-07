@@ -208,26 +208,26 @@ class UGRStorageStatsError(UGRBaseError):
             self.message = message
         super(UGRStorageStatsError, self).__init__(self.message)
 
-# class UGRStorageStatsConnectionError(UGRStorageStatsError):
-#     def __init__(self, endpoint, message=None):
-#         if message is None:
-#             # Set some default useful error message
-#             self.message = "An unkown error occured obtaning storage stats."
-#         else:
-#             self.message = '[%s] %s' % (endpoint,message)
-#         super(UGRStorageStatsConnectionError, self).__init__(self.message)
+class UGRStorageStatsConnectionError(UGRStorageStatsError):
+    def __init__(self, endpoint, message=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = "An unkown error occured obtaning storage stats."
+        else:
+            self.message = '[%s] %s' % (endpoint,message)
+        super(UGRStorageStatsConnectionError, self).__init__(self.message)
 
-class UGRStorageStatsErrorS3Method(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code, error):
-        self.message = '[%s] Error requesting stats. Connection Code: "%s"' \
-                  % (endpoint, status_code)
-        self.debug = error
-        super(UGRStorageStatsErrorS3Method, self).__init__(self.message)
+class UGRStorageStatsErrorS3API(UGRStorageStatsError):
+    def __init__(self, endpoint, status_code=None, error=None, api=None, content=None):
+        self.message = '[%s] Error requesting stats using API: %s. %s. Connection Code: "%s".' \
+                  % (endpoint, api, error, status_code)
+        self.debug = content
+        super(UGRStorageStatsErrorS3API, self).__init__(self.message)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code):
-        self.message = '[%s] did not provide bucket usage. Connection Code: "%s". This is normal in new Rados buckets.' \
-                  % (endpoint, status_code)
+    def __init__(self, endpoint, status_code, error=None):
+        self.message = '[%s] did not provide bucket usage information. %s. Connection Code: "%s"' \
+                  % (endpoint, error, status_code)
         super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
@@ -450,15 +450,17 @@ class S3StorageStats(StorageStats):
                             verify=self.options['ssl_check']
                            )
             try:
-                r = requests.get(endpoint_url,
+                r = requests.get(
+                                 url=endpoint_url,
                                  params=payload,
                                  auth=auth,
                                  verify=self.options['ssl_check']
                                 )
             except requests.RequestException as ERR:
-                #Review Maybe not userwarning?
-                warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.message.message))
-
+                raise UGRStorageStatsConnectionError(
+                                                     endpoint=self.id,
+                                                     message=str(ERR),
+                                                    )
             else:
                 # If ceph-admin is accidentally requested for AWS, no JSON content
                 # is passed, so we check for that.
@@ -466,25 +468,32 @@ class S3StorageStats(StorageStats):
                 try:
                     stats = r.json()
                 except ValueError:
-                    stats = {'Code': r.content}
+                    raise UGRStorageStatsErrorS3API(
+                                                       endpoint=self.id,
+                                                       status_code=r.status_code,
+                                                       error="No JSON content",
+                                                       api=self.options['s3.api'],
+                                                       content=r.content,
+                                                      )
 
-                # Make sure we get a 200 "OK" from the endpoint.
+                # Make sure we get a Bucket Usage information.
+                # Fails on empty (in minio) or newly created buckets.
                 try:
-                    if r.status_code != 200:
-                        raise UGRStorageStatsErrorS3Method(
-                                endpoint=self.id,
-                                status_code=r.status_code,
-                                error=stats['Code'],
-                        )
-                    elif len(stats['usage']) == 0:
-                        raise UGRStorageStatsErrorS3MissingBucketUsage(
-                                endpoint=self.id,
-                                status_code=r.status_code,
-                        )
-                except UGRStorageStatsError as ERR:
-                    #Review Maybe not userwarning?
-                    warnings.warn(ERR.message)
+                    stats['usage']
+
+                except KeyError as ERR:
+                    raise UGRStorageStatsErrorS3MissingBucketUsage(
+                                                                    endpoint=self.id,
+                                                                    status_code=r.status_code,
+                                                                    error=stats['Code']
+                                                                   )
                 else:
+                    if len(stats['usage']) == 0:
+                        raise UGRStorageStatsErrorS3MissingBucketUsage(
+                                                                        endpoint=self.id,
+                                                                        status_code=r.status_code,
+                                                                        error="Possibly a new/empty bucket"
+                                                                       )
                     #Review If no quota is set, we get a '-1'
                     self.stats['quota'] = stats['bucket_quota']['max_size']
                     self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
@@ -751,7 +760,12 @@ if __name__ == '__main__':
 #        print(endpoint.validators)
         #print('\n', type(endpoint), '\n')
         #print('\n', endpoint.options, '\n')
-        endpoint.get_storagestats()
+        try:
+            endpoint.get_storagestats()
+        except UGRStorageStatsError as ERR:
+            warnings.warn(ERR.message)
+        # finally: # Here add code to tadd the logs/debut attributes.
+
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
