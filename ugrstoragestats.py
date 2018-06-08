@@ -176,6 +176,12 @@ class UGRBaseError(UGRBaseException):
         super(UGRBaseError, self).__init__(self.message)
         self.debug=None
 
+class UGRUnsupportedPluginError(UGRBaseError):
+    def __init__(self, endpoint, error, plugin):
+        self.message ='[%s] [%s] Storage Endpoint Plugin "%s" not implemented yet. Skipping checks.' \
+                  % (endpoint, error, plugin)
+        super(UGRUnsupportedPluginError, self).__init__(self.message)
+
 class UGRConfigFileError(UGRBaseError):
     def __init__(self, message=None, debug=None):
         if message is None:
@@ -187,21 +193,21 @@ class UGRConfigFileError(UGRBaseError):
         self.debug = debug
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
-    def __init__(self, endpoint, line):
-        self.message ='[%s] Failed to match ID in line "%s". Check your configuration.' \
-                  % (endpoint, line)
+    def __init__(self, endpoint, error, line):
+        self.message ='[%s] [%s] Failed to match ID in line "%s". Check your configuration.' \
+                  % (endpoint, error, line)
         super(UGRConfigFileErrorIDMismatch, self).__init__(self.message)
 
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
-    def __init__(self, endpoint, option):
-        self.message = '[%s] Option "%s" is required. Check your configuration.' \
-                  % (endpoint, option)
+    def __init__(self, endpoint, error, option):
+        self.message = '[%s] [%s] "%s" is required. Check your configuration.' \
+                  % (endpoint, error, option)
         super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message)
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
-    def __init__(self, endpoint, option, valid_options):
-        self.message = '[%s] Incorrect value given in option "%s". Please check configuration. Valid options: %s' \
-                  % (endpoint, option, valid_options)
+    def __init__(self, endpoint, error, option, valid_options):
+        self.message = '[%s] [%s] Incorrect value given in option "%s". Valid options: %s' \
+                  % (endpoint, error, option, valid_options)
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message)
 
 class UGRStorageStatsError(UGRBaseError):
@@ -259,9 +265,9 @@ class UGRConfigFileWarning(UGRBaseWarning):
         super(UGRConfigFileWarning, self).__init__(self.message)
 
 class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
-    def __init__(self, endpoint, option, option_default):
-        self.message = '[%s] Unspecified "%s" option. Setting it to default value "%s"\n' \
-                  % (endpoint, option, option_default)
+    def __init__(self, endpoint, error, option, option_default):
+        self.message = '[%s] [%s] Unspecified "%s" option. Setting it to default value "%s"\n' \
+                  % (endpoint, error, option, option_default)
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message)
 
 #####################
@@ -331,18 +337,19 @@ class StorageStats(object):
                     if self.validators[ep_option]['required']:
                         raise UGRConfigFileErrorMissingRequiredOption(
                                   endpoint=self.id,
+                                  error="MissingRequiredOption",
                                   option=ep_option,
                               )
                     else:
                         raise UGRConfigFileWarningMissingOption(
                                   endpoint=self.id,
+                                  error="MissingOption",
                                   option=ep_option,
                                   option_default=self.validators[ep_option]['default'],
                               )
                 except UGRBaseWarning as WARN:
                     warnings.warn(WARN.message)
                     self.options.update({ep_option: self.validators[ep_option]['default']})
-
 
             # If the ep_option has been defined, check against a list of valid
             # options (if defined, otherwise contiune). Also transform to boolean
@@ -352,6 +359,7 @@ class StorageStats(object):
                     if self.options[ep_option] not in self.validators[ep_option]['valid']:
                         raise UGRConfigFileErrorInvalidOption(
                                 endpoint=self.id,
+                                error="InvalidOption",
                                 option=ep_option,
                                 valid_options=self.validators[ep_option]['valid']
                               )
@@ -368,10 +376,9 @@ class StorageStats(object):
                             else:
                                 self.options.update({ep_option: True})
                 except KeyError:
-                    # This 'valid' key is not required to exist.
+                    # The 'valid' key is not required to exist.
                     pass
-                except UGRConfigFileError as ERR:
-                    warnings.warn(ERR.message)
+
 
 
     def validate_schema(self, scheme):
@@ -730,7 +737,11 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                 endpoints[_id].setdefault('options', {})
                                 endpoints[_id]['options'].update({_option:_val.strip()})
                             else:
-                                raise UGRConfigFileErrorIDMismatch(endpoint=_id, line=line)
+                                raise UGRConfigFileErrorIDMismatch(
+                                                                    endpoint=_id,
+                                                                    error="OptionIDMismatch",
+                                                                    line=line.split(":")[0],
+                                                                   )
                         except UGRConfigFileError as ERR:
                             warnings.warn(ERR.message)
                     else:
@@ -748,7 +759,7 @@ def factory(plugin_type):
     plugin_dict = {
         'libugrlocplugin_dav.so': DAVStorageStats,
         'libugrlocplugin_http.so': DAVStorageStats,
-        'libugrlocplugin_s3.so': S3StorageStats,
+        #'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
         #'libugrlocplugin_dmliteclient.so': DMLiteStorageStats,
@@ -767,12 +778,18 @@ def get_endpoints(options):
         try:
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
         except TypeError:
-            print('Storage Endpoint Type "%s" not implemented yet. Skipping %s'
-                  % (endpoints[endpoint]['plugin'], endpoint)
-                 )
+            raise UGRUnsupportedPluginError(
+                                             endpoint=endpoint,
+                                             error="UnsupportedPlugin",
+                                             plugin=endpoints[endpoint]['plugin'],
+                                            )
         else:
-            ep.validate_ep_options(options)
-            storage_objects.append(ep)
+            try:
+                ep.validate_ep_options(options)
+            except UGRConfigFileError as ERR:
+                warnings.warn(ERR.message)
+            else:
+                storage_objects.append(ep)
 
     return(storage_objects)
 
