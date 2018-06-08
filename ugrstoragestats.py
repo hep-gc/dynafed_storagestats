@@ -176,12 +176,6 @@ class UGRBaseError(UGRBaseException):
         super(UGRBaseError, self).__init__(self.message)
         self.debug=None
 
-class UGRUnsupportedPluginError(UGRBaseError):
-    def __init__(self, endpoint, error, plugin):
-        self.message ='[%s] [%s] Storage Endpoint Plugin "%s" not implemented yet. Skipping checks.' \
-                  % (endpoint, error, plugin)
-        super(UGRUnsupportedPluginError, self).__init__(self.message)
-
 class UGRConfigFileError(UGRBaseError):
     def __init__(self, message=None, debug=None):
         if message is None:
@@ -191,6 +185,12 @@ class UGRConfigFileError(UGRBaseError):
             self.message = message
         super(UGRConfigFileError, self).__init__(self.message)
         self.debug = debug
+
+class UGRUnsupportedPluginError(UGRConfigFileError):
+    def __init__(self, endpoint, error, plugin):
+        self.message ='[%s] [%s] StorageStats method for "%s" not implemented yet. Skipping endpoint.' \
+                  % (endpoint, error, plugin)
+        super(UGRUnsupportedPluginError, self).__init__(self.message)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     def __init__(self, endpoint, error, line):
@@ -751,20 +751,27 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
 
     return endpoints
 
-def factory(plugin_type):
+def factory(endpoint, plugin):
     """
     Return object class to use based on the plugin specified in the UGR's
     configuration files.
     """
     plugin_dict = {
-        'libugrlocplugin_dav.so': DAVStorageStats,
+        #'libugrlocplugin_dav.so': DAVStorageStats,
         'libugrlocplugin_http.so': DAVStorageStats,
-        #'libugrlocplugin_s3.so': S3StorageStats,
+        'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
         #'libugrlocplugin_dmliteclient.so': DMLiteStorageStats,
     }
-    return plugin_dict.get(plugin_type, "nothing")
+    if plugin in plugin_dict:
+        return plugin_dict.get(plugin, "nothing")
+    else:
+        raise UGRUnsupportedPluginError(
+                                         endpoint=endpoint,
+                                         error="UnsupportedPlugin",
+                                         plugin=plugin,
+                                        )
 
 
 def get_endpoints(options):
@@ -776,13 +783,11 @@ def get_endpoints(options):
     endpoints = get_config(options.configs_directory)
     for endpoint in endpoints:
         try:
-            ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
-        except TypeError:
-            raise UGRUnsupportedPluginError(
-                                             endpoint=endpoint,
-                                             error="UnsupportedPlugin",
-                                             plugin=endpoints[endpoint]['plugin'],
-                                            )
+            ep = factory(endpoint, endpoints[endpoint]['plugin'])(endpoints[endpoint])
+
+        except UGRUnsupportedPluginError as ERR:
+            warnings.warn(ERR.message)
+
         else:
             try:
                 ep.validate_ep_options(options)
