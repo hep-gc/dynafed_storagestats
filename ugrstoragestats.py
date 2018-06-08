@@ -546,12 +546,6 @@ class S3StorageStats(StorageStats):
                 try:
                     response = connection.list_objects(**kwargs)
                 except botoExceptions.ClientError as ERR:
-                    # print('\n@@@@@@@@@botoExceptions.ClientError\n')
-                    # print(dir(ERR),"\n")
-                    # print(ERR.response,"\n")
-                    # print(ERR.response['ResponseMetadata']['HTTPStatusCode'])
-                    # print(ERR.response['Error']['Code'])
-                    # print('\n@@@@@@@@@\n')
                     raise UGRStorageStatsConnectionError(
                                                          endpoint=self.id,
                                                          error=ERR.response['Error']['Code'],
@@ -559,17 +553,24 @@ class S3StorageStats(StorageStats):
                                                          debug=str(ERR),
                                                         )
                     break
-
-                except (botoRequestsExceptions.RequestException,
-                        botoExceptions.BotoCoreError) as ERR:
+                except botoRequestsExceptions.RequestException as ERR:
                     #Review Maybe not userwarning?
-                    print('\n@@@@@@@@@botoExceptions.BotoCoreError\n')
+                    print('\n@@@@@@@@@botoRequestsExceptions.RequestException\n')
                     print(dir(ERR),"\n")
-                    print(ERR.args)
-                    print(ERR.kwargs)
                     print(ERR.__class__)
+                    print(ERR.args,"\n")
+                    print(str(ERR))
+
                     print('\n@@@@@@@@@\n')
 
+                    break
+                except botoExceptions.BotoCoreError as ERR:
+                    print('\n@@@@@@@@@botoExceptions.BotoCoreError\n')
+                    print(dir(ERR),"\n")
+                    print(ERR.__class__)
+                    print(ERR.args,"\n")
+                    print(ERR.kwargs,"\n")
+                    print(str(ERR))
                     break
 
                 else:
