@@ -688,7 +688,7 @@ class DAVStorageStats(StorageStats):
                                                  status_code="000",
                                                  debug=str(ERR),
                                                 )
-        except OSError as ERR:
+        except IOError as ERR:
             #We do some regex magic to get the filepath
             certfile = str(ERR).split(":")[-1]
             certfile = certfile.replace(' ','')
