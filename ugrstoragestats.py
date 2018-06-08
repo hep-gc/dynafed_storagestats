@@ -545,13 +545,31 @@ class S3StorageStats(StorageStats):
             while True:
                 try:
                     response = connection.list_objects(**kwargs)
+                except botoExceptions.ClientError as ERR:
+                    # print('\n@@@@@@@@@botoExceptions.ClientError\n')
+                    # print(dir(ERR),"\n")
+                    # print(ERR.response,"\n")
+                    # print(ERR.response['ResponseMetadata']['HTTPStatusCode'])
+                    # print(ERR.response['Error']['Code'])
+                    # print('\n@@@@@@@@@\n')
+                    raise UGRStorageStatsConnectionError(
+                                                         endpoint=self.id,
+                                                         error=ERR.response['Error']['Code'],
+                                                         status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
+                                                         debug=str(ERR),
+                                                        )
+                    break
+
                 except (botoRequestsExceptions.RequestException,
-                        botoExceptions.ClientError,
                         botoExceptions.BotoCoreError) as ERR:
                     #Review Maybe not userwarning?
-                    print('hello')
+                    print('\n@@@@@@@@@botoExceptions.BotoCoreError\n')
+                    print(dir(ERR),"\n")
+                    print(ERR.args)
+                    print(ERR.kwargs)
+                    print(ERR.__class__)
+                    print('\n@@@@@@@@@\n')
 
-                    warnings.warn('[ERROR] [%s] %s' %(self.id, ERR.response))
                     break
 
                 else:
