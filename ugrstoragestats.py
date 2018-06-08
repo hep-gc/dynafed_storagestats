@@ -214,26 +214,22 @@ class UGRStorageStatsError(UGRBaseError):
         self.debug = debug
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code=None, message=None, debug=None):
-        if message is None:
-            # Set some default useful error message
-            self.message = '[%s] An unkown error occured while trying to connect.' % (endpoint)
-        else:
-            self.message = '[%s] [%s] %s.' % (endpoint, status_code, message)
+    def __init__(self, endpoint, status_code=None, error=None, debug=None):
+        self.message = '[%s] [%s] [%s] Failed to establish a connection.' % (endpoint, error, status_code)
         super(UGRStorageStatsConnectionError, self).__init__(self.message)
         self.debug = debug
 
 class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, api=None, debug=None):
-        self.message = '[%s] [%s] Error requesting stats using API: %s. %s.' \
-                  % (endpoint, status_code, api, error)
+        self.message = '[%s] [%s] [%s] Error requesting stats using API "%s".' \
+                  % (endpoint, error, status_code, api)
         super(UGRStorageStatsConnectionErrorS3API, self).__init__(self.message)
         self.debug = debug
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, debug=None):
-        self.message = '[%s] [%s] Failed to get bucket usage information. %s.' \
-                  % (endpoint, status_code, error)
+        self.message = '[%s] [%s] [%s] Failed to get bucket usage information.' \
+                  % (endpoint, error, status_code)
         super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message)
         self.debug = debug
 
@@ -463,14 +459,15 @@ class S3StorageStats(StorageStats):
                                  auth=auth,
                                  verify=self.options['ssl_check']
                                 )
+
             except requests.ConnectionError as ERR:
                 #We do some regex magic to get the simple cause of error
                 pattern = '(?<=Caused by )(\w+)'
-                status_code = re.findall('(?<=Caused by )(\w+)', str(ERR))[0]
+                error = re.findall('(?<=Caused by )(\w+)', str(ERR))[0]
                 raise UGRStorageStatsConnectionError(
                                                      endpoint=self.id,
-                                                     message="Failed to establish a connection",
-                                                     status_code=status_code,
+                                                     error=error,
+                                                     status_code="000",
                                                      debug=str(ERR),
                                                     )
             else:
@@ -483,7 +480,7 @@ class S3StorageStats(StorageStats):
                     raise UGRStorageStatsConnectionErrorS3API(
                                                        endpoint=self.id,
                                                        status_code=r.status_code,
-                                                       error="No JSON content",
+                                                       error="NoContent",
                                                        api=self.options['s3.api'],
                                                        debug=r.content,
                                                       )
@@ -506,7 +503,7 @@ class S3StorageStats(StorageStats):
                         raise UGRStorageStatsErrorS3MissingBucketUsage(
                                                                         endpoint=self.id,
                                                                         status_code=r.status_code,
-                                                                        error="Possibly a new/empty bucket",
+                                                                        error="NewEmtpyBucket",
                                                                         debug=stats
                                                                        )
                     #Review If no quota is set, we get a '-1'
