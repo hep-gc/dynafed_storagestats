@@ -48,10 +48,11 @@ v0.4.1 Added exceptions and error handling for S3 storagestats ceph-admin.
 v0.4.2 Added exceptions and error handling for S3 storagestats, generic.
 v0.4.3 Added exceptions for configuration file errors, missing options,
        unsupported plugins.
+v0.4.4 Added exceptions and error handling for DAV storagestats.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.3"
+__version__ = "v0.4.4"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
@@ -243,10 +244,17 @@ class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
         self.debug = debug
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
-    def __init__(self, endpoint):
-        self.message = '[%s] does not support "WebDAV Quota Method".' \
-                  % (endpoint)
+    def __init__(self, endpoint, error):
+        self.message = '[%s] [%s] WebDAV Quota Method.' \
+                  % (endpoint, error)
         super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message)
+
+class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
+    def __init__(self, endpoint, status_code=None, error=None, certfile=None, debug=None):
+        self.message = '[%s] [%s] [%s] Invalid client certificate path "%s".' \
+                  % (endpoint, error, status_code, certfile)
+        super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(self.message)
+        self.debug = debug
 
 
 ### Defining Warning Exception Classes
@@ -669,11 +677,28 @@ class DAVStorageStats(StorageStats):
                 verify=self.options['ca_path'],
                 data=data
             )
-        except requests.exceptions.SSLError:
-            #Review
-            print("Some SSL Error")
-        except IOError:
-            print("Issue reading credential/proxy/cert file")
+        except requests.ConnectionError as ERR:
+            # #We do some regex magic to get the simple cause of error
+            # pattern = '\'(.*?)\''
+            # error = re.findall(pattern, str(ERR))[-1]
+            # error = error.title().replace(' ','')
+            raise UGRStorageStatsConnectionError(
+                                                 endpoint=self.id,
+                                                 error=ERR.__class__.__name__,
+                                                 status_code="000",
+                                                 debug=str(ERR),
+                                                )
+        except OSError as ERR:
+            #We do some regex magic to get the filepath
+            certfile = str(ERR).split(":")[-1]
+            certfile = certfile.replace(' ','')
+            raise UGRStorageStatsConnectionErrorDAVCertPath(
+                                                 endpoint=self.id,
+                                                 error="ClientCertError",
+                                                 status_code="000",
+                                                 certfile=certfile,
+                                                 debug=str(ERR),
+                                                )
 
         else:
             tree = etree.fromstring(response.content)
@@ -682,7 +707,9 @@ class DAVStorageStats(StorageStats):
                 if node is not None:
                     pass
                 else:
-                    raise UGRStorageStatsErrorDAVQuotaMethod(endpoint=self.id)
+                    raise UGRStorageStatsErrorDAVQuotaMethod(endpoint=self.id,
+                                                             error="UnsupportedMethod"
+                                                            )
             except UGRStorageStatsError as ERR:
                 warnings.warn(ERR.message)
 
