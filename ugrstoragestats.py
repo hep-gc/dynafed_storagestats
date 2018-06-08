@@ -479,12 +479,9 @@ class S3StorageStats(StorageStats):
                                 )
 
             except requests.ConnectionError as ERR:
-                #We do some regex magic to get the simple cause of error
-                pattern = '(?<=Caused by )(\w+)'
-                error = re.findall('(?<=Caused by )(\w+)', str(ERR))[0]
                 raise UGRStorageStatsConnectionError(
                                                      endpoint=self.id,
-                                                     error=error,
+                                                     error=ERR.__class__.__name__,
                                                      status_code="000",
                                                      debug=str(ERR),
                                                     )
@@ -521,7 +518,7 @@ class S3StorageStats(StorageStats):
                         raise UGRStorageStatsErrorS3MissingBucketUsage(
                                                                         endpoint=self.id,
                                                                         status_code=r.status_code,
-                                                                        error="NewEmtpyBucket",
+                                                                        error="NewEmptyBucket",
                                                                         debug=stats
                                                                        )
                     #Review If no quota is set, we get a '-1'
@@ -566,43 +563,31 @@ class S3StorageStats(StorageStats):
                 except botoExceptions.ClientError as ERR:
                     raise UGRStorageStatsConnectionError(
                                                          endpoint=self.id,
-                                                         error=ERR.response['Error']['Code'],
+                                                         error=ERR.__class__.__name__,
                                                          status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
                                                          debug=str(ERR),
                                                         )
                     break
                 except botoRequestsExceptions.RequestException as ERR:
-                    #We do some regex magic to get the simple cause of error
-                    pattern = '\[(.*?)\]'
-                    error = re.findall(pattern, str(ERR))[0]
-                    error = error.split()[-1].title().replace('_','')
                     raise UGRStorageStatsConnectionError(
                                                          endpoint=self.id,
-                                                         error=error,
+                                                         error=ERR.__class__.__name__,
                                                          status_code="000",
                                                          debug=str(ERR),
                                                         )
                     break
                 except botoExceptions.ParamValidationError as ERR:
-                    #We do some regex magic to get the simple cause of error
-                    pattern = '(.*?):'
-                    error = re.findall(pattern, str(ERR.kwargs['report']))[-1]
-                    error = error.title().replace(' ','')
                     raise UGRStorageStatsConnectionError(
                                                          endpoint=self.id,
-                                                         error=error,
+                                                         error=ERR.__class__.__name__,
                                                          status_code="000",
                                                          debug=str(ERR),
                                                         )
                     break
                 except botoExceptions.BotoCoreError as ERR:
-                    #We do some regex magic to get the simple cause of error
-                    pattern = '\'(.*?)\''
-                    error = re.findall(pattern, str(ERR.kwargs['error']))[-1]
-                    error = error.title().replace(' ','')
                     raise UGRStorageStatsConnectionError(
                                                          endpoint=self.id,
-                                                         error=error,
+                                                         error=ERR.__class__.__name__,
                                                          status_code="000",
                                                          debug=str(ERR),
                                                         )
@@ -678,10 +663,6 @@ class DAVStorageStats(StorageStats):
                 data=data
             )
         except requests.ConnectionError as ERR:
-            # #We do some regex magic to get the simple cause of error
-            # pattern = '\'(.*?)\''
-            # error = re.findall(pattern, str(ERR))[-1]
-            # error = error.title().replace(' ','')
             raise UGRStorageStatsConnectionError(
                                                  endpoint=self.id,
                                                  error=ERR.__class__.__name__,
