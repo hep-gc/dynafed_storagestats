@@ -759,7 +759,7 @@ def factory(endpoint, plugin):
     configuration files.
     """
     plugin_dict = {
-        #'libugrlocplugin_dav.so': DAVStorageStats,
+        'libugrlocplugin_dav.so': DAVStorageStats,
         'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
         #'libugrlocplugin_azure.so': AzureStorageStats,
