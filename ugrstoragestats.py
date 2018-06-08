@@ -44,11 +44,12 @@ v0.3.4 Fixed json parsing from requests using it's native json function to
        solve issue with json module of python 3.4.
 v0.4.0 Re-wrote the exception classes and how they are treated in code. Added
        warnings.
-v0.4.1 Added exceptions and error handling for S3 storagestats.
+v0.4.1 Added exceptions and error handling for S3 storagestats ceph-admin.
+v0.4.2 Added exceptions and error handling for S3 storagestats, generic.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.1"
+__version__ = "v0.4.2"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
@@ -554,23 +555,40 @@ class S3StorageStats(StorageStats):
                                                         )
                     break
                 except botoRequestsExceptions.RequestException as ERR:
-                    #Review Maybe not userwarning?
-                    print('\n@@@@@@@@@botoRequestsExceptions.RequestException\n')
-                    print(dir(ERR),"\n")
-                    print(ERR.__class__)
-                    print(ERR.args,"\n")
-                    print(str(ERR))
-
-                    print('\n@@@@@@@@@\n')
-
+                    #We do some regex magic to get the simple cause of error
+                    pattern = '\[(.*?)\]'
+                    error = re.findall(pattern, str(ERR))[0]
+                    error = error.split()[-1].title().replace('_','')
+                    raise UGRStorageStatsConnectionError(
+                                                         endpoint=self.id,
+                                                         error=error,
+                                                         status_code="000",
+                                                         debug=str(ERR),
+                                                        )
+                    break
+                except botoExceptions.ParamValidationError as ERR:
+                    #We do some regex magic to get the simple cause of error
+                    pattern = '(.*?):'
+                    error = re.findall(pattern, str(ERR.kwargs['report']))[-1]
+                    error = error.title().replace(' ','')
+                    raise UGRStorageStatsConnectionError(
+                                                         endpoint=self.id,
+                                                         error=error,
+                                                         status_code="000",
+                                                         debug=str(ERR),
+                                                        )
                     break
                 except botoExceptions.BotoCoreError as ERR:
-                    print('\n@@@@@@@@@botoExceptions.BotoCoreError\n')
-                    print(dir(ERR),"\n")
-                    print(ERR.__class__)
-                    print(ERR.args,"\n")
-                    print(ERR.kwargs,"\n")
-                    print(str(ERR))
+                    #We do some regex magic to get the simple cause of error
+                    pattern = '\'(.*?)\''
+                    error = re.findall(pattern, str(ERR.kwargs['error']))[-1]
+                    error = error.title().replace(' ','')
+                    raise UGRStorageStatsConnectionError(
+                                                         endpoint=self.id,
+                                                         error=error,
+                                                         status_code="000",
+                                                         debug=str(ERR),
+                                                        )
                     break
 
                 else:
