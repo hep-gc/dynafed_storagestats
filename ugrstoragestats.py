@@ -49,10 +49,11 @@ v0.4.2 Added exceptions and error handling for S3 storagestats, generic.
 v0.4.3 Added exceptions for configuration file errors, missing options,
        unsupported plugins.
 v0.4.4 Added exceptions and error handling for DAV storagestats.
+v0.4.5 Changed error to use the exception names. Works better and cleaner.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.4"
+__version__ = "v0.4.5"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
