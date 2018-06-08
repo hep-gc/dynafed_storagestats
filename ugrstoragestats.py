@@ -46,10 +46,12 @@ v0.4.0 Re-wrote the exception classes and how they are treated in code. Added
        warnings.
 v0.4.1 Added exceptions and error handling for S3 storagestats ceph-admin.
 v0.4.2 Added exceptions and error handling for S3 storagestats, generic.
+v0.4.3 Added exceptions for configuration file errors, missing options,
+       unsupported plugins.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.2"
+__version__ = "v0.4.3"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
