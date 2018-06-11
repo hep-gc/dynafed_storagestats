@@ -53,11 +53,12 @@ v0.4.5 Changed error to use the exception names. Works better and cleaner.
 v0.4.6 ssl_check now uses the ca_path if declared and ssl_check is true.
 v0.4.7 Removed the warnings and instead added a status and debug attribute
        to StorageStats objects. Status appends the last ERROR. Debug appends
-       all the ones that occur with more detail if availab.
+       all the ones that occur with more detail if available.
+v0.4.8 Improved memcached and status/debug output.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.7"
+__version__ = "v0.4.8"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
@@ -184,6 +185,7 @@ class UGRBaseError(UGRBaseException):
             self.message = "[ERROR] A unkown error occured."
         else:
             self.message = "[ERROR] " + message
+
         self.debug = debug
         super(UGRBaseError, self).__init__(self.message, self.debug)
 
@@ -199,29 +201,29 @@ class UGRConfigFileError(UGRBaseError):
 
 class UGRUnsupportedPluginError(UGRConfigFileError):
     def __init__(self, endpoint, error, plugin, debug=None):
-        self.message ='[%s] [%s] StorageStats method for "%s" not implemented yet.' \
-                  % (endpoint, error, plugin)
+        self.message ='[%s] StorageStats method for "%s" not implemented yet.' \
+                  % (error, plugin)
         self.debug = debug
         super(UGRUnsupportedPluginError, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     def __init__(self, endpoint, error, line, debug=None):
-        self.message ='[%s] [%s] Failed to match ID in line "%s". Check your configuration.' \
-                  % (endpoint, error, line)
+        self.message ='[%s] Failed to match ID in line "%s". Check your configuration.' \
+                  % (error, line)
         self.debug = debug
         super(UGRConfigFileErrorIDMismatch, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
     def __init__(self, endpoint, error, option, debug=None):
-        self.message = '[%s] [%s] "%s" is required. Check your configuration.' \
-                  % (endpoint, error, option)
+        self.message = '[%s] "%s" is required. Check your configuration.' \
+                  % (error, option)
         self.debug = debug
         super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
     def __init__(self, endpoint, error, option, valid_options, debug=None):
-        self.message = '[%s] [%s] Incorrect value given in option "%s". Valid options: %s' \
-                  % (endpoint, error, option, valid_options)
+        self.message = '[%s] Incorrect value given in option "%s". Valid options: %s' \
+                  % (error, option, valid_options)
         self.debug = debug
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message, self.debug)
 
@@ -237,35 +239,36 @@ class UGRStorageStatsError(UGRBaseError):
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, debug=None):
-        self.message = '[%s] [%s] [%s] Failed to establish a connection.' % (endpoint, error, status_code)
+        self.message = '[%s] [%s] Failed to establish a connection.' \
+                       % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsConnectionError, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, api=None, debug=None):
-        self.message = '[%s] [%s] [%s] Error requesting stats using API "%s".' \
-                  % (endpoint, error, status_code, api)
+        self.message = '[%s] [%s] Error requesting stats using API "%s".' \
+                  % (error, status_code, api)
         self.debug = debug
         super(UGRStorageStatsConnectionErrorS3API, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, debug=None):
-        self.message = '[%s] [%s] [%s] Failed to get bucket usage information.' \
-                  % (endpoint, error, status_code)
+        self.message = '[%s] [%s] Failed to get bucket usage information.' \
+                  % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     def __init__(self, endpoint, error, debug=None):
-        self.message = '[%s] [%s] WebDAV Quota Method.' \
-                  % (endpoint, error)
+        self.message = '[%s] WebDAV Quota Method.' \
+                  % (error)
         self.debug = debug
         super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, certfile=None, debug=None):
-        self.message = '[%s] [%s] [%s] Invalid client certificate path "%s".' \
-                  % (endpoint, error, status_code, certfile)
+        self.message = '[%s] [%s] Invalid client certificate path "%s".' \
+                  % (error, status_code, certfile)
         self.debug = debug
         super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(self.message, self.debug)
 
@@ -290,8 +293,8 @@ class UGRConfigFileWarning(UGRBaseWarning):
 
 class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
     def __init__(self, endpoint, error, option, option_default, debug=None):
-        self.message = '[%s] [%s] Unspecified "%s" option. Setting it to default value "%s"' \
-                  % (endpoint, error, option, option_default)
+        self.message = '[%s] Unspecified "%s" option. Using default value "%s"' \
+                  % (error, option, option_default)
         self.debug = debug
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message, self.debug)
 
@@ -317,7 +320,7 @@ class StorageStats(object):
         self.url = _ep['url']
 
         self.debug = []
-        self.status = []
+        self.status = '[OK] [OK]'
 
         self.validators = {
             'ssl_check': {
@@ -336,7 +339,13 @@ class StorageStats(object):
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
         index = "Ugrstoragestats_" + self.id
-        storagestats = '%%'.join([self.id, str(self.stats['quota']), str(self.stats['bytesused'])])
+        storagestats = '%%'.join([
+                                  self.id,
+                                  str(self.stats['quota']),
+                                  str(self.stats['bytesused']),
+                                  str(self.stats['bytesfree']),
+                                  self.status,
+                                ])
         mc.set(index, storagestats)
         return 0
 
@@ -774,8 +783,10 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                                                     line=line.split(":")[0],
                                                                    )
                         except UGRConfigFileError as ERR:
-                            self.debug.append(ERR.debug)
-                            self.status = ERR.message
+                            print(ERR.debug)
+                            sys.exit(1)
+                            # self.debug.append(ERR.debug)
+                            # self.status = ERR.message
                     else:
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
@@ -884,21 +895,23 @@ if __name__ == '__main__':
                 # were uploaded.
                 mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
                 index = "Ugrstoragestats_" + endpoint.id
-                print('Probing memcached index:', index)
                 index_contents = mc.get(index)
                 if index_contents is None:
-                    print('No content found at index: %s\n' %(index))
+                    memcached_debug = 'No content found at index: %s' %(index)
                 else:
-                    print(index_contents, '\n')
+                    memcached_debug = 'Memcached Index [%s]: %s' %(index, index_contents)
         else:
             options.output_stdout = True
 
         if options.output_stdout:
-            print('\nSE:', endpoint.id, '\nURL:', endpoint.url, \
+            print('\nSE:', endpoint.id, \
+                  '\nURL:', endpoint.url, \
                   '\nQuota:', endpoint.stats['quota'], \
                   '\nBytes Used:', endpoint.stats['bytesused'], \
                   '\nBytes Free:', endpoint.stats['bytesfree'], \
                   '\nStatus:', endpoint.status, \
-                  '\nDebug:', endpoint.debug, \
-                  '\n'
                  )
+        if options.debug:
+            print('Debug:', endpoint.debug)
+            if options.output_memcached:
+                print(memcached_debug, '\n')
