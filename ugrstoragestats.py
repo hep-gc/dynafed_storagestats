@@ -292,7 +292,7 @@ class UGRConfigFileWarning(UGRBaseWarning):
 
 class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
     def __init__(self, endpoint, error, option, option_default, debug=None):
-        self.message = '[%s] Unspecified "%s" option. Setting it to default value "%s"' \
+        self.message = '[%s] Unspecified "%s" option. Using default value "%s"' \
                   % (error, option, option_default)
         self.debug = debug
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message, self.debug)
@@ -319,7 +319,7 @@ class StorageStats(object):
         self.url = _ep['url']
 
         self.debug = []
-        self.status = []
+        self.status = '[OK] [OK]'
 
         self.validators = {
             'ssl_check': {
@@ -338,7 +338,13 @@ class StorageStats(object):
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
         index = "Ugrstoragestats_" + self.id
-        storagestats = '%%'.join([self.id, str(self.stats['quota']), str(self.stats['bytesused'])])
+        storagestats = '%%'.join([
+                                  self.id,
+                                  str(self.stats['quota']),
+                                  str(self.stats['bytesused']),
+                                  str(self.stats['bytesfree']),
+                                  self.status,
+                                ])
         mc.set(index, storagestats)
         return 0
 
@@ -886,21 +892,23 @@ if __name__ == '__main__':
                 # were uploaded.
                 mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
                 index = "Ugrstoragestats_" + endpoint.id
-                print('Probing memcached index:', index)
                 index_contents = mc.get(index)
                 if index_contents is None:
-                    print('No content found at index: %s\n' %(index))
+                    memcached_debug = 'No content found at index: %s' %(index)
                 else:
-                    print(index_contents, '\n')
+                    memcached_debug = 'Memcached Index %s: %s' %(index, index_contents)
         else:
             options.output_stdout = True
 
         if options.output_stdout:
-            print('\nSE:', endpoint.id, '\nURL:', endpoint.url, \
+            print('SE:', endpoint.id, '\nURL:', endpoint.url, \
                   '\nQuota:', endpoint.stats['quota'], \
                   '\nBytes Used:', endpoint.stats['bytesused'], \
                   '\nBytes Free:', endpoint.stats['bytesfree'], \
                   '\nStatus:', endpoint.status, \
-                  '\nDebug:', endpoint.debug, \
-                  '\n'
                  )
+        if options.debug:
+            print('Debug:', endpoint.debug)
+            if options.output_memcached:
+                print(memcached_debug)
+            print('\n')
