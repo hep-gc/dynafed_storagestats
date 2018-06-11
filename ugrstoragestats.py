@@ -184,6 +184,7 @@ class UGRBaseError(UGRBaseException):
             self.message = "[ERROR] A unkown error occured."
         else:
             self.message = "[ERROR] " + message
+
         self.debug = debug
         super(UGRBaseError, self).__init__(self.message, self.debug)
 
@@ -199,29 +200,29 @@ class UGRConfigFileError(UGRBaseError):
 
 class UGRUnsupportedPluginError(UGRConfigFileError):
     def __init__(self, endpoint, error, plugin, debug=None):
-        self.message ='[%s] [%s] StorageStats method for "%s" not implemented yet.' \
-                  % (endpoint, error, plugin)
+        self.message ='[%s] StorageStats method for "%s" not implemented yet.' \
+                  % (error, plugin)
         self.debug = debug
         super(UGRUnsupportedPluginError, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     def __init__(self, endpoint, error, line, debug=None):
-        self.message ='[%s] [%s] Failed to match ID in line "%s". Check your configuration.' \
-                  % (endpoint, error, line)
+        self.message ='[%s] Failed to match ID in line "%s". Check your configuration.' \
+                  % (error, line)
         self.debug = debug
         super(UGRConfigFileErrorIDMismatch, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
     def __init__(self, endpoint, error, option, debug=None):
-        self.message = '[%s] [%s] "%s" is required. Check your configuration.' \
-                  % (endpoint, error, option)
+        self.message = '[%s] "%s" is required. Check your configuration.' \
+                  % (error, option)
         self.debug = debug
         super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
     def __init__(self, endpoint, error, option, valid_options, debug=None):
-        self.message = '[%s] [%s] Incorrect value given in option "%s". Valid options: %s' \
-                  % (endpoint, error, option, valid_options)
+        self.message = '[%s] Incorrect value given in option "%s". Valid options: %s' \
+                  % (error, option, valid_options)
         self.debug = debug
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message, self.debug)
 
@@ -237,35 +238,36 @@ class UGRStorageStatsError(UGRBaseError):
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, debug=None):
-        self.message = '[%s] [%s] [%s] Failed to establish a connection.' % (endpoint, error, status_code)
+        self.message = '[%s] [%s] Failed to establish a connection.' \
+                       % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsConnectionError, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, api=None, debug=None):
-        self.message = '[%s] [%s] [%s] Error requesting stats using API "%s".' \
-                  % (endpoint, error, status_code, api)
+        self.message = '[%s] [%s] Error requesting stats using API "%s".' \
+                  % (error, status_code, api)
         self.debug = debug
         super(UGRStorageStatsConnectionErrorS3API, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, debug=None):
-        self.message = '[%s] [%s] [%s] Failed to get bucket usage information.' \
-                  % (endpoint, error, status_code)
+        self.message = '[%s] [%s] Failed to get bucket usage information.' \
+                  % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     def __init__(self, endpoint, error, debug=None):
-        self.message = '[%s] [%s] WebDAV Quota Method.' \
-                  % (endpoint, error)
+        self.message = '[%s] WebDAV Quota Method.' \
+                  % (error)
         self.debug = debug
         super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     def __init__(self, endpoint, status_code=None, error=None, certfile=None, debug=None):
-        self.message = '[%s] [%s] [%s] Invalid client certificate path "%s".' \
-                  % (endpoint, error, status_code, certfile)
+        self.message = '[%s] [%s] Invalid client certificate path "%s".' \
+                  % (error, status_code, certfile)
         self.debug = debug
         super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(self.message, self.debug)
 
@@ -290,8 +292,8 @@ class UGRConfigFileWarning(UGRBaseWarning):
 
 class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
     def __init__(self, endpoint, error, option, option_default, debug=None):
-        self.message = '[%s] [%s] Unspecified "%s" option. Setting it to default value "%s"' \
-                  % (endpoint, error, option, option_default)
+        self.message = '[%s] Unspecified "%s" option. Setting it to default value "%s"' \
+                  % (error, option, option_default)
         self.debug = debug
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message, self.debug)
 
