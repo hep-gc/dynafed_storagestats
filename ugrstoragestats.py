@@ -53,11 +53,12 @@ v0.4.5 Changed error to use the exception names. Works better and cleaner.
 v0.4.6 ssl_check now uses the ca_path if declared and ssl_check is true.
 v0.4.7 Removed the warnings and instead added a status and debug attribute
        to StorageStats objects. Status appends the last ERROR. Debug appends
-       all the ones that occur with more detail if availab.
+       all the ones that occur with more detail if available.
+v0.4.8 Improved memcached and status/debug output.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.7"
+__version__ = "v0.4.8"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
