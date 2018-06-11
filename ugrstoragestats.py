@@ -50,10 +50,11 @@ v0.4.3 Added exceptions for configuration file errors, missing options,
        unsupported plugins.
 v0.4.4 Added exceptions and error handling for DAV storagestats.
 v0.4.5 Changed error to use the exception names. Works better and cleaner.
+v0.4.6 ssl_check now uses the ca_path if declared and ssl_check is true.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.5"
+__version__ = "v0.4.6"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
@@ -380,7 +381,6 @@ class StorageStats(object):
                         except KeyError:
                             pass
                         else:
-                            ### Review this!
                             if self.options[ep_option].lower() == 'false'\
                             or self.options[ep_option].lower() == 'no':
                                 self.options.update({ep_option: False})
@@ -389,6 +389,13 @@ class StorageStats(object):
                 except KeyError:
                     # The 'valid' key is not required to exist.
                     pass
+        # If user has specified an SSL CA bundle:
+        if self.options['ssl_check']:
+            try:
+                self.options['ssl_check'] = self.options['ca_path']
+            except KeyError:
+                # The ssl_check will stay True and standard CA bundle will be used.
+                pass
 
 
 
@@ -451,7 +458,7 @@ class S3StorageStats(StorageStats):
         # formatting according to the method's needs.
         u = urlsplit(self.url)
         scheme = self.validate_schema(u.scheme)
-
+        print(self.options['ssl_check'])
         # Getting the storage Stats CephS3's Admin API
         if self.options['s3.api'].lower() == 'ceph-admin':
             if self.options['s3.alternate'].lower() == 'true'\
@@ -469,14 +476,13 @@ class S3StorageStats(StorageStats):
                             self.options['s3.priv_key'],
                             self.options['s3.region'],
                             's3',
-                            verify=self.options['ssl_check']
                            )
             try:
                 r = requests.get(
                                  url=endpoint_url,
                                  params=payload,
                                  auth=auth,
-                                 verify=self.options['ssl_check']
+                                 verify=self.options['ssl_check'],
                                 )
 
             except requests.ConnectionError as ERR:
@@ -635,10 +641,6 @@ class DAVStorageStats(StorageStats):
         """
         super(DAVStorageStats, self).__init__(*args, **kwargs)
         self.validators.update({
-            'ca_path': {
-                'default': False,
-                'required': False,
-            },
             'cli_certificate': {
                 'required': True,
             },
@@ -660,7 +662,7 @@ class DAVStorageStats(StorageStats):
                 url=endpoint_url,
                 cert=(self.options['cli_certificate'], self.options['cli_private_key']),
                 headers=headers,
-                verify=self.options['ca_path'],
+                verify=self.options['ssl_check'],
                 data=data
             )
         except requests.ConnectionError as ERR:
