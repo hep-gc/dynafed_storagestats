@@ -897,12 +897,13 @@ if __name__ == '__main__':
                 if index_contents is None:
                     memcached_debug = 'No content found at index: %s' %(index)
                 else:
-                    memcached_debug = 'Memcached Index %s: %s' %(index, index_contents)
+                    memcached_debug = 'Memcached Index [%s]: %s' %(index, index_contents)
         else:
             options.output_stdout = True
 
         if options.output_stdout:
-            print('SE:', endpoint.id, '\nURL:', endpoint.url, \
+            print('\nSE:', endpoint.id, \
+                  '\nURL:', endpoint.url, \
                   '\nQuota:', endpoint.stats['quota'], \
                   '\nBytes Used:', endpoint.stats['bytesused'], \
                   '\nBytes Free:', endpoint.stats['bytesfree'], \
@@ -911,5 +912,4 @@ if __name__ == '__main__':
         if options.debug:
             print('Debug:', endpoint.debug)
             if options.output_memcached:
-                print(memcached_debug)
-            print('\n')
+                print(memcached_debug, '\n')
