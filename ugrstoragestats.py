@@ -783,8 +783,10 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                                                     line=line.split(":")[0],
                                                                    )
                         except UGRConfigFileError as ERR:
-                            self.debug.append(ERR.debug)
-                            self.status = ERR.message
+                            print(ERR.debug)
+                            sys.exit(1)
+                            # self.debug.append(ERR.debug)
+                            # self.status = ERR.message
                     else:
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
