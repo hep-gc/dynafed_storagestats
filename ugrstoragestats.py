@@ -146,6 +146,10 @@ group.add_option('-m', '--memcached',
                  dest='output_memcached', action='store_true', default=False,
                  help='Declare to enable uploading information to memcached.'
                 )
+group.add_option('-e', '--execbeat',
+                 dest='output_execbeat', action='store_true', default=False,
+                 help='Declare to enable uploading information to execbeat.'
+                )
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout. If no other output option is set, this is enabled by default.'
@@ -890,18 +894,22 @@ if __name__ == '__main__':
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
+            mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+            index = "Ugrstoragestats_" + endpoint.id
+            index_contents = mc.get(index)
+
             if options.debug:
                 # Print out the contents of each index created to check stats
                 # were uploaded.
-                mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
-                index = "Ugrstoragestats_" + endpoint.id
-                index_contents = mc.get(index)
                 if index_contents is None:
                     memcached_debug = 'No content found at index: %s' %(index)
                 else:
                     memcached_debug = 'Memcached Index [%s]: %s' %(index, index_contents)
-        else:
-            options.output_stdout = True
+
+            if options.output_execbeat:
+                execbeat_output = '&&'.join([index_contents])
+                print(execbeat_output)
+
 
         if options.output_stdout:
             print('\nSE:', endpoint.id, \
