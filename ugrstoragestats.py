@@ -65,6 +65,7 @@ import re
 import warnings
 import sys
 import os
+import time
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
 import glob
@@ -317,6 +318,7 @@ class StorageStats(object):
                       'bytesfree': 0,
                       'files': 0,
                       'quota': 10000000000000,
+                      'timestamp': int(time.time()),
                      }
         self.id = _ep['id']
         self.options = _ep['options']
@@ -345,6 +347,7 @@ class StorageStats(object):
         index = "Ugrstoragestats_" + self.id
         storagestats = '%%'.join([
                                   self.id,
+                                  str(self.stats['timestamp']),
                                   str(self.stats['quota']),
                                   str(self.stats['bytesused']),
                                   str(self.stats['bytesfree']),
@@ -914,6 +917,7 @@ if __name__ == '__main__':
         if options.output_stdout:
             print('\nSE:', endpoint.id, \
                   '\nURL:', endpoint.url, \
+                  '\nTime:', endpoint.stats['timestamp'], \
                   '\nQuota:', endpoint.stats['quota'], \
                   '\nBytes Used:', endpoint.stats['bytesused'], \
                   '\nBytes Free:', endpoint.stats['bytesfree'], \
