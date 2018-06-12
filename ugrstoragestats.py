@@ -55,10 +55,11 @@ v0.4.7 Removed the warnings and instead added a status and debug attribute
        to StorageStats objects. Status appends the last ERROR. Debug appends
        all the ones that occur with more detail if available.
 v0.4.8 Improved memcached and status/debug output.
+v0.4.9 Added timestamp and execbeat output.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.8"
+__version__ = "v0.4.9"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
@@ -880,7 +881,7 @@ if __name__ == '__main__':
     warnings.formatwarning = warning_on_one_line
 
     endpoints = get_endpoints(options)
-
+    execbeat_output = []
     for endpoint in endpoints:
 #        print(endpoint.stats)
 #        print(endpoint.validators)
@@ -901,6 +902,9 @@ if __name__ == '__main__':
             index = "Ugrstoragestats_" + endpoint.id
             index_contents = mc.get(index)
 
+            # Add execbeat output
+            execbeat_output.append(index_contents)
+
             if options.debug:
                 # Print out the contents of each index created to check stats
                 # were uploaded.
@@ -908,10 +912,6 @@ if __name__ == '__main__':
                     memcached_debug = 'No content found at index: %s' %(index)
                 else:
                     memcached_debug = 'Memcached Index [%s]: %s' %(index, index_contents)
-
-            if options.output_execbeat:
-                execbeat_output = '&&'.join([index_contents])
-                print(execbeat_output)
 
 
         if options.output_stdout:
@@ -927,3 +927,6 @@ if __name__ == '__main__':
             print('Debug:', endpoint.debug)
             if options.output_memcached:
                 print(memcached_debug, '\n')
+
+    if options.output_execbeat:
+        print ('&&'.join(execbeat_output))
