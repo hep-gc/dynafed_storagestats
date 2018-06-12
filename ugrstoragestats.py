@@ -55,16 +55,18 @@ v0.4.7 Removed the warnings and instead added a status and debug attribute
        to StorageStats objects. Status appends the last ERROR. Debug appends
        all the ones that occur with more detail if available.
 v0.4.8 Improved memcached and status/debug output.
+v0.4.9 Added timestamp and execbeat output.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.8"
+__version__ = "v0.4.9"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
 import warnings
 import sys
 import os
+import time
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
 import glob
@@ -145,6 +147,10 @@ group.add_option('--debug',
 group.add_option('-m', '--memcached',
                  dest='output_memcached', action='store_true', default=False,
                  help='Declare to enable uploading information to memcached.'
+                )
+group.add_option('-e', '--execbeat',
+                 dest='output_execbeat', action='store_true', default=False,
+                 help='Declare to enable uploading information to execbeat.'
                 )
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
@@ -313,6 +319,7 @@ class StorageStats(object):
                       'bytesfree': 0,
                       'files': 0,
                       'quota': 10000000000000,
+                      'timestamp': int(time.time()),
                      }
         self.id = _ep['id']
         self.options = _ep['options']
@@ -341,6 +348,7 @@ class StorageStats(object):
         index = "Ugrstoragestats_" + self.id
         storagestats = '%%'.join([
                                   self.id,
+                                  str(self.stats['timestamp']),
                                   str(self.stats['quota']),
                                   str(self.stats['bytesused']),
                                   str(self.stats['bytesfree']),
@@ -873,7 +881,7 @@ if __name__ == '__main__':
     warnings.formatwarning = warning_on_one_line
 
     endpoints = get_endpoints(options)
-
+    execbeat_output = []
     for endpoint in endpoints:
 #        print(endpoint.stats)
 #        print(endpoint.validators)
@@ -890,22 +898,26 @@ if __name__ == '__main__':
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
+            mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+            index = "Ugrstoragestats_" + endpoint.id
+            index_contents = mc.get(index)
+
+            # Add execbeat output
+            execbeat_output.append(index_contents)
+
             if options.debug:
                 # Print out the contents of each index created to check stats
                 # were uploaded.
-                mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
-                index = "Ugrstoragestats_" + endpoint.id
-                index_contents = mc.get(index)
                 if index_contents is None:
                     memcached_debug = 'No content found at index: %s' %(index)
                 else:
                     memcached_debug = 'Memcached Index [%s]: %s' %(index, index_contents)
-        else:
-            options.output_stdout = True
+
 
         if options.output_stdout:
             print('\nSE:', endpoint.id, \
                   '\nURL:', endpoint.url, \
+                  '\nTime:', endpoint.stats['timestamp'], \
                   '\nQuota:', endpoint.stats['quota'], \
                   '\nBytes Used:', endpoint.stats['bytesused'], \
                   '\nBytes Free:', endpoint.stats['bytesfree'], \
@@ -915,3 +927,6 @@ if __name__ == '__main__':
             print('Debug:', endpoint.debug)
             if options.output_memcached:
                 print(memcached_debug, '\n')
+
+    if options.output_execbeat:
+        print ('&&'.join(execbeat_output))
