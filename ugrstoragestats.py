@@ -388,6 +388,7 @@ class StorageStats(object):
             except KeyError:
                 try:
                     if self.validators[ep_option]['required']:
+                        self.options.update({ep_option: ''})
                         raise UGRConfigFileErrorMissingRequiredOption(
                                   endpoint=self.id,
                                   error="MissingRequiredOption",
@@ -849,14 +850,15 @@ def get_endpoints(options):
             ep.debug.append(ERR.debug)
             ep.status = ERR.message
 
-        else:
-            try:
-                ep.validate_ep_options(options)
-            except UGRConfigFileError as ERR:
-                ep.debug.append(ERR.debug)
-                ep.status = ERR.message
-        finally:
-            storage_objects.append(ep)
+
+        try:
+            ep.validate_ep_options(options)
+        except UGRConfigFileError as ERR:
+            print(ERR.debug)
+            ep.debug.append(ERR.debug)
+            ep.status = ERR.message
+
+        storage_objects.append(ep)
 
     return(storage_objects)
 
@@ -895,7 +897,7 @@ if __name__ == '__main__':
         try:
             endpoint.get_storagestats()
         except UGRStorageStatsError as ERR:
-            endpoint.debug = ERR.debug
+            endpoint.debug.append(ERR.debug)
             endpoint.status = ERR.message
 
         # finally: # Here add code to tadd the logs/debut attributes.
@@ -912,7 +914,7 @@ if __name__ == '__main__':
                                                     error='MemcachedEmptyIndex'
                 )
         except UGRStorageStatsMemcachedError as ERR:
-            endpoint.debug = ERR.debug
+            endpoint.debug.append(ERR.debug)
             endpoint.status = ERR.message
             memcached_contents = '%%'.join([
                                             endpoint.id,
