@@ -188,7 +188,7 @@ class UGRBaseError(UGRBaseException):
     def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "[ERROR] A unkown error occured."
+            self.message = "[ERROR][ERROR][000] A unkown error occured."
         else:
             self.message = "[ERROR]" + message
 
@@ -199,38 +199,37 @@ class UGRConfigFileError(UGRBaseError):
     def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "[%s][000] An unkown error occured reading a configuration file." \
-                           % (self.__class__.__name__)
+            self.message = "[ConfigFileError][000] An unkown error occured reading a configuration file."
         else:
             self.message = message
         self.debug = debug
         super(UGRConfigFileError, self).__init__(self.message, self.debug)
 
 class UGRUnsupportedPluginError(UGRConfigFileError):
-    def __init__(self, endpoint, error, plugin, debug=None):
-        self.message ='[%s] StorageStats method for "%s" not implemented yet.' \
-                  % (error, plugin)
+    def __init__(self, endpoint, error=None, status_code="000", plugin=None, debug=None):
+        self.message ='[%s][%s] StorageStats method for "%s" not implemented yet.' \
+                  % (error, status_code, plugin)
         self.debug = debug
         super(UGRUnsupportedPluginError, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
-    def __init__(self, endpoint, error, line, debug=None):
-        self.message ='[%s] Failed to match ID in line "%s". Check your configuration.' \
-                  % (error, line)
+    def __init__(self, endpoint, line, error=None, status_code="000", debug=None):
+        self.message ='[%s][%s] Failed to match ID in line "%s". Check your configuration.' \
+                  % (error, status_code, line)
         self.debug = debug
         super(UGRConfigFileErrorIDMismatch, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
-    def __init__(self, endpoint, error, option, debug=None):
-        self.message = '[%s] "%s" is required. Check your configuration.' \
-                  % (error, option)
+    def __init__(self, endpoint, option, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] "%s" is required. Check your configuration.' \
+                  % (error, status_code, option)
         self.debug = debug
         super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
-    def __init__(self, endpoint, error, option, valid_options, debug=None):
-        self.message = '[%s] Incorrect value given in option "%s". Valid options: %s' \
-                  % (error, option, valid_options)
+    def __init__(self, endpoint, option, valid_options, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Incorrect value given in option "%s". Valid options: %s' \
+                  % (error, status_code, option, valid_options)
         self.debug = debug
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message, self.debug)
 
@@ -238,50 +237,50 @@ class UGRStorageStatsError(UGRBaseError):
     def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "An unkown error occured obtaning storage stats."
+            self.message = "[StorageStatsError][000] An unkown error occured obtaning storage stats."
         else:
             self.message = message
         self.debug = debug
         super(UGRStorageStatsError, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsMemcachedError(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code=None, error=None, debug=None):
-        self.message = '[%s] [%s] Possible error connecting to memcached or missing index.' \
+    def __init__(self, endpoint, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Possible error connecting to memcached or missing index.' \
                        % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsMemcachedError, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code=None, error=None, debug=None):
-        self.message = '[%s] [%s] Failed to establish a connection.' \
+    def __init__(self, endpoint, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Failed to establish a connection.' \
                        % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsConnectionError, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code=None, error=None, api=None, debug=None):
-        self.message = '[%s] [%s] Error requesting stats using API "%s".' \
+    def __init__(self, endpoint, error=None, status_code="000", api=None, debug=None):
+        self.message = '[%s][%s] Error requesting stats using API "%s".' \
                   % (error, status_code, api)
         self.debug = debug
         super(UGRStorageStatsConnectionErrorS3API, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code=None, error=None, debug=None):
-        self.message = '[%s] [%s] Failed to get bucket usage information.' \
+    def __init__(self, endpoint, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Failed to get bucket usage information.' \
                   % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
-    def __init__(self, endpoint, error, debug=None):
-        self.message = '[%s] WebDAV Quota Method.' \
-                  % (error)
+    def __init__(self, endpoint, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] WebDAV Quota Method.' \
+                  % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
-    def __init__(self, endpoint, status_code=None, error=None, certfile=None, debug=None):
-        self.message = '[%s] [%s] Invalid client certificate path "%s".' \
+    def __init__(self, endpoint, error=None, status_code="000", certfile=None, debug=None):
+        self.message = '[%s][%s] Invalid client certificate path "%s".' \
                   % (error, status_code, certfile)
         self.debug = debug
         super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(self.message, self.debug)
@@ -291,24 +290,25 @@ class UGRBaseWarning(UGRBaseException):
     def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "[WARN] A unkown error occured."
+            self.message = '[WARN][WARN][000] A unkown error occured.'
         else:
-            self.message = "[WARN] " + message
+            self.message = '[WARN]' + message
         self.debug = debug
         super(UGRBaseWarning, self).__init__(self.message, self.debug)
 
 class UGRConfigFileWarning(UGRBaseWarning):
-    def __init__(self, message=None, debug=None):
+    def __init__(self, message=None, error=None, status_code="000", debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "An unkown error occured reading a configuration file."
+            self.message = '[%s][%s] An unkown error occured reading a configuration file.' \
+                           % (error, status_code)
         self.debug = debug
         super(UGRConfigFileWarning, self).__init__(self.message, self.debug)
 
 class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
-    def __init__(self, endpoint, error, option, option_default, debug=None):
-        self.message = '[%s] Unspecified "%s" option. Using default value "%s"' \
-                  % (error, option, option_default)
+    def __init__(self, endpoint, option, option_default, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Unspecified "%s" option. Using default value "%s"' \
+                  % (error, status_code, option, option_default)
         self.debug = debug
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message, self.debug)
 
@@ -335,7 +335,7 @@ class StorageStats(object):
         self.url = _ep['url']
 
         self.debug = []
-        self.status = '[OK] [OK]'
+        self.status = '[OK][OK][200]'
 
         self.validators = {
             'ssl_check': {
