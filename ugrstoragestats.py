@@ -243,21 +243,23 @@ class UGRStorageStatsError(UGRBaseError):
         self.debug = debug
         super(UGRStorageStatsError, self).__init__(self.message, self.debug)
 
-class UGRStorageStatsMemcachedError(UGRStorageStatsError):
-    def __init__(self, endpoint, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Unknown memcached error.' \
-                       % (error, status_code)
+class UGRMemcachedError(UGRBaseError):
+    def __init__(self, message=None, debug=None):
+        if message is None:
+            self.message = '[MemcachedError][000] Unknown memcached error.'
+        else:
+            self.message = message
         self.debug = debug
-        super(UGRStorageStatsMemcachedError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedError, self).__init__(self.message, self.debug)
 
-class UGRStorageStatsMemcachedConnectionError(UGRStorageStatsMemcachedError):
+class UGRStorageStatsMemcachedConnectionError(UGRMemcachedError):
     def __init__(self, endpoint, error=None, status_code="400", debug=None):
         self.message = '[%s][%s] Failed to connect to memcached.' \
                        % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsMemcachedConnectionError, self).__init__(self.message, self.debug)
 
-class UGRStorageStatsMemcachedIndexError(UGRStorageStatsMemcachedError):
+class UGRStorageStatsMemcachedIndexError(UGRMemcachedError):
     def __init__(self, endpoint, error=None, status_code="404", debug=None):
         self.message = '[%s][%s] Unable to get memcached index contents.' \
                        % (error, status_code)
@@ -376,7 +378,45 @@ class StorageStats(object):
                                   str(self.stats['bytesfree']),
                                   self.status,
                                 ])
-        mc.set(memcached_index, storagestats)
+        try:
+            if mc.set(memcached_index, storagestats) == 0:
+                raise UGRStorageStatsMemcachedConnectionError(endpoint=self.id)
+
+        except UGRStorageStatsMemcachedConnectionError as ERR:
+            self.debug.append(ERR.debug)
+            self.status = ERR.message
+
+    def get_from_memcached(self, memcached_ip='127.0.0.1', memcached_port='11211'):
+        """
+        Connects to a memcached instance and tries to obtain the storage stats
+        from the index belonging to the endpoint making the call. If no index
+        is found, the stats are created in the same style as upload_to_memcached
+        with error information for debugging and logging
+        """
+        mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+        memcached_index = "Ugrstoragestats_" + self.id
+        try:
+            memcached_contents = mc.get(memcached_index)
+            if memcached_contents is None:
+                raise UGRStorageStatsMemcachedIndexError(
+                                                    endpoint = self.id,
+                                                    status_code="000",
+                                                    error='MemcachedEmptyIndex'
+                                                    )
+
+        except UGRStorageStatsMemcachedIndexError as ERR:
+            self.debug.append(ERR.debug)
+            self.status = ERR.message
+            memcached_contents = '%%'.join([
+                                            self.id,
+                                            str(self.stats['timestamp']),
+                                            str(self.stats['quota']),
+                                            str(self.stats['bytesused']),
+                                            str(self.stats['bytesfree']),
+                                            self.status,
+                                    ])
+        finally:
+            return(memcached_contents)
 
     def get_storagestats(self):
         """
@@ -915,35 +955,15 @@ if __name__ == '__main__':
 
         # finally: # Here add code to tadd the logs/debug attributes.
 
-        # Fill memcached and execbeat vars
-        mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
-        memcached_index = "Ugrstoragestats_" + endpoint.id
-
         # Upload Storagestats into memcached.
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
-        try:
-            if mc.get(memcached_index) is None:
-                raise UGRStorageStatsMemcachedError(
-                                                    endpoint = endpoint.id,
-                                                    status_code="000",
-                                                    error='MemcachedEmptyIndex'
-                )
-        except UGRStorageStatsMemcachedError as ERR:
-            endpoint.debug.append(ERR.debug)
-            endpoint.status = ERR.message
-            memcached_contents = '%%'.join([
-                                            endpoint.id,
-                                            str(endpoint.stats['timestamp']),
-                                            str(endpoint.stats['quota']),
-                                            str(endpoint.stats['bytesused']),
-                                            str(endpoint.stats['bytesfree']),
-                                            endpoint.status,
-                                    ])
-        else:
-            memcached_contents = mc.get(memcached_index)
-        finally:
+        if options.output_execbeat:
+            # Fill memcached and execbeat vars
+            mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+            memcached_index = "Ugrstoragestats_" + endpoint.id
+            memcached_contents = endpoint.get_from_memcached(options.memcached_ip, options.memcached_port)
             execbeat_output.append(memcached_contents)
 
 
