@@ -56,10 +56,12 @@ v0.4.7 Removed the warnings and instead added a status and debug attribute
        all the ones that occur with more detail if available.
 v0.4.8 Improved memcached and status/debug output.
 v0.4.9 Added timestamp and execbeat output.
+v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
+       output.
 """
 from __future__ import print_function
 
-__version__ = "v0.4.9"
+__version__ = "v0.5.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
