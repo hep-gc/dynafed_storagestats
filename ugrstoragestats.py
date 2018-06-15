@@ -861,17 +861,22 @@ class DAVStorageStats(StorageStats):
                                                              error="UnsupportedMethod"
                                                             )
             except UGRStorageStatsError as ERR:
+                self.stats['bytesused'] = -1
+                self.stats['bytesfree'] = -1
+                self.stats['quota'] = -1
                 self.debug.append(ERR.debug)
                 self.status = ERR.message
 
             else:
                 self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
                 self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-
-                # If quota-available-bytes is reported as '0' is because no quota is
-                # provided, so we use the one from the config file or default.
-                if self.stats['bytesfree'] != 0:
-                    self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                if self.options['quota'] == 'api':
+                    # If quota-available-bytes is reported as '0' is because no quota is
+                    # provided, so we use the one from the config file or default.
+                    if self.stats['bytesfree'] != 0:
+                        self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                else:
+                    self.stats['quota'] = self.options['quota']
     #        except TypeError:
     #            raise MethodNotSupported(name='free', server=hostname)
     #        except etree.XMLSyntaxError:
