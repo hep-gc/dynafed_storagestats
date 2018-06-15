@@ -60,6 +60,7 @@ v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
        output.
 v0.6.0 Added quota options and logic to S3 and DAV operations.
 v0.6.1 Moved ouptut to object class method.
+v0.6.2 Added debug output.
 """
 from __future__ import print_function
 
