@@ -931,6 +931,36 @@ def create_free_space_request_content():
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
 
+def convert_size_to_bytes(size):
+    """
+    Converts given sizse into bytes.
+    """
+    multipliers = {
+        'kib': 1024,
+        'mib': 1024**2,
+        'gib': 1024**3,
+        'tib': 1024**4,
+        'pib': 1024**5,
+        'kb': 1000,
+        'mb': 1000**2,
+        'gb': 1000**3,
+        'tb': 1000**4,
+        'pb': 1000**5,
+    }
+
+    for suffix in multipliers:
+        if size.lower().endswith(suffix):
+            return int(size[0:-len(suffix)]) * multipliers[suffix]
+    else:
+        if size.lower().endswith('b'):
+            return int(size[0:-1])
+
+    try:
+        return int(size)
+    except ValueError: # for example "1024x"
+        print('Malformed input!')
+        exit()
+
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     #return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
     return '%s\n' % (message)
