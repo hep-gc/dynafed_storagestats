@@ -538,7 +538,27 @@ class StorageStats(object):
         else:
             return (scheme)
 
+    def output_to_stdout(self, options):
+        mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+        memcached_index = "Ugrstoragestats_" + self.id
+        memcached_contents = self.get_from_memcached(options.memcached_ip, options.memcached_port)
+        if memcached_contents is None:
+            memcached_contents = 'No Content Found. Possible error connecting to memcached service.'
 
+        print('\n#####', self.id, '#####' \
+              '\n{0:12}{1}'.format('URL:', self.url), \
+              '\n{0:12}{1}'.format('Time:', self.stats['timestamp']), \
+              '\n{0:12}{1}'.format('Quota:', self.stats['quota']), \
+              '\n{0:12}{1}'.format('Bytes Used:', self.stats['bytesused']), \
+              '\n{0:12}{1}'.format('Bytes Free:', self.stats['bytesfree']), \
+              '\n{0:12}{1}'.format('Status:', self.status), \
+              )
+        print('\n{0:12}{1}'.format('Memcached:', memcached_index), \
+              '\n{0:12}{1}'.format('Contents:', memcached_contents), \
+             )
+        print('\nDebug:')
+        for error in self.debug:
+            print('{0:12}{1}'.format(' ',error))
 
 class S3StorageStats(StorageStats):
     """
@@ -1063,27 +1083,5 @@ if __name__ == '__main__':
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
-
         if options.output_stdout:
-            mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
-            memcached_index = "Ugrstoragestats_" + endpoint.id
-            memcached_contents = endpoint.get_from_memcached(options.memcached_ip, options.memcached_port)
-            if memcached_contents is None:
-                memcached_contents = 'No Content Found. Possible error connecting to memcached service.'
-
-            print('\n#####', endpoint.id, '#####' \
-                  '\nURL:       ', endpoint.url, \
-                  '\nTime:      ', endpoint.stats['timestamp'], \
-                  '\nQuota:     ', endpoint.stats['quota'], \
-                  '\nBytes Used:', endpoint.stats['bytesused'], \
-                  '\nBytes Free:', endpoint.stats['bytesfree'], \
-                  '\nStatus:    ', endpoint.status, \
-                  '\n\nDebug:'
-                  )
-            for error in endpoint.debug:
-                print('           ', error)
-
-            print('\nMemcached:', \
-                  '\nIndex:      ', memcached_index, \
-                  '\nContents:   ', memcached_contents
-                 )
+            endpoint.output_to_stdout(options)
