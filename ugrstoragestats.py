@@ -330,6 +330,14 @@ class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
         self.debug = debug
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message, self.debug)
 
+class UGRQuotaWarning(UGRBaseWarning):
+    def __init__(self, endpoint, option, option_default, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
+                  % (error, status_code, option, option_default)
+        self.debug = debug
+        super(UGRQuotaWarning, self).__init__(self.message, self.debug)
+
+
 #####################
 ## Storage Classes ##
 #####################
@@ -344,7 +352,7 @@ class StorageStats(object):
                       'bytesused': 0,
                       'bytesfree': 0,
                       'files': 0,
-                      'quota': 10000000000000,
+                      'quota': -1,
                       'timestamp': int(time.time()),
                      }
         self.id = _ep['id']
@@ -626,7 +634,7 @@ class S3StorageStats(StorageStats):
                                                                         error="NewEmptyBucket",
                                                                         debug=stats
                                                                        )
-                    #Review If no quota is set, we get a '-1'
+
                     self.stats['quota'] = stats['bucket_quota']['max_size']
                     self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
                     self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
