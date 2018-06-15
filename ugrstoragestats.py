@@ -59,10 +59,11 @@ v0.4.9 Added timestamp and execbeat output.
 v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
        output.
 v0.6.0 Added quota options and logic to S3 and DAV operations.
+v0.6.1 Moved ouptut to object class method.
 """
 from __future__ import print_function
 
-__version__ = "v0.6.0"
+__version__ = "v0.6.1"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
@@ -150,10 +151,6 @@ group.add_option('--debug',
 group.add_option('-m', '--memcached',
                  dest='output_memcached', action='store_true', default=False,
                  help='Declare to enable uploading information to memcached.'
-                )
-group.add_option('-e', '--execbeat',
-                 dest='output_execbeat', action='store_true', default=False,
-                 help='Declare to enable uploading information to execbeat.'
                 )
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
@@ -542,7 +539,27 @@ class StorageStats(object):
         else:
             return (scheme)
 
+    def output_to_stdout(self, options):
+        mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+        memcached_index = "Ugrstoragestats_" + self.id
+        memcached_contents = self.get_from_memcached(options.memcached_ip, options.memcached_port)
+        if memcached_contents is None:
+            memcached_contents = 'No Content Found. Possible error connecting to memcached service.'
 
+        print('\n#####', self.id, '#####' \
+              '\n{0:12}{1}'.format('URL:', self.url), \
+              '\n{0:12}{1}'.format('Time:', self.stats['timestamp']), \
+              '\n{0:12}{1}'.format('Quota:', self.stats['quota']), \
+              '\n{0:12}{1}'.format('Bytes Used:', self.stats['bytesused']), \
+              '\n{0:12}{1}'.format('Bytes Free:', self.stats['bytesfree']), \
+              '\n{0:12}{1}'.format('Status:', self.status), \
+              )
+        print('\n{0:12}{1}'.format('Memcached:', memcached_index), \
+              '\n{0:12}{1}'.format('Contents:', memcached_contents), \
+             )
+        print('\nDebug:')
+        for error in self.debug:
+            print('{0:12}{1}'.format(' ',error))
 
 class S3StorageStats(StorageStats):
     """
@@ -1050,7 +1067,6 @@ if __name__ == '__main__':
     warnings.formatwarning = warning_on_one_line
 
     endpoints = get_endpoints(options)
-    execbeat_output = []
 
     for endpoint in endpoints:
         try:
@@ -1068,34 +1084,5 @@ if __name__ == '__main__':
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
-        if options.output_execbeat:
-            # Fill memcached and execbeat vars
-            mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
-            memcached_index = "Ugrstoragestats_" + endpoint.id
-            memcached_contents = endpoint.get_from_memcached(options.memcached_ip, options.memcached_port)
-            execbeat_output.append(memcached_contents)
-
-
         if options.output_stdout:
-            print('\nSE:', endpoint.id, \
-                  '\nURL:', endpoint.url, \
-                  '\nTime:', endpoint.stats['timestamp'], \
-                  '\nQuota:', endpoint.stats['quota'], \
-                  '\nBytes Used:', endpoint.stats['bytesused'], \
-                  '\nBytes Free:', endpoint.stats['bytesfree'], \
-                  '\nStatus:', endpoint.status, \
-                 )
-
-        if options.debug:
-            print('###########')
-            print('Debug:', endpoint.debug)
-
-            if options.output_memcached:
-                if memcached_contents is None:
-                    memcached_debug = 'Memcached Index [%s]: No Content Found. Possible error connecting to memcached service.' %(memcached_index)
-                else:
-                    memcached_debug = 'Memcached Index [%s]: %s' %(memcached_index, memcached_contents)
-                print(memcached_debug, '\n')
-
-    if options.output_execbeat:
-        print ('&&'.join(execbeat_output))
+            endpoint.output_to_stdout(options)
