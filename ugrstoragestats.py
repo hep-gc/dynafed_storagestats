@@ -66,11 +66,11 @@ from __future__ import print_function
 __version__ = "v0.6.1"
 __author__ = "Fernando Fernandez Galindo"
 
-import re
-import warnings
-import sys
 import os
+import re
+import sys
 import time
+import warnings
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
 import glob
@@ -557,9 +557,10 @@ class StorageStats(object):
         print('\n{0:12}{1}'.format('Memcached:', memcached_index), \
               '\n{0:12}{1}'.format('Contents:', memcached_contents), \
              )
-        print('\nDebug:')
-        for error in self.debug:
-            print('{0:12}{1}'.format(' ',error))
+        if options.debug:
+            print('\nDebug:')
+            for error in self.debug:
+                print('{0:12}{1}'.format(' ',error))
 
 class S3StorageStats(StorageStats):
     """
