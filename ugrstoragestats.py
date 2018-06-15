@@ -19,7 +19,7 @@ v0.0.5 Added module import checks.
 v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
 v0.0.7 Added options
 v0.1.0 Changed aws-list to generic and now uses boto3 for generality.
-v0.2.0 Added validators key and 'validate_ep_options' function.
+v0.2.0 Added validators key and 'validate_options' function.
 v0.2.1 Cleaned up code to PEP8.
 v0.2.2 Exception for plugint types not yet implemented.
 v0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
@@ -58,10 +58,11 @@ v0.4.8 Improved memcached and status/debug output.
 v0.4.9 Added timestamp and execbeat output.
 v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
        output.
+v0.6.0 Added quota options and logic to S3 and DAV operations.
 """
 from __future__ import print_function
 
-__version__ = "v0.5.0"
+__version__ = "v0.6.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
@@ -193,7 +194,6 @@ class UGRBaseError(UGRBaseException):
             self.message = "[ERROR][ERROR][000] A unkown error occured."
         else:
             self.message = "[ERROR]" + message
-
         self.debug = debug
         super(UGRBaseError, self).__init__(self.message, self.debug)
 
@@ -330,6 +330,32 @@ class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
         self.debug = debug
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message, self.debug)
 
+class UGRStorageStatsWarning(UGRBaseWarning):
+    def __init__(self, message=None, debug=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = '[StorageStatsWarning][000] An unkown error occured reading storage stats' \
+                           % (error, status_code)
+        else:
+            self.message = message
+        self.debug = debug
+        super(UGRStorageStatsWarning, self).__init__(self.message, self.debug)
+
+class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
+    def __init__(self, endpoint, error="NoQuotaGiven", status_code="000", debug=None):
+        self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
+                    % (error, status_code)
+        self.debug = debug
+        super(UGRStorageStatsQuotaWarning, self).__init__(self.message, self.debug)
+
+class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
+    def __init__(self, endpoint, error="BucketQuotaDisabled", status_code="000", debug=None):
+        self.message = '[%s][%s] Bucket quota is disabled. Using default of 1TB' \
+                  % (error, status_code)
+        self.debug = debug
+        super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(self.message, self.debug)
+
+
 #####################
 ## Storage Classes ##
 #####################
@@ -344,7 +370,7 @@ class StorageStats(object):
                       'bytesused': 0,
                       'bytesfree': 0,
                       'files': 0,
-                      'quota': 10000000000000,
+                      'quota': 1000**4,
                       'timestamp': int(time.time()),
                      }
         self.id = _ep['id']
@@ -356,6 +382,10 @@ class StorageStats(object):
         self.status = '[OK][OK][200]'
 
         self.validators = {
+            'quota': {
+                'default': 'api',
+                'required': False,
+            },
             'ssl_check': {
                 'boolean': True,
                 'default': True,
@@ -428,7 +458,7 @@ class StorageStats(object):
         """
         pass
 
-    def validate_ep_options(self,options):
+    def validate_options(self,options):
         """
         Check the endpoints options from UGR's configuration file against the
         set of default and valid options defined under the self.validators dict.
@@ -494,6 +524,10 @@ class StorageStats(object):
             except KeyError:
                 # The ssl_check will stay True and standard CA bundle will be used.
                 pass
+
+        # Check the quota option and transform it into bytes if necessary.
+        if self.options['quota'] != "api":
+            self.options['quota'] = convert_size_to_bytes(self.options['quota'])
 
 
 
@@ -619,17 +653,39 @@ class S3StorageStats(StorageStats):
                                                                     debug=stats
                                                                    )
                 else:
-                    if len(stats['usage']) == 0:
-                        raise UGRStorageStatsErrorS3MissingBucketUsage(
-                                                                        endpoint=self.id,
-                                                                        status_code=r.status_code,
-                                                                        error="NewEmptyBucket",
-                                                                        debug=stats
-                                                                       )
-                    #Review If no quota is set, we get a '-1'
-                    self.stats['quota'] = stats['bucket_quota']['max_size']
-                    self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
-                    self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                    if len(stats['usage']) != 0:
+                        # If the bucket is emtpy, then just keep going we
+                        self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
+
+                        # raise UGRStorageStatsErrorS3MissingBucketUsage(
+                        #                                                 endpoint=self.id,
+                        #                                                 status_code=r.status_code,
+                        #                                                 error="NewEmptyBucket",
+                        #                                                 debug=stats
+                        #                                                )
+                    if self.options['quota'] != 'api':
+                        self.stats['quota'] = self.options['quota']
+                        self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+                    else:
+                        if stats['bucket_quota']['enabled'] == True:
+                            self.stats['quota'] = stats['bucket_quota']['max_size']
+                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+                        elif stats['bucket_quota']['enabled'] == False:
+                            self.stats['quota'] = convert_size_to_bytes("1TB")
+                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                            raise UGRStorageStatsCephS3QuotaDisabledWarning(
+                                                        endpoint=self.id,
+                                                        )
+                        else:
+                            self.stats['quota'] = convert_size_to_bytes("1TB")
+                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                            raise UGRStorageStatsQuotaWarning(
+                                                  endpoint = self.id,
+                                                  error="NoQuotaGiven",
+                                                  status_code="000",
+                            )
 
         # Getting the storage Stats AWS S3 API
         #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
@@ -715,8 +771,21 @@ class S3StorageStats(StorageStats):
                         break
 
             self.stats['bytesused'] = total_bytes
-            self.stats['files'] = total_files
-            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+            if self.options['quota'] == 'api':
+                self.stats['quota'] = convert_size_to_bytes("1TB")
+                self.stats['files'] = total_files
+                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                raise UGRStorageStatsQuotaWarning(
+                                      endpoint = self.id,
+                                      error="NoQuotaGiven",
+                                      status_code="000",
+                )
+
+            else:
+                self.stats['quota'] = self.options['quota']
+                self.stats['files'] = total_files
+                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
     def validate_schema(self, scheme):
         if scheme == 's3':
@@ -793,17 +862,22 @@ class DAVStorageStats(StorageStats):
                                                              error="UnsupportedMethod"
                                                             )
             except UGRStorageStatsError as ERR:
+                self.stats['bytesused'] = -1
+                self.stats['bytesfree'] = -1
+                self.stats['quota'] = -1
                 self.debug.append(ERR.debug)
                 self.status = ERR.message
 
             else:
                 self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
                 self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-
-                # If quota-available-bytes is reported as '0' is because no quota is
-                # provided, so we use the one from the config file or default.
-                if self.stats['bytesfree'] != 0:
-                    self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                if self.options['quota'] == 'api':
+                    # If quota-available-bytes is reported as '0' is because no quota is
+                    # provided, so we use the one from the config file or default.
+                    if self.stats['bytesfree'] != 0:
+                        self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                else:
+                    self.stats['quota'] = self.options['quota']
     #        except TypeError:
     #            raise MethodNotSupported(name='free', server=hostname)
     #        except etree.XMLSyntaxError:
@@ -907,7 +981,7 @@ def get_endpoints(options):
 
 
         try:
-            ep.validate_ep_options(options)
+            ep.validate_options(options)
         except UGRConfigFileError as ERR:
             print(ERR.debug)
             ep.debug.append(ERR.debug)
@@ -931,6 +1005,36 @@ def create_free_space_request_content():
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
 
+def convert_size_to_bytes(size):
+    """
+    Converts given sizse into bytes.
+    """
+    multipliers = {
+        'kib': 1024,
+        'mib': 1024**2,
+        'gib': 1024**3,
+        'tib': 1024**4,
+        'pib': 1024**5,
+        'kb': 1000,
+        'mb': 1000**2,
+        'gb': 1000**3,
+        'tb': 1000**4,
+        'pb': 1000**5,
+    }
+
+    for suffix in multipliers:
+        if size.lower().endswith(suffix):
+            return int(size[0:-len(suffix)]) * multipliers[suffix]
+    else:
+        if size.lower().endswith('b'):
+            return int(size[0:-1])
+
+    try:
+        return int(size)
+    except ValueError: # for example "1024x"
+        print('Malformed input!')
+        exit()
+
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     #return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
     return '%s\n' % (message)
@@ -951,6 +1055,9 @@ if __name__ == '__main__':
     for endpoint in endpoints:
         try:
             endpoint.get_storagestats()
+        except UGRStorageStatsWarning as WARN:
+            endpoint.debug.append(WARN.debug)
+            endpoint.status = WARN.message
         except UGRStorageStatsError as ERR:
             endpoint.debug.append(ERR.debug)
             endpoint.status = ERR.message
