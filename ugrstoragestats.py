@@ -151,10 +151,6 @@ group.add_option('-m', '--memcached',
                  dest='output_memcached', action='store_true', default=False,
                  help='Declare to enable uploading information to memcached.'
                 )
-group.add_option('-e', '--execbeat',
-                 dest='output_execbeat', action='store_true', default=False,
-                 help='Declare to enable uploading information to execbeat.'
-                )
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout. If no other output option is set, this is enabled by default.'
@@ -1050,7 +1046,6 @@ if __name__ == '__main__':
     warnings.formatwarning = warning_on_one_line
 
     endpoints = get_endpoints(options)
-    execbeat_output = []
 
     for endpoint in endpoints:
         try:
@@ -1068,34 +1063,27 @@ if __name__ == '__main__':
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
-        if options.output_execbeat:
-            # Fill memcached and execbeat vars
+
+        if options.output_stdout:
             mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
             memcached_index = "Ugrstoragestats_" + endpoint.id
             memcached_contents = endpoint.get_from_memcached(options.memcached_ip, options.memcached_port)
-            execbeat_output.append(memcached_contents)
+            if memcached_contents is None:
+                memcached_contents = 'No Content Found. Possible error connecting to memcached service.'
 
-
-        if options.output_stdout:
-            print('\nSE:', endpoint.id, \
-                  '\nURL:', endpoint.url, \
-                  '\nTime:', endpoint.stats['timestamp'], \
-                  '\nQuota:', endpoint.stats['quota'], \
+            print('\n#####', endpoint.id, '#####' \
+                  '\nURL:       ', endpoint.url, \
+                  '\nTime:      ', endpoint.stats['timestamp'], \
+                  '\nQuota:     ', endpoint.stats['quota'], \
                   '\nBytes Used:', endpoint.stats['bytesused'], \
                   '\nBytes Free:', endpoint.stats['bytesfree'], \
-                  '\nStatus:', endpoint.status, \
+                  '\nStatus:    ', endpoint.status, \
+                  '\n\nDebug:'
+                  )
+            for error in endpoint.debug:
+                print('           ', error)
+
+            print('\nMemcached:', \
+                  '\nIndex:      ', memcached_index, \
+                  '\nContents:   ', memcached_contents
                  )
-
-        if options.debug:
-            print('###########')
-            print('Debug:', endpoint.debug)
-
-            if options.output_memcached:
-                if memcached_contents is None:
-                    memcached_debug = 'Memcached Index [%s]: No Content Found. Possible error connecting to memcached service.' %(memcached_index)
-                else:
-                    memcached_debug = 'Memcached Index [%s]: %s' %(memcached_index, memcached_contents)
-                print(memcached_debug, '\n')
-
-    if options.output_execbeat:
-        print ('&&'.join(execbeat_output))
