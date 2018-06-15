@@ -193,7 +193,6 @@ class UGRBaseError(UGRBaseException):
             self.message = "[ERROR][ERROR][000] A unkown error occured."
         else:
             self.message = "[ERROR]" + message
-
         self.debug = debug
         super(UGRBaseError, self).__init__(self.message, self.debug)
 
@@ -330,12 +329,31 @@ class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
         self.debug = debug
         super(UGRConfigFileWarningMissingOption, self).__init__(self.message, self.debug)
 
-class UGRQuotaWarning(UGRBaseWarning):
-    def __init__(self, endpoint, option, option_default, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
-                  % (error, status_code, option, option_default)
+class UGRStorageStatsWarning(UGRBaseWarning):
+    def __init__(self, message=None, debug=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = '[StorageStatsWarning][000] An unkown error occured reading storage stats' \
+                           % (error, status_code)
+        else:
+            self.message = message
         self.debug = debug
-        super(UGRQuotaWarning, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsWarning, self).__init__(self.message, self.debug)
+
+class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
+    def __init__(self, endpoint, error="NoQuotaGiven", status_code="000", debug=None):
+        if message is None:
+            self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
+                    % (error, status_code)
+        self.debug = debug
+        super(UGRStorageStatsQuotaWarning, self).__init__(self.message, self.debug)
+
+class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
+    def __init__(self, endpoint, error="BucketQuotaDisabled", status_code="000", debug=None):
+        self.message = '[%s][%s] Bucket quota is disabled. Using default of 1TB' \
+                  % (error, status_code)
+        self.debug = debug
+        super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(self.message, self.debug)
 
 
 #####################
@@ -352,7 +370,7 @@ class StorageStats(object):
                       'bytesused': 0,
                       'bytesfree': 0,
                       'files': 0,
-                      'quota': -1,
+                      'quota': 1000**4,
                       'timestamp': int(time.time()),
                      }
         self.id = _ep['id']
@@ -364,6 +382,10 @@ class StorageStats(object):
         self.status = '[OK][OK][200]'
 
         self.validators = {
+            'quota': {
+                'default': 'api',
+                'required': False,
+            },
             'ssl_check': {
                 'boolean': True,
                 'default': True,
@@ -627,17 +649,40 @@ class S3StorageStats(StorageStats):
                                                                     debug=stats
                                                                    )
                 else:
-                    if len(stats['usage']) == 0:
-                        raise UGRStorageStatsErrorS3MissingBucketUsage(
-                                                                        endpoint=self.id,
-                                                                        status_code=r.status_code,
-                                                                        error="NewEmptyBucket",
-                                                                        debug=stats
-                                                                       )
+                    if len(stats['usage']) != 0:
+                        # If the bucket is emtpy, then just keep going we
+                        self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
 
-                    self.stats['quota'] = stats['bucket_quota']['max_size']
-                    self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
-                    self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                        # raise UGRStorageStatsErrorS3MissingBucketUsage(
+                        #                                                 endpoint=self.id,
+                        #                                                 status_code=r.status_code,
+                        #                                                 error="NewEmptyBucket",
+                        #                                                 debug=stats
+                        #                                                )
+                    if self.options['quota'] != 'api':
+                        print('uo')
+                        self.stats['quota'] = self.options['quota']
+                        self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+                    else:
+                        if stats['bucket_quota']['enabled'] == True:
+                            self.stats['quota'] = stats['bucket_quota']['max_size']
+                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+                        elif stats['bucket_quota']['enabled'] == False:
+                            self.stats['quota'] = convert_size_to_bytes("1TB")
+                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                            raise UGRStorageStatsCephS3QuotaDisabledWarning(
+                                                        endpoint=self.id,
+                                                        )
+                        else:
+                            self.stats['quota'] = convert_size_to_bytes("1TB")
+                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                            raise UGRStorageStatsQuotaWarning(
+                                                  endpoint = self.id,
+                                                  error="NoQuotaGiven",
+                                                  status_code="000",
+                            )
 
         # Getting the storage Stats AWS S3 API
         #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
@@ -989,6 +1034,9 @@ if __name__ == '__main__':
     for endpoint in endpoints:
         try:
             endpoint.get_storagestats()
+        except UGRStorageStatsWarning as WARN:
+            endpoint.debug.append(WARN.debug)
+            endpoint.status = WARN.message
         except UGRStorageStatsError as ERR:
             endpoint.debug.append(ERR.debug)
             endpoint.status = ERR.message
