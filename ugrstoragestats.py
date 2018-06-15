@@ -19,7 +19,7 @@ v0.0.5 Added module import checks.
 v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
 v0.0.7 Added options
 v0.1.0 Changed aws-list to generic and now uses boto3 for generality.
-v0.2.0 Added validators key and 'validate_ep_options' function.
+v0.2.0 Added validators key and 'validate_options' function.
 v0.2.1 Cleaned up code to PEP8.
 v0.2.2 Exception for plugint types not yet implemented.
 v0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
@@ -342,8 +342,7 @@ class UGRStorageStatsWarning(UGRBaseWarning):
 
 class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
     def __init__(self, endpoint, error="NoQuotaGiven", status_code="000", debug=None):
-        if message is None:
-            self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
+        self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
                     % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsQuotaWarning, self).__init__(self.message, self.debug)
@@ -458,7 +457,7 @@ class StorageStats(object):
         """
         pass
 
-    def validate_ep_options(self,options):
+    def validate_options(self,options):
         """
         Check the endpoints options from UGR's configuration file against the
         set of default and valid options defined under the self.validators dict.
@@ -524,6 +523,10 @@ class StorageStats(object):
             except KeyError:
                 # The ssl_check will stay True and standard CA bundle will be used.
                 pass
+
+        # Check the quota option and transform it into bytes if necessary.
+        if self.options['quota'] != "api":
+            self.options['quota'] = convert_size_to_bytes(self.options['quota'])
 
 
 
@@ -660,7 +663,6 @@ class S3StorageStats(StorageStats):
                         #                                                 debug=stats
                         #                                                )
                     if self.options['quota'] != 'api':
-                        print('uo')
                         self.stats['quota'] = self.options['quota']
                         self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
@@ -768,8 +770,21 @@ class S3StorageStats(StorageStats):
                         break
 
             self.stats['bytesused'] = total_bytes
-            self.stats['files'] = total_files
-            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+            if self.options['quota'] == 'api':
+                self.stats['quota'] = convert_size_to_bytes("1TB")
+                self.stats['files'] = total_files
+                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                raise UGRStorageStatsQuotaWarning(
+                                      endpoint = self.id,
+                                      error="NoQuotaGiven",
+                                      status_code="000",
+                )
+
+            else:
+                self.stats['quota'] = self.options['quota']
+                self.stats['files'] = total_files
+                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
     def validate_schema(self, scheme):
         if scheme == 's3':
@@ -960,7 +975,7 @@ def get_endpoints(options):
 
 
         try:
-            ep.validate_ep_options(options)
+            ep.validate_options(options)
         except UGRConfigFileError as ERR:
             print(ERR.debug)
             ep.debug.append(ERR.debug)
