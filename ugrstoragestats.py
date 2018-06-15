@@ -58,10 +58,11 @@ v0.4.8 Improved memcached and status/debug output.
 v0.4.9 Added timestamp and execbeat output.
 v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
        output.
+v0.6.0 Added quota options and logic to S3 and DAV operations.
 """
 from __future__ import print_function
 
-__version__ = "v0.5.0"
+__version__ = "v0.6.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import re
