@@ -5,6 +5,7 @@ storage status information from various types of endpoints.
 
 ## Prerequisites:
 Python Modules:
+- boto3
 - lxml
 - memcache
 - requests
@@ -41,17 +42,17 @@ Options:
 For testing that it all works, including memcached, this will print out warnings
 for missing options and the stats gathered, as well as memcached idices:
 ```
-./ugrstoragestats.py -d /etc/ugr/conf.d --stdout --debug -m
+./ugrstoragestats.py -d /etc/ugr/conf.d --stdout -m --debug
 ```
 
 For testing only stats with warnings:
 ```
-./ugrstoragestats.py -d /etc/ugr/conf.d --debug
+./ugrstoragestats.py -d /etc/ugr/conf.d --stdout
 ```
 
-To only see the stats gathered:
+To output stats only to memcached:
 ```
-./ugrstoragestats.py -d /etc/ugr/conf.d
+./ugrstoragestats.py -d /etc/ugr/conf.d -m
 ```
 
 
@@ -59,6 +60,19 @@ To only see the stats gathered:
 
 In order to use the correct methods for each storage type some options should
 be added to the endpoints.conf configuration file:
+
+### General
+
+```
+locplugin.<ID>.api: [api, 1b|mb|gb|tb|pb|mib|gib|tib|pib]
+```
+
+**api**
+Will try to obtain the quota from the storage endpoint. If that fails a default
+of 1TB will be used.
+
+**bytes**
+The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase.
 
 ### S3
 ```
