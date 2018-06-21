@@ -84,23 +84,25 @@ locplugin.<ID>.quota: [api, 1b|mb|gb|tb|pb|mib|gib|tib|pib]
 If this option is missing, the script will try to get the quota from the endpoint
 using the relevant API. Failing this, a default quota of 1TB will used.
 
-**api**
+##### api
 Will try to obtain the quota from the storage endpoint. If that fails a default
 of 1TB will be used.
 
-**bytes**
+##### bytes
 The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase.
 
 ### S3
+
 ```
 locplugin.<ID>.s3.api: [generic, ceph-admin]
 ```
 
-**generic**
+##### generic
+
 This option will list all objects behind the bucket and add the individual
 sizes.
 
-**ceph-admin**
+##### ceph-admin
 
 Use this option if Ceph's Admin API is to be used. The credentials of the
 configured user should have the "bucket read" caps enabled.
