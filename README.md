@@ -21,20 +21,6 @@ Python Modules:
 - requests
 - requests_aws4auth
 
-## How it works
-
-When run the main function will read every configuration file in the directory
-given by the user (which defaults to /etc/ugr/conf.d), and will identify all the
-different endpoints with their respective options and authorization credentials.
-
-A python object belonging to a subclass of StorageStats, depending on the protocol
-to be used, is created for each endpoint containing all the information and
-methods necessary to request and process storage stats and quota information.
-
-The gathered information can then be output either to a memcache instance or
-the STDOUT.
-
-
 ## Usage
 
 This module is intended to be run periodically as a cron job, so place it in
@@ -124,3 +110,16 @@ locplugin.<ID>.s3.signature_ver: [s3, s3v4]
 ```
 Most S3 endpoints should use the s3v4 signature auth version, and is used as
 default, but use s3 in case is needed.
+
+## How it works
+
+When run the main function will read every configuration file in the directory
+given by the user (which defaults to /etc/ugr/conf.d), and will identify all the
+different endpoints with their respective options and authorization credentials.
+
+A python object belonging to a subclass of StorageStats, depending on the protocol
+to be used, is created for each endpoint containing all the information and
+methods necessary to request and process storage stats and quota information.
+
+The gathered information can then be output either to a memcache instance or
+the STDOUT.
