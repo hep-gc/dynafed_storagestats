@@ -1,7 +1,17 @@
 # ugrstoragestats.py
 
 Module to interact with UGR's configuration files in order to obtain
-storage status information from various types of endpoints.
+storage status information from various types of endpoints and upload the
+information to memcahe.
+
+While it works under Python2 it is recommended to be run with Python3.
+
+So far it supports has been tested with:
+AWS S3
+Ceph S3
+Minio S3
+DPM via WebDAV
+dCache via WebDAV
 
 ## Prerequisites:
 Python Modules:
@@ -11,7 +21,42 @@ Python Modules:
 - requests
 - requests_aws4auth
 
+## How it works
+
+When run the main function will read every configuration file in the directory
+given by the user (which defaults to /etc/ugr/conf.d), and will identify all the
+different endpoints with their respective options and authorization credentials.
+
+A python object belonging to a subclass of StorageStats, depending on the protocol
+to be used, is created for each endpoint containing all the information and
+methods necessary to request and process storage stats and quota information.
+
+The gathered information can then be output either to a memcache instance or
+the STDOUT.
+
+
 ## Usage
+
+This module is intended to be run periodically as a cron job, so place it in
+an appropriate location for this.
+
+First run with the following flags:
+
+```
+./ugrstoragestats.py -d /etc/ugr/conf.d --stdout -m --debug
+```
+
+This will give is the best way to test if there are any options missing in the
+configuration or errors contacting or obtaining the information from each endpoint.
+It will also show the information uploaded to memcached and if there were issues.
+
+When everything is in place and working as desired, the following command is
+what would normally used with cron:
+
+```
+./ugrstoragestats.py -d /etc/ugr/conf.d -m
+```
+
 To get help:
 ```
 ugrstoragestats -h
@@ -38,23 +83,6 @@ Options:
                         option is set, this is enabled by default.
 ```
 
-**Examples**
-For testing that it all works, including memcached, this will print out warnings
-for missing options and the stats gathered, as well as memcached idices:
-```
-./ugrstoragestats.py -d /etc/ugr/conf.d --stdout -m --debug
-```
-
-For testing only stats with warnings:
-```
-./ugrstoragestats.py -d /etc/ugr/conf.d --stdout
-```
-
-To output stats only to memcached:
-```
-./ugrstoragestats.py -d /etc/ugr/conf.d -m
-```
-
 
 ## Endpoints Configuration
 
@@ -64,8 +92,11 @@ be added to the endpoints.conf configuration file:
 ### General
 
 ```
-locplugin.<ID>.api: [api, 1b|mb|gb|tb|pb|mib|gib|tib|pib]
+locplugin.<ID>.quota: [api, 1b|mb|gb|tb|pb|mib|gib|tib|pib]
 ```
+
+If this option is missing, the script will try to get the quota from the endpoint
+using the relevant API. Failing this, a default quota of 1TB will used.
 
 **api**
 Will try to obtain the quota from the storage endpoint. If that fails a default
