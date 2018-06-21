@@ -530,6 +530,10 @@ class StorageStats(object):
 
 
     def validate_schema(self, scheme):
+        """
+        Used to translate dav/davs into http/https since requests doesn't
+        support the former schema.
+        """
         schema_translator = {
             'dav': 'http',
             'davs': 'https',
@@ -541,6 +545,11 @@ class StorageStats(object):
             return (scheme)
 
     def output_to_stdout(self, options):
+        """
+        Prints all the storage stats information for each endpont, including
+        the last warning/error, and if proper flags set, memcached indices and
+        contents and full warning/error debug information from the exceptions.
+        """
         mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
         memcached_contents = self.get_from_memcached(options.memcached_ip, options.memcached_port)
@@ -807,6 +816,10 @@ class S3StorageStats(StorageStats):
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
     def validate_schema(self, scheme):
+        """
+        Used to translate s3 into http/https since requests doesn't
+        support the former schema.
+        """
         if scheme == 's3':
             if self.options['ssl_check']:
                 return ('https')
@@ -836,6 +849,10 @@ class DAVStorageStats(StorageStats):
         })
 
     def get_storagestats(self):
+        """
+        Connect to the storage endpoint and will try WebDAV's quota and bytesfree
+        method as defined by RFC 4331.
+        """
         u = urlsplit(self.url)
         scheme = self.validate_schema(u.scheme)
         endpoint_url = '{uri_scheme}://{uri.netloc}{uri.path}'.format(uri=u, uri_scheme=scheme)
@@ -1055,6 +1072,9 @@ def convert_size_to_bytes(size):
         exit()
 
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+    """
+    Define the output format that the warnings.warn method will use.
+    """
     #return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
     return '%s\n' % (message)
 
