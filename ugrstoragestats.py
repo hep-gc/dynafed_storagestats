@@ -402,6 +402,7 @@ class StorageStats(object):
         memcached_index = "Ugrstoragestats_" + self.id
         storagestats = '%%'.join([
                                   self.id,
+                                  self.storageprotocol,
                                   str(self.stats['timestamp']),
                                   str(self.stats['quota']),
                                   str(self.stats['bytesused']),
@@ -439,6 +440,7 @@ class StorageStats(object):
             self.status = ERR.message
             memcached_contents = '%%'.join([
                                             self.id,
+                                            self.storageprotocol,
                                             str(self.stats['timestamp']),
                                             str(self.stats['quota']),
                                             str(self.stats['bytesused']),
@@ -558,6 +560,7 @@ class StorageStats(object):
 
         print('\n#####', self.id, '#####' \
               '\n{0:12}{1}'.format('URL:', self.url), \
+              '\n{0:12}{1}'.format('Protocol:', self.storageprotocol), \
               '\n{0:12}{1}'.format('Time:', self.stats['timestamp']), \
               '\n{0:12}{1}'.format('Quota:', self.stats['quota']), \
               '\n{0:12}{1}'.format('Bytes Used:', self.stats['bytesused']), \
@@ -582,6 +585,7 @@ class S3StorageStats(StorageStats):
         the storage status check can proceed.
         """
         super(S3StorageStats, self).__init__(*args, **kwargs)
+        self.storageprotocol = "S3"
         self.validators.update({
             's3.alternate': {
                 'default': 'false',
@@ -839,6 +843,7 @@ class DAVStorageStats(StorageStats):
         the storage status check can proceed.
         """
         super(DAVStorageStats, self).__init__(*args, **kwargs)
+        self.storageprotocol = "DAV"
         self.validators.update({
             'cli_certificate': {
                 'required': True,
