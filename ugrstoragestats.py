@@ -604,6 +604,7 @@ class S3StorageStats(StorageStats):
                 'required': True,
             },
             's3.region': {
+                'default': 'us-east-1',
                 'required': True,
             },
             's3.signature_ver': {
