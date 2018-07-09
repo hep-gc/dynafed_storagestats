@@ -61,10 +61,11 @@ v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
 v0.6.0 Added quota options and logic to S3 and DAV operations.
 v0.6.1 Moved ouptut to object class method.
 v0.6.2 Added debug output.
+v0.6.3 Renamed storagestats attribute from options to plugin_options.
 """
 from __future__ import print_function
 
-__version__ = "v0.6.1"
+__version__ = "v0.6.3"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
@@ -227,9 +228,9 @@ class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
         super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message, self.debug)
 
 class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
-    def __init__(self, endpoint, option, valid_options, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Incorrect value given in option "%s". Valid options: %s' \
-                  % (error, status_code, option, valid_options)
+    def __init__(self, endpoint, option, valid_plugin_options, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Incorrect value given in option "%s". Valid plugin_options: %s' \
+                  % (error, status_code, option, valid_plugin_options)
         self.debug = debug
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message, self.debug)
 
@@ -372,7 +373,7 @@ class StorageStats(object):
                       'timestamp': int(time.time()),
                      }
         self.id = _ep['id']
-        self.options = _ep['options']
+        self.plugin_options = _ep['plugin_options']
         self.plugin = _ep['plugin']
         self.url = _ep['url']
 
@@ -458,22 +459,22 @@ class StorageStats(object):
         """
         pass
 
-    def validate_options(self,options):
+    def validate_plugin_options(self, options):
         """
-        Check the endpoints options from UGR's configuration file against the
-        set of default and valid options defined under the self.validators dict.
+        Check the endpoints plugin_options from UGR's configuration file against the
+        set of default and valid plugin_options defined under the self.validators dict.
         """
         for ep_option in self.validators:
             # First check if the option has been defined in the config file..
             # If it is missing, check if it is required, and exit if true
             # otherwise set it to the default value and print a warning.
             try:
-                self.options[ep_option]
+                self.plugin_options[ep_option]
 
             except KeyError:
                 try:
                     if self.validators[ep_option]['required']:
-                        self.options.update({ep_option: ''})
+                        self.plugin_options.update({ep_option: ''})
                         raise UGRConfigFileErrorMissingRequiredOption(
                                   endpoint=self.id,
                                   error="MissingRequiredOption",
@@ -489,14 +490,14 @@ class StorageStats(object):
                 except UGRBaseWarning as WARN:
                     self.debug.append(WARN.debug)
                     self.status = WARN.message
-                    self.options.update({ep_option: self.validators[ep_option]['default']})
+                    self.plugin_options.update({ep_option: self.validators[ep_option]['default']})
 
             # If the ep_option has been defined, check against a list of valid
-            # options (if defined, otherwise contiune). Also transform to boolean
+            # plugin_options (if defined, otherwise contiune). Also transform to boolean
             # form those that have the "boolean" key set as true.
             else:
                 try:
-                    if self.options[ep_option] not in self.validators[ep_option]['valid']:
+                    if self.plugin_options[ep_option] not in self.validators[ep_option]['valid']:
                         raise UGRConfigFileErrorInvalidOption(
                                 endpoint=self.id,
                                 error="InvalidOption",
@@ -509,25 +510,25 @@ class StorageStats(object):
                         except KeyError:
                             pass
                         else:
-                            if self.options[ep_option].lower() == 'false'\
-                            or self.options[ep_option].lower() == 'no':
-                                self.options.update({ep_option: False})
+                            if self.plugin_options[ep_option].lower() == 'false'\
+                            or self.plugin_options[ep_option].lower() == 'no':
+                                self.plugin_options.update({ep_option: False})
                             else:
-                                self.options.update({ep_option: True})
+                                self.plugin_options.update({ep_option: True})
                 except KeyError:
                     # The 'valid' key is not required to exist.
                     pass
         # If user has specified an SSL CA bundle:
-        if self.options['ssl_check']:
+        if self.plugin_options['ssl_check']:
             try:
-                self.options['ssl_check'] = self.options['ca_path']
+                self.plugin_options['ssl_check'] = self.plugin_options['ca_path']
             except KeyError:
                 # The ssl_check will stay True and standard CA bundle will be used.
                 pass
 
         # Check the quota option and transform it into bytes if necessary.
-        if self.options['quota'] != "api":
-            self.options['quota'] = convert_size_to_bytes(self.options['quota'])
+        if self.plugin_options['quota'] != "api":
+            self.plugin_options['quota'] = convert_size_to_bytes(self.plugin_options['quota'])
 
 
 
@@ -625,9 +626,9 @@ class S3StorageStats(StorageStats):
         scheme = self.validate_schema(u.scheme)
 
         # Getting the storage Stats CephS3's Admin API
-        if self.options['s3.api'].lower() == 'ceph-admin':
-            if self.options['s3.alternate'].lower() == 'true'\
-            or self.options['s3.alternate'].lower() == 'yes':
+        if self.plugin_options['s3.api'].lower() == 'ceph-admin':
+            if self.plugin_options['s3.alternate'].lower() == 'true'\
+            or self.plugin_options['s3.alternate'].lower() == 'yes':
                 endpoint_url = '{uri_scheme}://{uri.netloc}/admin/bucket?format=json'.format(uri=u, uri_scheme=scheme)
                 bucket = u.path.rpartition("/")[-1]
                 payload = {'bucket': bucket, 'stats': 'True'}
@@ -637,9 +638,9 @@ class S3StorageStats(StorageStats):
                 endpoint_url = '{uri_scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_scheme=scheme, uri_bucket=bucket, uri_domain=domain)
                 payload = {'bucket': bucket, 'stats': 'True'}
 
-            auth = AWS4Auth(self.options['s3.pub_key'],
-                            self.options['s3.priv_key'],
-                            self.options['s3.region'],
+            auth = AWS4Auth(self.plugin_options['s3.pub_key'],
+                            self.plugin_options['s3.priv_key'],
+                            self.plugin_options['s3.region'],
                             's3',
                            )
             try:
@@ -647,7 +648,7 @@ class S3StorageStats(StorageStats):
                                  url=endpoint_url,
                                  params=payload,
                                  auth=auth,
-                                 verify=self.options['ssl_check'],
+                                 verify=self.plugin_options['ssl_check'],
                                 )
 
             except requests.ConnectionError as ERR:
@@ -668,7 +669,7 @@ class S3StorageStats(StorageStats):
                                                        endpoint=self.id,
                                                        status_code=r.status_code,
                                                        error="NoContent",
-                                                       api=self.options['s3.api'],
+                                                       api=self.plugin_options['s3.api'],
                                                        debug=r.content,
                                                       )
 
@@ -696,8 +697,8 @@ class S3StorageStats(StorageStats):
                         #                                                 error="NewEmptyBucket",
                         #                                                 debug=stats
                         #                                                )
-                    if self.options['quota'] != 'api':
-                        self.stats['quota'] = self.options['quota']
+                    if self.plugin_options['quota'] != 'api':
+                        self.stats['quota'] = self.plugin_options['quota']
                         self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
                     else:
@@ -721,13 +722,13 @@ class S3StorageStats(StorageStats):
                             )
 
         # Getting the storage Stats AWS S3 API
-        #elif self.options['s3.api'].lower() == 'aws-cloudwatch':
+        #elif self.plugin_options['s3.api'].lower() == 'aws-cloudwatch':
 
         # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
         # API, should work for any compatible S3 endpoint.
-        elif self.options['s3.api'].lower() == 'generic':
-            if self.options['s3.alternate'].lower() == 'true'\
-            or self.options['s3.alternate'].lower() == 'yes':
+        elif self.plugin_options['s3.api'].lower() == 'generic':
+            if self.plugin_options['s3.alternate'].lower() == 'true'\
+            or self.plugin_options['s3.alternate'].lower() == 'yes':
                 endpoint_url = '{uri_scheme}://{uri.netloc}'.format(uri=u, uri_scheme=scheme)
                 bucket = u.path.rpartition("/")[-1]
 
@@ -736,13 +737,13 @@ class S3StorageStats(StorageStats):
                 endpoint_url = '{uri_scheme}://{uri_domain}'.format(uri=u, uri_scheme=scheme, uri_domain=domain)
 
             connection = boto3.client('s3',
-                                      region_name=self.options['s3.region'],
+                                      region_name=self.plugin_options['s3.region'],
                                       endpoint_url=endpoint_url,
-                                      aws_access_key_id=self.options['s3.pub_key'],
-                                      aws_secret_access_key=self.options['s3.priv_key'],
+                                      aws_access_key_id=self.plugin_options['s3.pub_key'],
+                                      aws_secret_access_key=self.plugin_options['s3.priv_key'],
                                       use_ssl=True,
-                                      verify=self.options['ssl_check'],
-                                      config=Config(signature_version=self.options['s3.signature_ver']),
+                                      verify=self.plugin_options['ssl_check'],
+                                      config=Config(signature_version=self.plugin_options['s3.signature_ver']),
                                      )
             total_bytes = 0
             total_files = 0
@@ -805,7 +806,7 @@ class S3StorageStats(StorageStats):
 
             self.stats['bytesused'] = total_bytes
 
-            if self.options['quota'] == 'api':
+            if self.plugin_options['quota'] == 'api':
                 self.stats['quota'] = convert_size_to_bytes("1TB")
                 self.stats['files'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
@@ -816,7 +817,7 @@ class S3StorageStats(StorageStats):
                 )
 
             else:
-                self.stats['quota'] = self.options['quota']
+                self.stats['quota'] = self.plugin_options['quota']
                 self.stats['files'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
@@ -826,7 +827,7 @@ class S3StorageStats(StorageStats):
         support the former schema.
         """
         if scheme == 's3':
-            if self.options['ssl_check']:
+            if self.plugin_options['ssl_check']:
                 return ('https')
             else:
                 return ('http')
@@ -869,9 +870,9 @@ class DAVStorageStats(StorageStats):
             response = requests.request(
                 method="PROPFIND",
                 url=endpoint_url,
-                cert=(self.options['cli_certificate'], self.options['cli_private_key']),
+                cert=(self.plugin_options['cli_certificate'], self.plugin_options['cli_private_key']),
                 headers=headers,
-                verify=self.options['ssl_check'],
+                verify=self.plugin_options['ssl_check'],
                 data=data
             )
         except requests.ConnectionError as ERR:
@@ -913,13 +914,13 @@ class DAVStorageStats(StorageStats):
             else:
                 self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
                 self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-                if self.options['quota'] == 'api':
+                if self.plugin_options['quota'] == 'api':
                     # If quota-available-bytes is reported as '0' is because no quota is
                     # provided, so we use the one from the config file or default.
                     if self.stats['bytesfree'] != 0:
                         self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
                 else:
-                    self.stats['quota'] = self.options['quota']
+                    self.stats['quota'] = self.plugin_options['quota']
     #        except TypeError:
     #            raise MethodNotSupported(name='free', server=hostname)
     #        except etree.XMLSyntaxError:
@@ -937,7 +938,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     be any *.conf file defined under the config_dir variable.
     The default directory is "/etc/ugr/conf.d/"
     All the glb.locplugin options defined for each are stored as dictionary keys under
-    each parent SE key, and the locplugin as keys for the dictionary "options" under
+    each parent SE key, and the locplugin as keys for the dictionary "plugin_options" under
     each parent SE key.
     """
     endpoints = {}
@@ -962,8 +963,8 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                             if _id in key:
                                 _option = key.split(_id+'.')[-1]
                                 endpoints.setdefault(_id, {})
-                                endpoints[_id].setdefault('options', {})
-                                endpoints[_id]['options'].update({_option:_val.strip()})
+                                endpoints[_id].setdefault('plugin_options', {})
+                                endpoints[_id]['plugin_options'].update({_option:_val.strip()})
                             else:
                                 raise UGRConfigFileErrorIDMismatch(
                                                                     endpoint=_id,
@@ -1023,7 +1024,7 @@ def get_endpoints(options):
 
 
         try:
-            ep.validate_options(options)
+            ep.validate_plugin_options(options)
         except UGRConfigFileError as ERR:
             print(ERR.debug)
             ep.debug.append(ERR.debug)
