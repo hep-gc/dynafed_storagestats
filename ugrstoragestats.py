@@ -459,7 +459,7 @@ class StorageStats(object):
         """
         pass
 
-    def validate_plugin_options(self, options):
+    def validate_plugin_options(self):
         """
         Check the endpoints plugin_options from UGR's configuration file against the
         set of default and valid plugin_options defined under the self.validators dict.
@@ -1006,13 +1006,13 @@ def factory(endpoint, plugin):
                                         )
 
 
-def get_endpoints(options):
+def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
     Returns list of storage endpoint objects whose class represents each storage
     endpoint configured in UGR's configuration files.
     """
     storage_objects = []
-    endpoints = get_config(options.configs_directory)
+    endpoints = get_config(config_dir)
     for endpoint in endpoints:
         try:
             ep = factory(endpoint, endpoints[endpoint]['plugin'])(endpoints[endpoint])
@@ -1024,7 +1024,7 @@ def get_endpoints(options):
 
 
         try:
-            ep.validate_plugin_options(options)
+            ep.validate_plugin_options()
         except UGRConfigFileError as ERR:
             print(ERR.debug)
             ep.debug.append(ERR.debug)
@@ -1095,7 +1095,7 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore")
     warnings.formatwarning = warning_on_one_line
 
-    endpoints = get_endpoints(options)
+    endpoints = get_endpoints(options.configs_directory)
 
     for endpoint in endpoints:
         try:
