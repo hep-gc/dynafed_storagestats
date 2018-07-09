@@ -62,10 +62,12 @@ v0.6.0 Added quota options and logic to S3 and DAV operations.
 v0.6.1 Moved ouptut to object class method.
 v0.6.2 Added debug output.
 v0.6.3 Renamed storagestats attribute from options to plugin_options.
+v0.7.0 Functions don't depend on cli options. Module can be used from the
+       interpreter.
 """
 from __future__ import print_function
 
-__version__ = "v0.6.3"
+__version__ = "v0.7.0"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
