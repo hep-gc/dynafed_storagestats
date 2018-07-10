@@ -376,8 +376,21 @@ class StorageStats(object):
                      }
         self.id = _ep['id']
         self.plugin_options = _ep['plugin_options']
+        # We add the url form the conf file to the plugin_options as the one
+        # in the uri attribute below will be modified depending on the enpoint's
+        # protocol.
+        self.plugin_options.update({'url': _ep['url']})
         self.plugin = _ep['plugin']
-        self.url = _ep['url']
+
+        _url =  urlsplit(_ep['url'])
+        self.uri = {
+                    'hostname': _url.hostname,
+                    'netloc':   _url.netloc,
+                    'path':     _url.path,
+                    'port':     _url.port,
+                    'scheme':   self.validate_schema(_url.scheme),
+                    'url':      _ep['url'],
+                    }
 
         self.debug = []
         self.status = '[OK][OK][200]'
@@ -562,7 +575,7 @@ class StorageStats(object):
             memcached_contents = 'No Content Found. Possible error connecting to memcached service.'
 
         print('\n#####', self.id, '#####' \
-              '\n{0:12}{1}'.format('URL:', self.url), \
+              '\n{0:12}{1}'.format('URL:', self.uri['url']), \
               '\n{0:12}{1}'.format('Protocol:', self.storageprotocol), \
               '\n{0:12}{1}'.format('Time:', self.stats['timestamp']), \
               '\n{0:12}{1}'.format('Quota:', self.stats['quota']), \
@@ -578,6 +591,107 @@ class StorageStats(object):
             for error in self.debug:
                 print('{0:12}{1}'.format(' ',error))
 
+    def make_StAR_xml(self):
+        """
+        Heavily based on the star-accounting.py script by Fabrizion Furano
+        http://svnweb.cern.ch/world/wsvn/lcgdm/lcg-dm/trunk/scripts/StAR-accounting/star-accounting.py
+        """
+        SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
+        SR = "{%s}" % SR_namespace
+        NSMAP = {"sr": SR_namespace}
+        xmlroot = etree.Element(SR+"StorageUsageRecords", nsmap=NSMAP)
+
+        # update XML
+        rec = etree.SubElement(xmlroot, SR+'StorageUsageRecord')
+        rid = etree.SubElement(rec, SR+'RecordIdentity')
+        rid.set(SR+"createTime", datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+        # Set the bucket name as the "StorageShare field"
+        if endpoint.storageshare:
+            sshare = etree.SubElement(rec, SR+"StorageShare")
+            sshare.text = endpoint.storageshare
+
+        if endpoint.hostname:
+            ssys = etree.SubElement(rec, SR+"StorageSystem")
+            ssys.text = endpoint.hostname
+
+        recid = endpoint.recordid
+        if not recid:
+            recid = endpoint.hostname+"-"+str(uuid.uuid1())
+        rid.set(SR+"recordId", recid)
+
+        subjid = etree.SubElement(rec, SR+'SubjectIdentity')
+
+    #    if endpoint.group:
+    #      grouproles = endpoint.group.split('/')
+    #      # If the last token is Role=... then we fetch the role and add it to the record
+    #    tmprl = grouproles[-1]
+    #    if tmprl.find('Role=') != -1:
+    #      splitroles = tmprl.split('=')
+    #      if (len(splitroles) > 1):
+    #        role = splitroles[1]
+    #        grp = etree.SubElement(subjid, SR+"GroupAttribute" )
+    #        grp.set( SR+"attributeType", "role" )
+    #        grp.text = role
+    #      # Now drop this last token, what remains is the vo identifier
+    #      grouproles.pop()
+    #
+    #    # The voname is the first token
+    #    voname = grouproles.pop(0)
+    #    grp = etree.SubElement(subjid, SR+"Group")
+    #    grp.text = voname
+    #
+    #    # If there are other tokens, they are a subgroup
+    #    if len(grouproles) > 0:
+    #      subgrp = '/'.join(grouproles)
+    #      grp = etree.SubElement(subjid, SR+"GroupAttribute" )
+    #      grp.set( SR+"attributeType", "subgroup" )
+    #      grp.text = subgrp
+    #
+    #    if endpoint.user:
+    #      usr = etree.SubElement(subjid, SR+"User")
+    #      usr.text = endpoint.user
+
+        if endpoint.site:
+            st = etree.SubElement(subjid, SR+"Site")
+            st.text = endpoint.site
+
+        # too many e vars here below, wtf?
+        if endpoint.storagemedia:
+            e = etree.SubElement(rec, SR+"StorageMedia")
+            e.text = endpoint.storagemedia
+
+        if endpoint.validduration:
+            e = etree.SubElement(rec, SR+"StartTime")
+            d = datetime.datetime.utcnow() - datetime.timedelta(seconds=endpoint.validduration)
+            e.text = d.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        e = etree.SubElement(rec, SR+"EndTime")
+        e.text = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+        if endpoint.filecount:
+            e = etree.SubElement(rec, SR+"FileCount")
+            e.text = str(endpoint.filecount)
+
+
+        if not endpoint.resourcecapacityused:
+            endpoint.resourcecapacityused = 0
+
+        e1 = etree.SubElement(rec, SR+"ResourceCapacityUsed")
+        e1.text = str(endpoint.resourcecapacityused)
+
+        e3 = etree.SubElement(rec, SR+"ResourceCapacityAllocated")
+        e3.text = str(endpoint.resourcecapacityallocated)
+
+        if not endpoint.logicalcapacityused:
+            endpoint.logicalcapacityused = 0
+
+        e2 = etree.SubElement(rec, SR+"LogicalCapacityUsed")
+        e2.text = str(endpoint.logicalcapacityused)
+
+        return xmlroot
+
 class S3StorageStats(StorageStats):
     """
     Subclass that defines methods for obtaining storage stats of S3 endpoints.
@@ -586,6 +700,7 @@ class S3StorageStats(StorageStats):
         """
         Extend the object's validators unique to the storage type to make sure
         the storage status check can proceed.
+        Extend the uri attribute with S3 specific attributes like bucket.
         """
         super(S3StorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "S3"
@@ -617,6 +732,20 @@ class S3StorageStats(StorageStats):
             },
         })
 
+        try:
+            self.validate_plugin_options()
+        except UGRConfigFileError as ERR:
+            print(ERR.debug)
+            self.debug.append(ERR.debug)
+            self.status = ERR.message
+
+        if self.plugin_options['s3.alternate'].lower() == 'true'\
+        or self.plugin_options['s3.alternate'].lower() == 'yes':
+            self.uri['bucket'] = self.uri['path'].rpartition("/")[-1]
+
+        else:
+            self.uri['bucket'], self.uri['domain'] = self.uri['netloc'].partition('.')[::2]
+
     def get_storagestats(self):
         """
         Connect to the storage endpoint with the defined or generic API's
@@ -624,21 +753,19 @@ class S3StorageStats(StorageStats):
         """
         # Split the URL in the configuration file for validation and proper
         # formatting according to the method's needs.
-        u = urlsplit(self.url)
-        scheme = self.validate_schema(u.scheme)
+        # u = urlsplit(self.url)
+        # scheme = self.validate_schema(u.scheme)
 
         # Getting the storage Stats CephS3's Admin API
         if self.plugin_options['s3.api'].lower() == 'ceph-admin':
+
             if self.plugin_options['s3.alternate'].lower() == 'true'\
             or self.plugin_options['s3.alternate'].lower() == 'yes':
-                endpoint_url = '{uri_scheme}://{uri.netloc}/admin/bucket?format=json'.format(uri=u, uri_scheme=scheme)
-                bucket = u.path.rpartition("/")[-1]
-                payload = {'bucket': bucket, 'stats': 'True'}
-
+                api_url = '{scheme}://{netloc}/admin/bucket?format=json'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'] )
             else:
-                bucket, domain = u.netloc.partition('.')[::2]
-                endpoint_url = '{uri_scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_scheme=scheme, uri_bucket=bucket, uri_domain=domain)
-                payload = {'bucket': bucket, 'stats': 'True'}
+                api_url = '{scheme}://{domain}/admin/{bucket}?format=json'.format(scheme=self.uri['scheme'], domain=self.uri['domain'], bucket=self.uri['bucket'] )
+
+            payload = {'bucket': self.uri['bucket'], 'stats': 'True'}
 
             auth = AWS4Auth(self.plugin_options['s3.pub_key'],
                             self.plugin_options['s3.priv_key'],
@@ -647,7 +774,7 @@ class S3StorageStats(StorageStats):
                            )
             try:
                 r = requests.get(
-                                 url=endpoint_url,
+                                 url=api_url,
                                  params=payload,
                                  auth=auth,
                                  verify=self.plugin_options['ssl_check'],
@@ -729,18 +856,17 @@ class S3StorageStats(StorageStats):
         # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
         # API, should work for any compatible S3 endpoint.
         elif self.plugin_options['s3.api'].lower() == 'generic':
+
             if self.plugin_options['s3.alternate'].lower() == 'true'\
             or self.plugin_options['s3.alternate'].lower() == 'yes':
-                endpoint_url = '{uri_scheme}://{uri.netloc}'.format(uri=u, uri_scheme=scheme)
-                bucket = u.path.rpartition("/")[-1]
+                api_url = '{scheme}://{netloc}'.format(scheme=self.uri['scheme'],netloc=self.uri['netloc'])
 
             else:
-                bucket, domain = u.netloc.partition('.')[::2]
-                endpoint_url = '{uri_scheme}://{uri_domain}'.format(uri=u, uri_scheme=scheme, uri_domain=domain)
+                api_url = '{scheme}://{domain}'.format(scheme=self.uri['scheme'], domain=self.uri['domain'])
 
             connection = boto3.client('s3',
                                       region_name=self.plugin_options['s3.region'],
-                                      endpoint_url=endpoint_url,
+                                      endpoint_url=api_url,
                                       aws_access_key_id=self.plugin_options['s3.pub_key'],
                                       aws_secret_access_key=self.plugin_options['s3.priv_key'],
                                       use_ssl=True,
@@ -749,7 +875,7 @@ class S3StorageStats(StorageStats):
                                      )
             total_bytes = 0
             total_files = 0
-            kwargs = {'Bucket': bucket}
+            kwargs = {'Bucket': self.uri['bucket']}
             # This loop is needed to obtain all objects as the API can only
             # server 1,000 objects per request. The 'NextMarker' tells where
             # to start the next 1,000. If no 'NextMarker' is received, all
@@ -857,21 +983,26 @@ class DAVStorageStats(StorageStats):
             },
         })
 
+        try:
+            self.validate_plugin_options()
+        except UGRConfigFileError as ERR:
+            print(ERR.debug)
+            self.debug.append(ERR.debug)
+            self.status = ERR.message
+
     def get_storagestats(self):
         """
         Connect to the storage endpoint and will try WebDAV's quota and bytesfree
         method as defined by RFC 4331.
         """
-        u = urlsplit(self.url)
-        scheme = self.validate_schema(u.scheme)
-        endpoint_url = '{uri_scheme}://{uri.netloc}{uri.path}'.format(uri=u, uri_scheme=scheme)
+        api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
 
         headers = {'Depth': '0',}
         data = create_free_space_request_content()
         try:
             response = requests.request(
                 method="PROPFIND",
-                url=endpoint_url,
+                url=api_url,
                 cert=(self.plugin_options['cli_certificate'], self.plugin_options['cli_private_key']),
                 headers=headers,
                 verify=self.plugin_options['ssl_check'],
@@ -1021,14 +1152,6 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
 
         except UGRUnsupportedPluginError as ERR:
             ep = StorageStats(endpoints[endpoint])
-            ep.debug.append(ERR.debug)
-            ep.status = ERR.message
-
-
-        try:
-            ep.validate_plugin_options()
-        except UGRConfigFileError as ERR:
-            print(ERR.debug)
             ep.debug.append(ERR.debug)
             ep.status = ERR.message
 
