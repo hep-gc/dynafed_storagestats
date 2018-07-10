@@ -64,10 +64,11 @@ v0.6.2 Added debug output.
 v0.6.3 Renamed storagestats attribute from options to plugin_options.
 v0.7.0 Functions don't depend on cli options. Module can be used from the
        interpreter.
+v0.7.1 XML StAR files output implemented for S3 and DAV.
 """
 from __future__ import print_function
 
-__version__ = "v0.7.0"
+__version__ = "v0.7.1"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
