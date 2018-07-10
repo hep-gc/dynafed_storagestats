@@ -796,6 +796,7 @@ class S3StorageStats(StorageStats):
                                  auth=auth,
                                  verify=self.plugin_options['ssl_check'],
                                 )
+                # Save time when data was obtained.
                 self.stats['endtime'] = int(time.time())
 
             except requests.ConnectionError as ERR:
@@ -950,8 +951,10 @@ class S3StorageStats(StorageStats):
                     except KeyError:
                         break
 
-            self.stats['bytesused'] = total_bytes
+            # Save time when data was obtained.
             self.stats['endtime'] = int(time.time())
+
+            self.stats['bytesused'] = total_bytes
 
             if self.plugin_options['quota'] == 'api':
                 self.stats['quota'] = convert_size_to_bytes("1TB")
@@ -1033,6 +1036,9 @@ class DAVStorageStats(StorageStats):
                 verify=self.plugin_options['ssl_check'],
                 data=data
             )
+            # Save time when data was obtained.
+            self.stats['endtime'] = int(time.time())
+
         except requests.ConnectionError as ERR:
             raise UGRStorageStatsConnectionError(
                                                  endpoint=self.id,
