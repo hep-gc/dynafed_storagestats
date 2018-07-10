@@ -55,7 +55,7 @@ v0.4.7 Removed the warnings and instead added a status and debug attribute
        to StorageStats objects. Status appends the last ERROR. Debug appends
        all the ones that occur with more detail if available.
 v0.4.8 Improved memcached and status/debug output.
-v0.4.9 Added timestamp and execbeat output.
+v0.4.9 Added starttime and execbeat output.
 v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
        output.
 v0.6.0 Added quota options and logic to S3 and DAV operations.
@@ -74,6 +74,7 @@ import os
 import re
 import sys
 import time
+import uuid
 import warnings
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
@@ -159,6 +160,10 @@ group.add_option('-m', '--memcached',
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout. If no other output option is set, this is enabled by default.'
+                )
+group.add_option('--xml',
+                 dest='output_xml', action='store_true', default=False,
+                 help='Set to output xml file with StAR format.'
                 )
 
 #group.add_option('-o', '--outputfile',
@@ -370,9 +375,10 @@ class StorageStats(object):
         self.stats = {
                       'bytesused': 0,
                       'bytesfree': 0,
-                      'files': 0,
+                      'endtime': 0,
+                      'filecount': 0,
                       'quota': 1000**4,
-                      'timestamp': int(time.time()),
+                      'starttime': int(time.time()),
                      }
         self.id = _ep['id']
         self.plugin_options = _ep['plugin_options']
@@ -407,6 +413,9 @@ class StorageStats(object):
                 'valid': ['true', 'false', 'yes', 'no']
             },
         }
+        # Initialize StAR fields dict to use in xml output.
+        self.StAR_fields = {}
+
 
     def upload_to_memcached(self, memcached_ip='127.0.0.1', memcached_port='11211'):
         """
@@ -419,7 +428,7 @@ class StorageStats(object):
         storagestats = '%%'.join([
                                   self.id,
                                   self.storageprotocol,
-                                  str(self.stats['timestamp']),
+                                  str(self.stats['starttime']),
                                   str(self.stats['quota']),
                                   str(self.stats['bytesused']),
                                   str(self.stats['bytesfree']),
@@ -457,7 +466,7 @@ class StorageStats(object):
             memcached_contents = '%%'.join([
                                             self.id,
                                             self.storageprotocol,
-                                            str(self.stats['timestamp']),
+                                            str(self.stats['starttime']),
                                             str(self.stats['quota']),
                                             str(self.stats['bytesused']),
                                             str(self.stats['bytesfree']),
@@ -577,7 +586,7 @@ class StorageStats(object):
         print('\n#####', self.id, '#####' \
               '\n{0:12}{1}'.format('URL:', self.uri['url']), \
               '\n{0:12}{1}'.format('Protocol:', self.storageprotocol), \
-              '\n{0:12}{1}'.format('Time:', self.stats['timestamp']), \
+              '\n{0:12}{1}'.format('Time:', self.stats['starttime']), \
               '\n{0:12}{1}'.format('Quota:', self.stats['quota']), \
               '\n{0:12}{1}'.format('Bytes Used:', self.stats['bytesused']), \
               '\n{0:12}{1}'.format('Bytes Free:', self.stats['bytesfree']), \
@@ -591,7 +600,7 @@ class StorageStats(object):
             for error in self.debug:
                 print('{0:12}{1}'.format(' ',error))
 
-    def make_StAR_xml(self):
+    def output_StAR_xml(self, output_dir="/tmp"):
         """
         Heavily based on the star-accounting.py script by Fabrizion Furano
         http://svnweb.cern.ch/world/wsvn/lcgdm/lcg-dm/trunk/scripts/StAR-accounting/star-accounting.py
@@ -604,23 +613,23 @@ class StorageStats(object):
         # update XML
         rec = etree.SubElement(xmlroot, SR+'StorageUsageRecord')
         rid = etree.SubElement(rec, SR+'RecordIdentity')
-        rid.set(SR+"createTime", datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        rid.set(SR+"createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time())))
 
-        # Set the bucket name as the "StorageShare field"
-        if endpoint.storageshare:
+        # StAR StorageShare field (Optional)
+        if self.StAR_fields['storageshare']:
             sshare = etree.SubElement(rec, SR+"StorageShare")
-            sshare.text = endpoint.storageshare
+            sshare.text = self.StAR_fields['storageshare']
 
-        if endpoint.hostname:
+        #StAR StorageSystem field (Required)
+        if self.uri['hostname']:
             ssys = etree.SubElement(rec, SR+"StorageSystem")
-            ssys.text = endpoint.hostname
+            ssys.text = self.uri['hostname']
 
-        recid = endpoint.recordid
-        if not recid:
-            recid = endpoint.hostname+"-"+str(uuid.uuid1())
+        # StAR recordID field (Required)
+        recid = self.id+"-"+str(uuid.uuid1())
         rid.set(SR+"recordId", recid)
 
-        subjid = etree.SubElement(rec, SR+'SubjectIdentity')
+    #    subjid = etree.SubElement(rec, SR+'SubjectIdentity')
 
     #    if endpoint.group:
     #      grouproles = endpoint.group.split('/')
@@ -652,45 +661,51 @@ class StorageStats(object):
     #      usr = etree.SubElement(subjid, SR+"User")
     #      usr.text = endpoint.user
 
-        if endpoint.site:
-            st = etree.SubElement(subjid, SR+"Site")
-            st.text = endpoint.site
+        # StAR Site field (Optional)
+        ## Review
+        # if endpoint.site:
+        #     st = etree.SubElement(subjid, SR+"Site")
+        #     st.text = endpoint.site
 
+        # StAR StorageMedia field (Optional)
         # too many e vars here below, wtf?
-        if endpoint.storagemedia:
-            e = etree.SubElement(rec, SR+"StorageMedia")
-            e.text = endpoint.storagemedia
+        ## Review
+        # if endpoint.storagemedia:
+        #     e = etree.SubElement(rec, SR+"StorageMedia")
+        #     e.text = endpoint.storagemedia
 
-        if endpoint.validduration:
-            e = etree.SubElement(rec, SR+"StartTime")
-            d = datetime.datetime.utcnow() - datetime.timedelta(seconds=endpoint.validduration)
-            e.text = d.strftime("%Y-%m-%dT%H:%M:%SZ")
+        # StAR StartTime field (Required)
+        e = etree.SubElement(rec, SR+"StartTime")
+        e.text = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(self.stats['starttime']))
 
+        # StAR EndTime field (Required)
         e = etree.SubElement(rec, SR+"EndTime")
-        e.text = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        e.text = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(self.stats['endtime']))
 
-
-        if endpoint.filecount:
+        # StAR FileCount field (Optional)
+        if self.stats['filecount']:
             e = etree.SubElement(rec, SR+"FileCount")
-            e.text = str(endpoint.filecount)
+            e.text = str(self.stats['filecount'])
 
-
-        if not endpoint.resourcecapacityused:
-            endpoint.resourcecapacityused = 0
-
+        # StAR ResourceCapacityUsed (Required)
         e1 = etree.SubElement(rec, SR+"ResourceCapacityUsed")
-        e1.text = str(endpoint.resourcecapacityused)
+        e1.text = str(self.stats['bytesused'])
 
+        # StAR ResourceCapacityAllocated (Optional)
         e3 = etree.SubElement(rec, SR+"ResourceCapacityAllocated")
-        e3.text = str(endpoint.resourcecapacityallocated)
+        e3.text = str(self.stats['quota'])
 
-        if not endpoint.logicalcapacityused:
-            endpoint.logicalcapacityused = 0
+        # if not endpoint.logicalcapacityused:
+        #     endpoint.logicalcapacityused = 0
+        #
+        # e2 = etree.SubElement(rec, SR+"LogicalCapacityUsed")
+        # e2.text = str(endpoint.logicalcapacityused)
 
-        e2 = etree.SubElement(rec, SR+"LogicalCapacityUsed")
-        e2.text = str(endpoint.logicalcapacityused)
-
-        return xmlroot
+        xml_output = etree.tostring(xmlroot, pretty_print=True, encoding='unicode')
+        filename = output_dir + '/' + recid + '.xml'
+        output = open(filename, 'w')
+        output.write(xml_output)
+        output.close()
 
 class S3StorageStats(StorageStats):
     """
@@ -779,6 +794,7 @@ class S3StorageStats(StorageStats):
                                  auth=auth,
                                  verify=self.plugin_options['ssl_check'],
                                 )
+                self.stats['endtime'] = int(time.time())
 
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
@@ -933,10 +949,11 @@ class S3StorageStats(StorageStats):
                         break
 
             self.stats['bytesused'] = total_bytes
+            self.stats['endtime'] = int(time.time())
 
             if self.plugin_options['quota'] == 'api':
                 self.stats['quota'] = convert_size_to_bytes("1TB")
-                self.stats['files'] = total_files
+                self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
                 raise UGRStorageStatsQuotaWarning(
                                       endpoint = self.id,
@@ -946,7 +963,7 @@ class S3StorageStats(StorageStats):
 
             else:
                 self.stats['quota'] = self.plugin_options['quota']
-                self.stats['files'] = total_files
+                self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
     def validate_schema(self, scheme):
@@ -961,6 +978,12 @@ class S3StorageStats(StorageStats):
                 return ('http')
         else:
             return (scheme)
+
+    def output_StAR_xml(self):
+        self.StAR_fields['storageshare'] = self.uri['bucket']
+
+
+        super(S3StorageStats, self).output_StAR_xml()
 
 
 class DAVStorageStats(StorageStats):
@@ -1240,3 +1263,6 @@ if __name__ == '__main__':
 
         if options.output_stdout:
             endpoint.output_to_stdout(options)
+
+        if options.output_xml:
+            endpoint.output_StAR_xml()
