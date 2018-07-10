@@ -414,7 +414,9 @@ class StorageStats(object):
             },
         }
         # Initialize StAR fields dict to use in xml output.
-        self.StAR_fields = {}
+        self.StAR_fields = {
+            'storageshare': '',
+        }
 
 
     def upload_to_memcached(self, memcached_ip='127.0.0.1', memcached_port='11211'):
