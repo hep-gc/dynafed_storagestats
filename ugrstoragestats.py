@@ -1211,7 +1211,6 @@ def add_xml_getcontentlength(content):
     Iterates and sums through all the "contentlegth sub-elements" returing the
     total byte count.
     """
-
     xml = etree.fromstring(content)
     bytesused = 0
     filescount = 0
