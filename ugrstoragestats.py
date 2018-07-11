@@ -1214,10 +1214,12 @@ def add_xml_getcontentlength(content):
 
     xml = etree.fromstring(content)
     bytesused = 0
+    filescount = 0
     for tags in xml.iter('{DAV:}getcontentlength'):
         if isinstance(tags.text, str):
             bytesused += int(tags.text)
-    return (bytesused)
+            filescount += 1
+    return (bytesused, filescount)
 
 def convert_size_to_bytes(size):
     """
