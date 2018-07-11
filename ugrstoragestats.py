@@ -55,7 +55,7 @@ v0.4.7 Removed the warnings and instead added a status and debug attribute
        to StorageStats objects. Status appends the last ERROR. Debug appends
        all the ones that occur with more detail if available.
 v0.4.8 Improved memcached and status/debug output.
-v0.4.9 Added timestamp and execbeat output.
+v0.4.9 Added starttime and execbeat output.
 v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
        output.
 v0.6.0 Added quota options and logic to S3 and DAV operations.
@@ -64,16 +64,18 @@ v0.6.2 Added debug output.
 v0.6.3 Renamed storagestats attribute from options to plugin_options.
 v0.7.0 Functions don't depend on cli options. Module can be used from the
        interpreter.
+v0.7.1 XML StAR files output implemented for S3 and DAV.
 """
 from __future__ import print_function
 
-__version__ = "v0.7.0"
+__version__ = "v0.7.1"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
 import re
 import sys
 import time
+import uuid
 import warnings
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
@@ -159,6 +161,10 @@ group.add_option('-m', '--memcached',
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout. If no other output option is set, this is enabled by default.'
+                )
+group.add_option('--xml',
+                 dest='output_xml', action='store_true', default=False,
+                 help='Set to output xml file with StAR format.'
                 )
 
 #group.add_option('-o', '--outputfile',
@@ -370,14 +376,28 @@ class StorageStats(object):
         self.stats = {
                       'bytesused': 0,
                       'bytesfree': 0,
-                      'files': 0,
+                      'endtime': 0,
+                      'filecount': 0,
                       'quota': 1000**4,
-                      'timestamp': int(time.time()),
+                      'starttime': int(time.time()),
                      }
         self.id = _ep['id']
         self.plugin_options = _ep['plugin_options']
+        # We add the url form the conf file to the plugin_options as the one
+        # in the uri attribute below will be modified depending on the enpoint's
+        # protocol.
+        self.plugin_options.update({'url': _ep['url']})
         self.plugin = _ep['plugin']
-        self.url = _ep['url']
+
+        _url =  urlsplit(_ep['url'])
+        self.uri = {
+                    'hostname': _url.hostname,
+                    'netloc':   _url.netloc,
+                    'path':     _url.path,
+                    'port':     _url.port,
+                    'scheme':   self.validate_schema(_url.scheme),
+                    'url':      _ep['url'],
+                    }
 
         self.debug = []
         self.status = '[OK][OK][200]'
@@ -394,6 +414,11 @@ class StorageStats(object):
                 'valid': ['true', 'false', 'yes', 'no']
             },
         }
+        # Initialize StAR fields dict to use in xml output.
+        self.StAR_fields = {
+            'storageshare': '',
+        }
+
 
     def upload_to_memcached(self, memcached_ip='127.0.0.1', memcached_port='11211'):
         """
@@ -406,7 +431,7 @@ class StorageStats(object):
         storagestats = '%%'.join([
                                   self.id,
                                   self.storageprotocol,
-                                  str(self.stats['timestamp']),
+                                  str(self.stats['starttime']),
                                   str(self.stats['quota']),
                                   str(self.stats['bytesused']),
                                   str(self.stats['bytesfree']),
@@ -444,7 +469,7 @@ class StorageStats(object):
             memcached_contents = '%%'.join([
                                             self.id,
                                             self.storageprotocol,
-                                            str(self.stats['timestamp']),
+                                            str(self.stats['starttime']),
                                             str(self.stats['quota']),
                                             str(self.stats['bytesused']),
                                             str(self.stats['bytesfree']),
@@ -562,9 +587,9 @@ class StorageStats(object):
             memcached_contents = 'No Content Found. Possible error connecting to memcached service.'
 
         print('\n#####', self.id, '#####' \
-              '\n{0:12}{1}'.format('URL:', self.url), \
+              '\n{0:12}{1}'.format('URL:', self.uri['url']), \
               '\n{0:12}{1}'.format('Protocol:', self.storageprotocol), \
-              '\n{0:12}{1}'.format('Time:', self.stats['timestamp']), \
+              '\n{0:12}{1}'.format('Time:', self.stats['starttime']), \
               '\n{0:12}{1}'.format('Quota:', self.stats['quota']), \
               '\n{0:12}{1}'.format('Bytes Used:', self.stats['bytesused']), \
               '\n{0:12}{1}'.format('Bytes Free:', self.stats['bytesfree']), \
@@ -578,6 +603,113 @@ class StorageStats(object):
             for error in self.debug:
                 print('{0:12}{1}'.format(' ',error))
 
+    def output_StAR_xml(self, output_dir="/tmp"):
+        """
+        Heavily based on the star-accounting.py script by Fabrizion Furano
+        http://svnweb.cern.ch/world/wsvn/lcgdm/lcg-dm/trunk/scripts/StAR-accounting/star-accounting.py
+        """
+        SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
+        SR = "{%s}" % SR_namespace
+        NSMAP = {"sr": SR_namespace}
+        xmlroot = etree.Element(SR+"StorageUsageRecords", nsmap=NSMAP)
+
+        # update XML
+        rec = etree.SubElement(xmlroot, SR+'StorageUsageRecord')
+        rid = etree.SubElement(rec, SR+'RecordIdentity')
+        rid.set(SR+"createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time())))
+
+        # StAR StorageShare field (Optional)
+        if self.StAR_fields['storageshare']:
+            sshare = etree.SubElement(rec, SR+"StorageShare")
+            sshare.text = self.StAR_fields['storageshare']
+
+        #StAR StorageSystem field (Required)
+        if self.uri['hostname']:
+            ssys = etree.SubElement(rec, SR+"StorageSystem")
+            ssys.text = self.uri['hostname']
+
+        # StAR recordID field (Required)
+        recid = self.id+"-"+str(uuid.uuid1())
+        rid.set(SR+"recordId", recid)
+
+    #    subjid = etree.SubElement(rec, SR+'SubjectIdentity')
+
+    #    if endpoint.group:
+    #      grouproles = endpoint.group.split('/')
+    #      # If the last token is Role=... then we fetch the role and add it to the record
+    #    tmprl = grouproles[-1]
+    #    if tmprl.find('Role=') != -1:
+    #      splitroles = tmprl.split('=')
+    #      if (len(splitroles) > 1):
+    #        role = splitroles[1]
+    #        grp = etree.SubElement(subjid, SR+"GroupAttribute" )
+    #        grp.set( SR+"attributeType", "role" )
+    #        grp.text = role
+    #      # Now drop this last token, what remains is the vo identifier
+    #      grouproles.pop()
+    #
+    #    # The voname is the first token
+    #    voname = grouproles.pop(0)
+    #    grp = etree.SubElement(subjid, SR+"Group")
+    #    grp.text = voname
+    #
+    #    # If there are other tokens, they are a subgroup
+    #    if len(grouproles) > 0:
+    #      subgrp = '/'.join(grouproles)
+    #      grp = etree.SubElement(subjid, SR+"GroupAttribute" )
+    #      grp.set( SR+"attributeType", "subgroup" )
+    #      grp.text = subgrp
+    #
+    #    if endpoint.user:
+    #      usr = etree.SubElement(subjid, SR+"User")
+    #      usr.text = endpoint.user
+
+        # StAR Site field (Optional)
+        ## Review
+        # if endpoint.site:
+        #     st = etree.SubElement(subjid, SR+"Site")
+        #     st.text = endpoint.site
+
+        # StAR StorageMedia field (Optional)
+        # too many e vars here below, wtf?
+        ## Review
+        # if endpoint.storagemedia:
+        #     e = etree.SubElement(rec, SR+"StorageMedia")
+        #     e.text = endpoint.storagemedia
+
+        # StAR StartTime field (Required)
+        e = etree.SubElement(rec, SR+"StartTime")
+        e.text = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(self.stats['starttime']))
+
+        # StAR EndTime field (Required)
+        e = etree.SubElement(rec, SR+"EndTime")
+        e.text = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(self.stats['endtime']))
+
+        # StAR FileCount field (Optional)
+        if self.stats['filecount']:
+            e = etree.SubElement(rec, SR+"FileCount")
+            e.text = str(self.stats['filecount'])
+
+        # StAR ResourceCapacityUsed (Required)
+        e1 = etree.SubElement(rec, SR+"ResourceCapacityUsed")
+        e1.text = str(self.stats['bytesused'])
+
+        # StAR ResourceCapacityAllocated (Optional)
+        e3 = etree.SubElement(rec, SR+"ResourceCapacityAllocated")
+        e3.text = str(self.stats['quota'])
+
+        # if not endpoint.logicalcapacityused:
+        #     endpoint.logicalcapacityused = 0
+        #
+        # e2 = etree.SubElement(rec, SR+"LogicalCapacityUsed")
+        # e2.text = str(endpoint.logicalcapacityused)
+
+        xml_output = etree.tostring(xmlroot, pretty_print=True, encoding='unicode')
+        filename = output_dir + '/' + recid + '.xml'
+        output = open(filename, 'w')
+        output.write(xml_output)
+        output.close()
+
 class S3StorageStats(StorageStats):
     """
     Subclass that defines methods for obtaining storage stats of S3 endpoints.
@@ -586,6 +718,7 @@ class S3StorageStats(StorageStats):
         """
         Extend the object's validators unique to the storage type to make sure
         the storage status check can proceed.
+        Extend the uri attribute with S3 specific attributes like bucket.
         """
         super(S3StorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "S3"
@@ -617,6 +750,20 @@ class S3StorageStats(StorageStats):
             },
         })
 
+        try:
+            self.validate_plugin_options()
+        except UGRConfigFileError as ERR:
+            print(ERR.debug)
+            self.debug.append(ERR.debug)
+            self.status = ERR.message
+
+        if self.plugin_options['s3.alternate'].lower() == 'true'\
+        or self.plugin_options['s3.alternate'].lower() == 'yes':
+            self.uri['bucket'] = self.uri['path'].rpartition("/")[-1]
+
+        else:
+            self.uri['bucket'], self.uri['domain'] = self.uri['netloc'].partition('.')[::2]
+
     def get_storagestats(self):
         """
         Connect to the storage endpoint with the defined or generic API's
@@ -624,21 +771,19 @@ class S3StorageStats(StorageStats):
         """
         # Split the URL in the configuration file for validation and proper
         # formatting according to the method's needs.
-        u = urlsplit(self.url)
-        scheme = self.validate_schema(u.scheme)
+        # u = urlsplit(self.url)
+        # scheme = self.validate_schema(u.scheme)
 
         # Getting the storage Stats CephS3's Admin API
         if self.plugin_options['s3.api'].lower() == 'ceph-admin':
+
             if self.plugin_options['s3.alternate'].lower() == 'true'\
             or self.plugin_options['s3.alternate'].lower() == 'yes':
-                endpoint_url = '{uri_scheme}://{uri.netloc}/admin/bucket?format=json'.format(uri=u, uri_scheme=scheme)
-                bucket = u.path.rpartition("/")[-1]
-                payload = {'bucket': bucket, 'stats': 'True'}
-
+                api_url = '{scheme}://{netloc}/admin/bucket?format=json'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'] )
             else:
-                bucket, domain = u.netloc.partition('.')[::2]
-                endpoint_url = '{uri_scheme}://{uri_domain}/admin/{uri_bucket}?format=json'.format(uri=u, uri_scheme=scheme, uri_bucket=bucket, uri_domain=domain)
-                payload = {'bucket': bucket, 'stats': 'True'}
+                api_url = '{scheme}://{domain}/admin/{bucket}?format=json'.format(scheme=self.uri['scheme'], domain=self.uri['domain'], bucket=self.uri['bucket'] )
+
+            payload = {'bucket': self.uri['bucket'], 'stats': 'True'}
 
             auth = AWS4Auth(self.plugin_options['s3.pub_key'],
                             self.plugin_options['s3.priv_key'],
@@ -647,11 +792,13 @@ class S3StorageStats(StorageStats):
                            )
             try:
                 r = requests.get(
-                                 url=endpoint_url,
+                                 url=api_url,
                                  params=payload,
                                  auth=auth,
                                  verify=self.plugin_options['ssl_check'],
                                 )
+                # Save time when data was obtained.
+                self.stats['endtime'] = int(time.time())
 
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
@@ -729,18 +876,17 @@ class S3StorageStats(StorageStats):
         # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
         # API, should work for any compatible S3 endpoint.
         elif self.plugin_options['s3.api'].lower() == 'generic':
+
             if self.plugin_options['s3.alternate'].lower() == 'true'\
             or self.plugin_options['s3.alternate'].lower() == 'yes':
-                endpoint_url = '{uri_scheme}://{uri.netloc}'.format(uri=u, uri_scheme=scheme)
-                bucket = u.path.rpartition("/")[-1]
+                api_url = '{scheme}://{netloc}'.format(scheme=self.uri['scheme'],netloc=self.uri['netloc'])
 
             else:
-                bucket, domain = u.netloc.partition('.')[::2]
-                endpoint_url = '{uri_scheme}://{uri_domain}'.format(uri=u, uri_scheme=scheme, uri_domain=domain)
+                api_url = '{scheme}://{domain}'.format(scheme=self.uri['scheme'], domain=self.uri['domain'])
 
             connection = boto3.client('s3',
                                       region_name=self.plugin_options['s3.region'],
-                                      endpoint_url=endpoint_url,
+                                      endpoint_url=api_url,
                                       aws_access_key_id=self.plugin_options['s3.pub_key'],
                                       aws_secret_access_key=self.plugin_options['s3.priv_key'],
                                       use_ssl=True,
@@ -749,7 +895,7 @@ class S3StorageStats(StorageStats):
                                      )
             total_bytes = 0
             total_files = 0
-            kwargs = {'Bucket': bucket}
+            kwargs = {'Bucket': self.uri['bucket']}
             # This loop is needed to obtain all objects as the API can only
             # server 1,000 objects per request. The 'NextMarker' tells where
             # to start the next 1,000. If no 'NextMarker' is received, all
@@ -806,11 +952,14 @@ class S3StorageStats(StorageStats):
                     except KeyError:
                         break
 
+            # Save time when data was obtained.
+            self.stats['endtime'] = int(time.time())
+
             self.stats['bytesused'] = total_bytes
 
             if self.plugin_options['quota'] == 'api':
                 self.stats['quota'] = convert_size_to_bytes("1TB")
-                self.stats['files'] = total_files
+                self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
                 raise UGRStorageStatsQuotaWarning(
                                       endpoint = self.id,
@@ -820,7 +969,7 @@ class S3StorageStats(StorageStats):
 
             else:
                 self.stats['quota'] = self.plugin_options['quota']
-                self.stats['files'] = total_files
+                self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
     def validate_schema(self, scheme):
@@ -835,6 +984,12 @@ class S3StorageStats(StorageStats):
                 return ('http')
         else:
             return (scheme)
+
+    def output_StAR_xml(self):
+        self.StAR_fields['storageshare'] = self.uri['bucket']
+
+
+        super(S3StorageStats, self).output_StAR_xml()
 
 
 class DAVStorageStats(StorageStats):
@@ -857,26 +1012,34 @@ class DAVStorageStats(StorageStats):
             },
         })
 
+        try:
+            self.validate_plugin_options()
+        except UGRConfigFileError as ERR:
+            print(ERR.debug)
+            self.debug.append(ERR.debug)
+            self.status = ERR.message
+
     def get_storagestats(self):
         """
         Connect to the storage endpoint and will try WebDAV's quota and bytesfree
         method as defined by RFC 4331.
         """
-        u = urlsplit(self.url)
-        scheme = self.validate_schema(u.scheme)
-        endpoint_url = '{uri_scheme}://{uri.netloc}{uri.path}'.format(uri=u, uri_scheme=scheme)
+        api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
 
         headers = {'Depth': '0',}
         data = create_free_space_request_content()
         try:
             response = requests.request(
                 method="PROPFIND",
-                url=endpoint_url,
+                url=api_url,
                 cert=(self.plugin_options['cli_certificate'], self.plugin_options['cli_private_key']),
                 headers=headers,
                 verify=self.plugin_options['ssl_check'],
                 data=data
             )
+            # Save time when data was obtained.
+            self.stats['endtime'] = int(time.time())
+
         except requests.ConnectionError as ERR:
             raise UGRStorageStatsConnectionError(
                                                  endpoint=self.id,
@@ -1024,14 +1187,6 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
             ep.debug.append(ERR.debug)
             ep.status = ERR.message
 
-
-        try:
-            ep.validate_plugin_options()
-        except UGRConfigFileError as ERR:
-            print(ERR.debug)
-            ep.debug.append(ERR.debug)
-            ep.status = ERR.message
-
         storage_objects.append(ep)
 
     return(storage_objects)
@@ -1117,3 +1272,6 @@ if __name__ == '__main__':
 
         if options.output_stdout:
             endpoint.output_to_stdout(options)
+
+        if options.output_xml:
+            endpoint.output_StAR_xml()
