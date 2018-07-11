@@ -1192,7 +1192,8 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     return(storage_objects)
 
 def create_free_space_request_content():
-    """Creates an XML for requesting of free space on remote WebDAV server.
+    """
+    Creates an XML for requesting of free space on remote WebDAV server.
 
     :return: the XML string of request content.
     """
@@ -1204,6 +1205,19 @@ def create_free_space_request_content():
     buff = BytesIO()
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
+
+def add_xml_getcontentlength(content):
+    """
+    Iterates and sums through all the "contentlegth sub-elements" returing the
+    total byte count.
+    """
+
+    xml = etree.fromstring(content)
+    bytesused = 0
+    for tags in xml.iter('{DAV:}getcontentlength'):
+        if isinstance(tags.text, str):
+            bytesused += int(tags.text)
+    return (bytesused)
 
 def convert_size_to_bytes(size):
     """
