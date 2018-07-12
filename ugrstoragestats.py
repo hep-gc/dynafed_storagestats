@@ -65,10 +65,12 @@ v0.6.3 Renamed storagestats attribute from options to plugin_options.
 v0.7.0 Functions don't depend on cli options. Module can be used from the
        interpreter.
 v0.7.1 XML StAR files output implemented for S3 and DAV.
+v0.7.2 Added generic DAV method to list and obtain used space. Renamed required
+       options from quota to storagetats.quota and s3.api to storagestats.api
 """
 from __future__ import print_function
 
-__version__ = "v0.7.1"
+__version__ = "v0.7.2"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
