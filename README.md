@@ -78,7 +78,7 @@ be added to the endpoints.conf configuration file:
 ### General
 
 ```
-locplugin.<ID>.quota: [api, 1b|mb|gb|tb|pb|mib|gib|tib|pib]
+locplugin.<ID>.storagestats.quota: [api, 1b|mb|gb|tb|pb|mib|gib|tib|pib]
 ```
 
 If this option is missing, the script will try to get the quota from the endpoint
@@ -94,7 +94,7 @@ The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase
 ### S3
 
 ```
-locplugin.<ID>.s3.api: [generic, ceph-admin]
+locplugin.<ID>.storagestats.api: [generic, ceph-admin]
 ```
 
 ##### generic

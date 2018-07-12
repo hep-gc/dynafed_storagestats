@@ -65,10 +65,12 @@ v0.6.3 Renamed storagestats attribute from options to plugin_options.
 v0.7.0 Functions don't depend on cli options. Module can be used from the
        interpreter.
 v0.7.1 XML StAR files output implemented for S3 and DAV.
+v0.7.2 Added generic DAV method to list and obtain used space. Renamed required
+       options from quota to storagetats.quota and s3.api to storagestats.api
 """
 from __future__ import print_function
 
-__version__ = "v0.7.1"
+__version__ = "v0.7.2"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
@@ -403,9 +405,14 @@ class StorageStats(object):
         self.status = '[OK][OK][200]'
 
         self.validators = {
-            'quota': {
+            'storagestats.quota': {
                 'default': 'api',
                 'required': False,
+            },
+            'storagestats.api': {
+                'default': 'generic',
+                'required': True,
+                'valid': ['generic'],
             },
             'ssl_check': {
                 'boolean': True,
@@ -554,8 +561,8 @@ class StorageStats(object):
                 pass
 
         # Check the quota option and transform it into bytes if necessary.
-        if self.plugin_options['quota'] != "api":
-            self.plugin_options['quota'] = convert_size_to_bytes(self.plugin_options['quota'])
+        if self.plugin_options['storagestats.quota'] != "api":
+            self.plugin_options['storagestats.quota'] = convert_size_to_bytes(self.plugin_options['storagestats.quota'])
 
 
 
@@ -728,7 +735,7 @@ class S3StorageStats(StorageStats):
                 'required': False,
                 'valid': ['true', 'false', 'yes', 'no']
             },
-            's3.api': {
+            'storagestats.api': {
                 'default': 'generic',
                 'required': True,
                 'valid': ['ceph-admin', 'generic'],
@@ -775,7 +782,7 @@ class S3StorageStats(StorageStats):
         # scheme = self.validate_schema(u.scheme)
 
         # Getting the storage Stats CephS3's Admin API
-        if self.plugin_options['s3.api'].lower() == 'ceph-admin':
+        if self.plugin_options['storagestats.api'].lower() == 'ceph-admin':
 
             if self.plugin_options['s3.alternate'].lower() == 'true'\
             or self.plugin_options['s3.alternate'].lower() == 'yes':
@@ -818,7 +825,7 @@ class S3StorageStats(StorageStats):
                                                        endpoint=self.id,
                                                        status_code=r.status_code,
                                                        error="NoContent",
-                                                       api=self.plugin_options['s3.api'],
+                                                       api=self.plugin_options['storagestats.api'],
                                                        debug=r.content,
                                                       )
 
@@ -846,8 +853,8 @@ class S3StorageStats(StorageStats):
                         #                                                 error="NewEmptyBucket",
                         #                                                 debug=stats
                         #                                                )
-                    if self.plugin_options['quota'] != 'api':
-                        self.stats['quota'] = self.plugin_options['quota']
+                    if self.plugin_options['storagestats.quota'] != 'api':
+                        self.stats['quota'] = self.plugin_options['storagestats.quota']
                         self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
                     else:
@@ -871,11 +878,11 @@ class S3StorageStats(StorageStats):
                             )
 
         # Getting the storage Stats AWS S3 API
-        #elif self.plugin_options['s3.api'].lower() == 'aws-cloudwatch':
+        #elif self.plugin_options['storagestats.api'].lower() == 'aws-cloudwatch':
 
         # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
         # API, should work for any compatible S3 endpoint.
-        elif self.plugin_options['s3.api'].lower() == 'generic':
+        elif self.plugin_options['storagestats.api'].lower() == 'generic':
 
             if self.plugin_options['s3.alternate'].lower() == 'true'\
             or self.plugin_options['s3.alternate'].lower() == 'yes':
@@ -957,7 +964,7 @@ class S3StorageStats(StorageStats):
 
             self.stats['bytesused'] = total_bytes
 
-            if self.plugin_options['quota'] == 'api':
+            if self.plugin_options['storagestats.quota'] == 'api':
                 self.stats['quota'] = convert_size_to_bytes("1TB")
                 self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
@@ -968,7 +975,7 @@ class S3StorageStats(StorageStats):
                 )
 
             else:
-                self.stats['quota'] = self.plugin_options['quota']
+                self.stats['quota'] = self.plugin_options['storagestats.quota']
                 self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
@@ -1010,6 +1017,11 @@ class DAVStorageStats(StorageStats):
             'cli_private_key': {
                 'required': True,
             },
+            'storagestats.api': {
+                'default': 'generic',
+                'required': True,
+                'valid': ['generic', 'rfc4331'],
+            },
         })
 
         try:
@@ -1022,12 +1034,18 @@ class DAVStorageStats(StorageStats):
     def get_storagestats(self):
         """
         Connect to the storage endpoint and will try WebDAV's quota and bytesfree
-        method as defined by RFC 4331.
+        method as defined by RFC 4331 if "api" option is selected. Or use PROPFIND
+        with Depth: Infinity to scan all files and add the contentlegth.
         """
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
+        if self.plugin_options['storagestats.api'].lower() == 'generic':
+            headers = {'Depth': 'infinity',}
+            data = ''
 
-        headers = {'Depth': '0',}
-        data = create_free_space_request_content()
+        elif self.plugin_options['storagestats.api'].lower() == 'rfc4331':
+            headers = {'Depth': '0',}
+            data = create_free_space_request_content()
+
         try:
             response = requests.request(
                 method="PROPFIND",
@@ -1060,36 +1078,42 @@ class DAVStorageStats(StorageStats):
                                                 )
 
         else:
-            tree = etree.fromstring(response.content)
-            try:
-                node = tree.find('.//{DAV:}quota-available-bytes').text
-                if node is not None:
-                    pass
-                else:
-                    raise UGRStorageStatsErrorDAVQuotaMethod(endpoint=self.id,
-                                                             error="UnsupportedMethod"
-                                                            )
-            except UGRStorageStatsError as ERR:
-                self.stats['bytesused'] = -1
-                self.stats['bytesfree'] = -1
-                self.stats['quota'] = -1
-                self.debug.append(ERR.debug)
-                self.status = ERR.message
+            if self.plugin_options['storagestats.api'].lower() == 'generic':
+                self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
+                self.stats['quota'] = self.plugin_options['storagestats.quota']
+                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
-            else:
-                self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
-                self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-                if self.plugin_options['quota'] == 'api':
-                    # If quota-available-bytes is reported as '0' is because no quota is
-                    # provided, so we use the one from the config file or default.
-                    if self.stats['bytesfree'] != 0:
-                        self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+            elif self.plugin_options['storagestats.api'].lower() == 'rfc4331':
+                tree = etree.fromstring(response.content)
+                try:
+                    node = tree.find('.//{DAV:}quota-available-bytes').text
+                    if node is not None:
+                        pass
+                    else:
+                        raise UGRStorageStatsErrorDAVQuotaMethod(endpoint=self.id,
+                                                                 error="UnsupportedMethod"
+                                                                )
+                except UGRStorageStatsError as ERR:
+                    self.stats['bytesused'] = -1
+                    self.stats['bytesfree'] = -1
+                    self.stats['quota'] = -1
+                    self.debug.append(ERR.debug)
+                    self.status = ERR.message
+
                 else:
-                    self.stats['quota'] = self.plugin_options['quota']
-    #        except TypeError:
-    #            raise MethodNotSupported(name='free', server=hostname)
-    #        except etree.XMLSyntaxError:
-    #            return str()
+                    self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
+                    self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
+                    if self.plugin_options['storagestats.quota'] == 'api':
+                        # If quota-available-bytes is reported as '0' is because no quota is
+                        # provided, so we use the one from the config file or default.
+                        if self.stats['bytesfree'] != 0:
+                            self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                    else:
+                        self.stats['quota'] = self.plugin_options['storagestats.quota']
+        #        except TypeError:
+        #            raise MethodNotSupported(name='free', server=hostname)
+        #        except etree.XMLSyntaxError:
+        #            return str()
 
 
 ###############
@@ -1192,7 +1216,8 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     return(storage_objects)
 
 def create_free_space_request_content():
-    """Creates an XML for requesting of free space on remote WebDAV server.
+    """
+    Creates an XML for requesting of free space on remote WebDAV server.
 
     :return: the XML string of request content.
     """
@@ -1204,6 +1229,20 @@ def create_free_space_request_content():
     buff = BytesIO()
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
+
+def add_xml_getcontentlength(content):
+    """
+    Iterates and sums through all the "contentlegth sub-elements" returing the
+    total byte count.
+    """
+    xml = etree.fromstring(content)
+    bytesused = 0
+    filescount = 0
+    for tags in xml.iter('{DAV:}getcontentlength'):
+        if isinstance(tags.text, str):
+            bytesused += int(tags.text)
+            filescount += 1
+    return (bytesused, filescount)
 
 def convert_size_to_bytes(size):
     """
@@ -1232,7 +1271,7 @@ def convert_size_to_bytes(size):
     try:
         return int(size)
     except ValueError: # for example "1024x"
-        print('Malformed input!')
+        print('Malformed input for option: "storagestats.quota"')
         exit()
 
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
