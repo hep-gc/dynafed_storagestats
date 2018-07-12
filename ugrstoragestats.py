@@ -1022,12 +1022,18 @@ class DAVStorageStats(StorageStats):
     def get_storagestats(self):
         """
         Connect to the storage endpoint and will try WebDAV's quota and bytesfree
-        method as defined by RFC 4331.
+        method as defined by RFC 4331 if "api" option is selected. Or use PROPFIND
+        with Depth: Infinity to scan all files and add the contentlegth.
         """
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
+        if self.plugin_options['api'].lower() == 'generic':
+            headers = {'Depth': 'infinity',}
+            data = ''
 
-        headers = {'Depth': '0',}
-        data = create_free_space_request_content()
+        elif self.plugin_options['api'].lower() == 'rfc4331':
+            headers = {'Depth': '0',}
+            data = create_free_space_request_content()
+
         try:
             response = requests.request(
                 method="PROPFIND",
@@ -1060,36 +1066,42 @@ class DAVStorageStats(StorageStats):
                                                 )
 
         else:
-            tree = etree.fromstring(response.content)
-            try:
-                node = tree.find('.//{DAV:}quota-available-bytes').text
-                if node is not None:
-                    pass
-                else:
-                    raise UGRStorageStatsErrorDAVQuotaMethod(endpoint=self.id,
-                                                             error="UnsupportedMethod"
-                                                            )
-            except UGRStorageStatsError as ERR:
-                self.stats['bytesused'] = -1
-                self.stats['bytesfree'] = -1
-                self.stats['quota'] = -1
-                self.debug.append(ERR.debug)
-                self.status = ERR.message
+            if self.plugin_options['api'].lower() == 'generic':
+                self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
+                self.stats['quota'] = self.plugin_options['quota']
+                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
-            else:
-                self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
-                self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-                if self.plugin_options['quota'] == 'api':
-                    # If quota-available-bytes is reported as '0' is because no quota is
-                    # provided, so we use the one from the config file or default.
-                    if self.stats['bytesfree'] != 0:
-                        self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+            elif self.plugin_options['api'].lower() == 'rfc4331':
+                tree = etree.fromstring(response.content)
+                try:
+                    node = tree.find('.//{DAV:}quota-available-bytes').text
+                    if node is not None:
+                        pass
+                    else:
+                        raise UGRStorageStatsErrorDAVQuotaMethod(endpoint=self.id,
+                                                                 error="UnsupportedMethod"
+                                                                )
+                except UGRStorageStatsError as ERR:
+                    self.stats['bytesused'] = -1
+                    self.stats['bytesfree'] = -1
+                    self.stats['quota'] = -1
+                    self.debug.append(ERR.debug)
+                    self.status = ERR.message
+
                 else:
-                    self.stats['quota'] = self.plugin_options['quota']
-    #        except TypeError:
-    #            raise MethodNotSupported(name='free', server=hostname)
-    #        except etree.XMLSyntaxError:
-    #            return str()
+                    self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
+                    self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
+                    if self.plugin_options['quota'] == 'api':
+                        # If quota-available-bytes is reported as '0' is because no quota is
+                        # provided, so we use the one from the config file or default.
+                        if self.stats['bytesfree'] != 0:
+                            self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                    else:
+                        self.stats['quota'] = self.plugin_options['quota']
+        #        except TypeError:
+        #            raise MethodNotSupported(name='free', server=hostname)
+        #        except etree.XMLSyntaxError:
+        #            return str()
 
 
 ###############
@@ -1247,7 +1259,7 @@ def convert_size_to_bytes(size):
     try:
         return int(size)
     except ValueError: # for example "1024x"
-        print('Malformed input!')
+        print('Malformed input for option: "quota"')
         exit()
 
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
