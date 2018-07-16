@@ -568,18 +568,9 @@ class StorageStats(object):
 
     def validate_schema(self, scheme):
         """
-        Used to translate dav/davs into http/https since requests doesn't
-        support the former schema.
+        Used to validate the URN's schema. SubClasses can have their own.
         """
-        schema_translator = {
-            'dav': 'http',
-            'davs': 'https',
-        }
-
-        if scheme in schema_translator:
-            return (schema_translator[scheme])
-        else:
-            return (scheme)
+        return (scheme)
 
     def output_to_stdout(self, options):
         """
@@ -1115,6 +1106,20 @@ class DAVStorageStats(StorageStats):
         #        except etree.XMLSyntaxError:
         #            return str()
 
+    def validate_schema(self, scheme):
+        """
+        Used to translate dav/davs into http/https since requests doesn't
+        support the former schema.
+        """
+        schema_translator = {
+            'dav': 'http',
+            'davs': 'https',
+        }
+
+        if scheme in schema_translator:
+            return (schema_translator[scheme])
+        else:
+            return (scheme)
 
 ###############
 ## Functions ##
