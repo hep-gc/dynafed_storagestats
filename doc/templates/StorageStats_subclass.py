@@ -5,7 +5,7 @@ type of storage endpoint.
 It uses the python3 format.
 """
 
-class StorageStatsNewType (StorageStats):
+class NewTypeStorageStats (StorageStats):
     """
     Define the type of storage endpoint this subclass will interface with
     and any API options it can use.
