@@ -65,8 +65,8 @@ Options:
   Output options:
     --debug             Declare to enable debug output on stdout.
     -m, --memcached     Declare to enable uploading information to memcached.
-    --stdout            Set to output stats on stdout. If no other output
-                        option is set, this is enabled by default.
+    --stdout            Set to output stats on stdout.
+    --xml               Set to output xml file with StAR format.
 ```
 
 
