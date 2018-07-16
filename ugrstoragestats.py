@@ -66,15 +66,17 @@ v0.7.0 Functions don't depend on cli options. Module can be used from the
        interpreter.
 v0.7.1 XML StAR files output implemented for S3 and DAV.
 v0.7.2 Added generic DAV method to list and obtain used space. Renamed required
-       options from quota to storagetats.quota and s3.api to storagestats.api
+       options from quota to storagetats.quota and s3.api to storagestats.api.
+v0.7.3 Bug fixes when storagestats.api in DAV was not specified. Cleaned up
+       unused parameters in exception classes. Added documentation to all
+       exception classes. Cleaned code according to pep8 guidelines.
 """
 from __future__ import print_function
 
-__version__ = "v0.7.2"
+__version__ = "v0.7.3"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
-import re
 import sys
 import time
 import uuid
@@ -233,7 +235,7 @@ class UGRUnsupportedPluginError(UGRConfigFileError):
     Exception error when an endpoint of an unsuprted type/protocol plugin
     is detected.
     """
-    def __init__(self, endpoint, error=None, status_code="000", plugin=None, debug=None):
+    def __init__(self, error=None, status_code="000", plugin=None, debug=None):
         self.message = '[%s][%s] StorageStats method for "%s" not implemented yet.' \
                        % (error, status_code, plugin)
         self.debug = debug
@@ -244,7 +246,7 @@ class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     Exception error when a line in the configuration file under a specific
     endpoint does not match the given endpoint ID. Usually a typo.
     """
-    def __init__(self, endpoint, line, error=None, status_code="000", debug=None):
+    def __init__(self, line, error=None, status_code="000", debug=None):
         self.message = '[%s][%s] Failed to match ID in line "%s". Check your configuration.' \
                        % (error, status_code, line)
         self.debug = debug
@@ -255,7 +257,7 @@ class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
     Exception error when an option required by this module to obtain the Storage
     Stats is missing from the config files for the endpoint being processed.
     """
-    def __init__(self, endpoint, option, error=None, status_code="000", debug=None):
+    def __init__(self, option, error=None, status_code="000", debug=None):
         self.message = '[%s][%s] "%s" is required. Check your configuration.' \
                   % (error, status_code, option)
         self.debug = debug
@@ -266,7 +268,7 @@ class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
     Exception error when the value given for an option in the configuration file
     does not match the 'valid' values specified in the 'validators' attribute.
     """
-    def __init__(self, endpoint, option, valid_plugin_options, error=None, status_code="000", debug=None):
+    def __init__(self, option, valid_plugin_options, error=None, status_code="000", debug=None):
         self.message = '[%s][%s] Incorrect value given in option "%s". Valid plugin_options: %s' \
                   % (error, status_code, option, valid_plugin_options)
         self.debug = debug
@@ -290,7 +292,7 @@ class UGRMemcachedConnectionError(UGRMemcachedError):
     Exception error when script cannot connect to a memcached instance as
     requested.
     """
-    def __init__(self, endpoint, error=None, status_code="400", debug=None):
+    def __init__(self, error=None, status_code="400", debug=None):
         self.message = '[%s][%s] Failed to connect to memcached.' \
                        % (error, status_code)
         self.debug = debug
@@ -300,7 +302,7 @@ class UGRMemcachedIndexError(UGRMemcachedError):
     """
     Exception error when the requested index in memcached cannot be found.
     """
-    def __init__(self, endpoint, error=None, status_code="404", debug=None):
+    def __init__(self, error=None, status_code="404", debug=None):
         self.message = '[%s][%s] Unable to get memcached index contents.' \
                        % (error, status_code)
         self.debug = debug
@@ -324,7 +326,7 @@ class UGRStorageStatsConnectionError(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to the endpoint's URN.
     """
-    def __init__(self, endpoint, error=None, status_code="000", debug=None):
+    def __init__(self, error=None, status_code="000", debug=None):
         self.message = '[%s][%s] Failed to establish a connection.' \
                        % (error, status_code)
         self.debug = debug
@@ -334,7 +336,7 @@ class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to an S3 endpoint's API.
     """
-    def __init__(self, endpoint, error=None, status_code="000", api=None, debug=None):
+    def __init__(self, error=None, status_code="000", api=None, debug=None):
         self.message = '[%s][%s] Error requesting stats using API "%s".' \
                   % (error, status_code, api)
         self.debug = debug
@@ -344,7 +346,7 @@ class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     """
     Exception error when no bucket usage stats could be found.
     """
-    def __init__(self, endpoint, error=None, status_code="000", debug=None):
+    def __init__(self, error=None, status_code="000", debug=None):
         self.message = '[%s][%s] Failed to get bucket usage information.' \
                   % (error, status_code)
         self.debug = debug
@@ -354,7 +356,7 @@ class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     """
     Exception error when the DAV endpoint does not support the RFC 4331 method.
     """
-    def __init__(self, endpoint, error=None, status_code="000", debug=None):
+    def __init__(self, error=None, status_code="000", debug=None):
         self.message = '[%s][%s] WebDAV Quota Method.' \
                   % (error, status_code)
         self.debug = debug
@@ -365,7 +367,7 @@ class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     Exception caused when there is an issue reading a client X509 certificate
     as configured in the config files for the endpoint being processed.
     """
-    def __init__(self, endpoint, error=None, status_code="000", certfile=None, debug=None):
+    def __init__(self, error=None, status_code="000", certfile=None, debug=None):
         self.message = '[%s][%s] Invalid client certificate path "%s".' \
                   % (error, status_code, certfile)
         self.debug = debug
@@ -405,7 +407,7 @@ class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
     out the default option given by the 'validators' attribute that will be used
     in this absence.
     """
-    def __init__(self, endpoint, option, option_default, error=None, status_code="000", debug=None):
+    def __init__(self, option, option_default, error=None, status_code="000", debug=None):
         self.message = '[%s][%s] Unspecified "%s" option. Using default value "%s"' \
                   % (error, status_code, option, option_default)
         self.debug = debug
@@ -432,7 +434,7 @@ class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
     config file(s). Prints out the default being used as specified in the
     StorageStats object class's attribute self.stats['quota']
     """
-    def __init__(self, endpoint, error="NoQuotaGiven", status_code="000", debug=None):
+    def __init__(self, error="NoQuotaGiven", status_code="000", debug=None):
         self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
                        % (error, status_code)
         self.debug = debug
@@ -443,7 +445,7 @@ class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
     Exception warning when contacting a Ceph S3 Admin API and it is detected
     that now quota has been enabled for the endpoint bucket.
     """
-    def __init__(self, endpoint, error="BucketQuotaDisabled", status_code="000", debug=None):
+    def __init__(self, error="BucketQuotaDisabled", status_code="000", debug=None):
         self.message = '[%s][%s] Bucket quota is disabled. Using default of 1TB' \
                   % (error, status_code)
         self.debug = debug
@@ -534,7 +536,7 @@ class StorageStats(object):
 
         try:
             if mc.set(memcached_index, storagestats) == 0:
-                raise UGRMemcachedConnectionError(endpoint=self.id)
+                raise UGRMemcachedConnectionError()
 
         except UGRMemcachedConnectionError as ERR:
             self.debug.append(ERR.debug)
@@ -553,7 +555,6 @@ class StorageStats(object):
             memcached_contents = mc.get(memcached_index)
             if memcached_contents is None:
                 raise UGRMemcachedIndexError(
-                    endpoint=self.id,
                     status_code="000",
                     error='MemcachedEmptyIndex'
                     )
@@ -598,13 +599,11 @@ class StorageStats(object):
                     if self.validators[ep_option]['required']:
                         self.plugin_options.update({ep_option: ''})
                         raise UGRConfigFileErrorMissingRequiredOption(
-                            endpoint=self.id,
                             error="MissingRequiredOption",
                             option=ep_option,
                             )
                     else:
                         raise UGRConfigFileWarningMissingOption(
-                            endpoint=self.id,
                             error="MissingOption",
                             option=ep_option,
                             option_default=self.validators[ep_option]['default'],
@@ -621,7 +620,6 @@ class StorageStats(object):
                 try:
                     if self.plugin_options[ep_option] not in self.validators[ep_option]['valid']:
                         raise UGRConfigFileErrorInvalidOption(
-                            endpoint=self.id,
                             error="InvalidOption",
                             option=ep_option,
                             valid_plugin_options=self.validators[ep_option]['valid']
@@ -889,7 +887,6 @@ class S3StorageStats(StorageStats):
 
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
-                    endpoint=self.id,
                     error=ERR.__class__.__name__,
                     status_code="000",
                     debug=str(ERR),
@@ -902,9 +899,8 @@ class S3StorageStats(StorageStats):
                     stats = r.json()
                 except ValueError:
                     raise UGRStorageStatsConnectionErrorS3API(
-                        endpoint=self.id,
-                        status_code=r.status_code,
                         error="NoContent",
+                        status_code=r.status_code,
                         api=self.plugin_options['storagestats.api'],
                         debug=r.content,
                         )
@@ -917,7 +913,6 @@ class S3StorageStats(StorageStats):
                 except KeyError as ERR:
 
                     raise UGRStorageStatsErrorS3MissingBucketUsage(
-                        endpoint=self.id,
                         status_code=r.status_code,
                         error=stats['Code'],
                         debug=stats
@@ -927,12 +922,6 @@ class S3StorageStats(StorageStats):
                         # If the bucket is emtpy, then just keep going we
                         self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
 
-                        # raise UGRStorageStatsErrorS3MissingBucketUsage(
-                        #                                                 endpoint=self.id,
-                        #                                                 status_code=r.status_code,
-                        #                                                 error="NewEmptyBucket",
-                        #                                                 debug=stats
-                        #                                                )
                     if self.plugin_options['storagestats.quota'] != 'api':
                         self.stats['quota'] = self.plugin_options['storagestats.quota']
                         self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
@@ -945,14 +934,12 @@ class S3StorageStats(StorageStats):
                         elif stats['bucket_quota']['enabled'] is False:
                             self.stats['quota'] = convert_size_to_bytes("1TB")
                             self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-                            raise UGRStorageStatsCephS3QuotaDisabledWarning(
-                                endpoint=self.id,
-                                )
+                            raise UGRStorageStatsCephS3QuotaDisabledWarning()
+
                         else:
                             self.stats['quota'] = convert_size_to_bytes("1TB")
                             self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
                             raise UGRStorageStatsQuotaWarning(
-                                endpoint=self.id,
                                 error="NoQuotaGiven",
                                 status_code="000",
                                 )
@@ -992,36 +979,28 @@ class S3StorageStats(StorageStats):
                     response = connection.list_objects(**kwargs)
                 except botoExceptions.ClientError as ERR:
                     raise UGRStorageStatsConnectionError(
-                        endpoint=self.id,
                         error=ERR.__class__.__name__,
                         status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
                         debug=str(ERR),
                         )
-                    break
                 except botoRequestsExceptions.RequestException as ERR:
                     raise UGRStorageStatsConnectionError(
-                        endpoint=self.id,
                         error=ERR.__class__.__name__,
                         status_code="000",
                         debug=str(ERR),
                         )
-                    break
                 except botoExceptions.ParamValidationError as ERR:
                     raise UGRStorageStatsConnectionError(
-                        endpoint=self.id,
                         error=ERR.__class__.__name__,
                         status_code="000",
                         debug=str(ERR),
                         )
-                    break
                 except botoExceptions.BotoCoreError as ERR:
                     raise UGRStorageStatsConnectionError(
-                        endpoint=self.id,
                         error=ERR.__class__.__name__,
                         status_code="000",
                         debug=str(ERR),
                         )
-                    break
 
                 else:
                     try:
@@ -1049,7 +1028,6 @@ class S3StorageStats(StorageStats):
                 self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
                 raise UGRStorageStatsQuotaWarning(
-                    endpoint=self.id,
                     error="NoQuotaGiven",
                     status_code="000",
                 )
@@ -1072,7 +1050,7 @@ class S3StorageStats(StorageStats):
         else:
             return scheme
 
-    def output_StAR_xml(self):
+    def output_StAR_xml(self, output_dir="/tmp"):
         self.star_fields['storageshare'] = self.uri['bucket']
 
 
@@ -1098,8 +1076,8 @@ class DAVStorageStats(StorageStats):
                 'required': True,
             },
             'storagestats.api': {
-                'default': 'generic',
-                'required': True,
+                'default': 'rfc4331',
+                'required': False,
                 'valid': ['generic', 'rfc4331'],
             },
         })
@@ -1140,7 +1118,6 @@ class DAVStorageStats(StorageStats):
 
         except requests.ConnectionError as ERR:
             raise UGRStorageStatsConnectionError(
-                endpoint=self.id,
                 error=ERR.__class__.__name__,
                 status_code="000",
                 debug=str(ERR),
@@ -1150,7 +1127,6 @@ class DAVStorageStats(StorageStats):
             certfile = str(ERR).split(":")[-1]
             certfile = certfile.replace(' ', '')
             raise UGRStorageStatsConnectionErrorDAVCertPath(
-                endpoint=self.id,
                 error="ClientCertError",
                 status_code="000",
                 certfile=certfile,
@@ -1170,9 +1146,9 @@ class DAVStorageStats(StorageStats):
                     if node is not None:
                         pass
                     else:
-                        raise UGRStorageStatsErrorDAVQuotaMethod(endpoint=self.id,
-                                                                 error="UnsupportedMethod"
-                                                                )
+                        raise UGRStorageStatsErrorDAVQuotaMethod(
+                            error="UnsupportedMethod"
+                            )
                 except UGRStorageStatsError as ERR:
                     self.stats['bytesused'] = -1
                     self.stats['bytesfree'] = -1
@@ -1250,7 +1226,6 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                 endpoints[_id]['plugin_options'].update({_option:_val.strip()})
                             else:
                                 raise UGRConfigFileErrorIDMismatch(
-                                    endpoint=_id,
                                     error="OptionIDMismatch",
                                     line=line.split(":")[0],
                                     )
@@ -1266,7 +1241,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
 
     return endpoints
 
-def factory(endpoint, plugin):
+def factory(plugin):
     """
     Return object class to use based on the plugin specified in the UGR's
     configuration files.
@@ -1283,7 +1258,6 @@ def factory(endpoint, plugin):
         return plugin_dict.get(plugin)
     else:
         raise UGRUnsupportedPluginError(
-            endpoint=endpoint,
             error="UnsupportedPlugin",
             plugin=plugin,
             )
@@ -1298,7 +1272,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     endpoints = get_config(config_dir)
     for endpoint in endpoints:
         try:
-            ep = factory(endpoint, endpoints[endpoint]['plugin'])(endpoints[endpoint])
+            ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
 
         except UGRUnsupportedPluginError as ERR:
             ep = StorageStats(endpoints[endpoint])
@@ -1358,6 +1332,7 @@ def convert_size_to_bytes(size):
     for suffix in multipliers:
         if size.lower().endswith(suffix):
             return int(size[0:-len(suffix)]) * multipliers[suffix]
+
     else:
         if size.lower().endswith('b'):
             return int(size[0:-1])
