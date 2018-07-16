@@ -1073,8 +1073,8 @@ class DAVStorageStats(StorageStats):
                 'required': True,
             },
             'storagestats.api': {
-                'default': 'generic',
-                'required': True,
+                'default': 'rfc4331',
+                'required': False,
                 'valid': ['generic', 'rfc4331'],
             },
         })
@@ -1330,7 +1330,8 @@ def convert_size_to_bytes(size):
         if size.lower().endswith(suffix):
             return int(size[0:-len(suffix)]) * multipliers[suffix]
 
-        elif size.lower().endswith('b'):
+    else:
+        if size.lower().endswith('b'):
             return int(size[0:-1])
 
     try:
