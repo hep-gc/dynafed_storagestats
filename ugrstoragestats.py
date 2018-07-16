@@ -419,8 +419,7 @@ class UGRStorageStatsWarning(UGRBaseWarning):
     def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = '[StorageStatsWarning][000] An unkown error occured reading storage stats' \
-                           % (error, status_code)
+            self.message = '[StorageStatsWarning][000] An unkown error occured reading storage stats'
         else:
             self.message = message
         self.debug = debug
@@ -471,6 +470,7 @@ class StorageStats(object):
             }
 
         self.id = _ep['id']
+        self.storageprotocol = 'Undefined'
         self.plugin_options = _ep['plugin_options']
         # We add the url form the conf file to the plugin_options as the one
         # in the uri attribute below will be modified depending on the enpoint's
@@ -509,7 +509,7 @@ class StorageStats(object):
             },
         }
         # Initialize StAR fields dict to use in xml output.
-        self.StAR_fields = {
+        self.star_fields = {
             'storageshare': '',
         }
 
@@ -547,7 +547,7 @@ class StorageStats(object):
         is found, the stats are created in the same style as upload_to_memcached
         with error information for debugging and logging
         """
-        mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+        mc = memcache.Client([memcached_ip + ':' + memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
         try:
             memcached_contents = mc.get(memcached_index)
@@ -624,7 +624,7 @@ class StorageStats(object):
                             endpoint=self.id,
                             error="InvalidOption",
                             option=ep_option,
-                            valid_options=self.validators[ep_option]['valid']
+                            valid_plugin_options=self.validators[ep_option]['valid']
                             )
                     else:
                         try:
@@ -705,9 +705,9 @@ class StorageStats(object):
         rid.set(SR+"createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time())))
 
         # StAR StorageShare field (Optional)
-        if self.StAR_fields['storageshare']:
+        if self.star_fields['storageshare']:
             sshare = etree.SubElement(rec, SR+"StorageShare")
-            sshare.text = self.StAR_fields['storageshare']
+            sshare.text = self.star_fields['storageshare']
 
         #StAR StorageSystem field (Required)
         if self.uri['hostname']:
@@ -938,11 +938,11 @@ class S3StorageStats(StorageStats):
                         self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
                     else:
-                        if stats['bucket_quota']['enabled'] == True:
+                        if stats['bucket_quota']['enabled'] is True:
                             self.stats['quota'] = stats['bucket_quota']['max_size']
                             self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
-                        elif stats['bucket_quota']['enabled'] == False:
+                        elif stats['bucket_quota']['enabled'] is False:
                             self.stats['quota'] = convert_size_to_bytes("1TB")
                             self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
                             raise UGRStorageStatsCephS3QuotaDisabledWarning(
@@ -1073,7 +1073,7 @@ class S3StorageStats(StorageStats):
             return scheme
 
     def output_StAR_xml(self):
-        self.StAR_fields['storageshare'] = self.uri['bucket']
+        self.star_fields['storageshare'] = self.uri['bucket']
 
 
         super(S3StorageStats, self).output_StAR_xml()
