@@ -1296,8 +1296,10 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore")
     warnings.formatwarning = warning_on_one_line
 
+    # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
 
+    # Call get_storagestats method for each endpoint to obtain Storage Stats.
     for endpoint in endpoints:
         try:
             endpoint.get_storagestats()
@@ -1314,8 +1316,10 @@ if __name__ == '__main__':
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
+        # Print Storagestats to the standard output.
         if options.output_stdout:
             endpoint.output_to_stdout(options)
 
+        # Create StAR Storagestats XML files for each endpoint.
         if options.output_xml:
             endpoint.output_StAR_xml()
