@@ -244,16 +244,6 @@ class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
         self.debug = debug
         super(UGRConfigFileErrorInvalidOption, self).__init__(self.message, self.debug)
 
-class UGRStorageStatsError(UGRBaseError):
-    def __init__(self, message=None, debug=None):
-        if message is None:
-            # Set some default useful error message
-            self.message = "[StorageStatsError][000] An unkown error occured obtaning storage stats."
-        else:
-            self.message = message
-        self.debug = debug
-        super(UGRStorageStatsError, self).__init__(self.message, self.debug)
-
 class UGRMemcachedError(UGRBaseError):
     def __init__(self, message=None, debug=None):
         if message is None:
@@ -263,19 +253,29 @@ class UGRMemcachedError(UGRBaseError):
         self.debug = debug
         super(UGRMemcachedError, self).__init__(self.message, self.debug)
 
-class UGRStorageStatsMemcachedConnectionError(UGRMemcachedError):
+class UGRMemcachedConnectionError(UGRMemcachedError):
     def __init__(self, endpoint, error=None, status_code="400", debug=None):
         self.message = '[%s][%s] Failed to connect to memcached.' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsMemcachedConnectionError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedConnectionError, self).__init__(self.message, self.debug)
 
-class UGRStorageStatsMemcachedIndexError(UGRMemcachedError):
+class UGRMemcachedIndexError(UGRMemcachedError):
     def __init__(self, endpoint, error=None, status_code="404", debug=None):
         self.message = '[%s][%s] Unable to get memcached index contents.' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsMemcachedIndexError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedIndexError, self).__init__(self.message, self.debug)
+
+class UGRStorageStatsError(UGRBaseError):
+    def __init__(self, message=None, debug=None):
+        if message is None:
+            # Set some default useful error message
+            self.message = "[StorageStatsError][000] An unkown error occured obtaning storage stats."
+        else:
+            self.message = message
+        self.debug = debug
+        super(UGRStorageStatsError, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
     def __init__(self, endpoint, error=None, status_code="000", debug=None):
@@ -446,9 +446,9 @@ class StorageStats(object):
                                 ])
         try:
             if mc.set(memcached_index, storagestats) == 0:
-                raise UGRStorageStatsMemcachedConnectionError(endpoint=self.id)
+                raise UGRMemcachedConnectionError(endpoint=self.id)
 
-        except UGRStorageStatsMemcachedConnectionError as ERR:
+        except UGRMemcachedConnectionError as ERR:
             self.debug.append(ERR.debug)
             self.status = ERR.message
 
@@ -464,13 +464,13 @@ class StorageStats(object):
         try:
             memcached_contents = mc.get(memcached_index)
             if memcached_contents is None:
-                raise UGRStorageStatsMemcachedIndexError(
+                raise UGRMemcachedIndexError(
                                                     endpoint = self.id,
                                                     status_code="000",
                                                     error='MemcachedEmptyIndex'
                                                     )
 
-        except UGRStorageStatsMemcachedIndexError as ERR:
+        except UGRMemcachedIndexError as ERR:
             self.debug.append(ERR.debug)
             self.status = ERR.message
             memcached_contents = '%%'.join([
