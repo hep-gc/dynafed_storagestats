@@ -61,6 +61,7 @@ class StorageStatsNewType (StorageStats):
             """
             This might not be necessary, but if the protocol uses a unique
             protocol schema in the URN that requires some logic to figure out.
+            Example below if for the DAVStorageStats.
             """
             schema_translator = {
                 'dav': 'http',
