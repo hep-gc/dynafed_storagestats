@@ -70,10 +70,11 @@ v0.7.2 Added generic DAV method to list and obtain used space. Renamed required
 v0.7.3 Bug fixes when storagestats.api in DAV was not specified. Cleaned up
        unused parameters in exception classes. Added documentation to all
        exception classes. Cleaned code according to pep8 guidelines.
+v0.7.4 Single XML StAR file output with all endpoints' stats.
 """
 from __future__ import print_function
 
-__version__ = "v0.7.3"
+__version__ = "v0.7.4"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
