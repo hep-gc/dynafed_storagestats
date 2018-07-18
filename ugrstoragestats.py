@@ -70,10 +70,11 @@ v0.7.2 Added generic DAV method to list and obtain used space. Renamed required
 v0.7.3 Bug fixes when storagestats.api in DAV was not specified. Cleaned up
        unused parameters in exception classes. Added documentation to all
        exception classes. Cleaned code according to pep8 guidelines.
+v0.7.4 Single XML StAR file output with all endpoints' stats.
 """
 from __future__ import print_function
 
-__version__ = "v0.7.3"
+__version__ = "v0.7.4"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
@@ -83,6 +84,7 @@ import uuid
 import warnings
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
+import copy
 import glob
 import json
 
@@ -687,8 +689,9 @@ class StorageStats(object):
             for error in self.debug:
                 print('{0:12}{1}'.format(' ', error))
 
-    def output_StAR_xml(self, output_dir="/tmp"):
+    def create_StAR_xml(self):
         """
+        Creates XML object wtih storage stats in the StAR format.
         Heavily based on the star-accounting.py script by Fabrizion Furano
         http://svnweb.cern.ch/world/wsvn/lcgdm/lcg-dm/trunk/scripts/StAR-accounting/star-accounting.py
         """
@@ -787,12 +790,9 @@ class StorageStats(object):
         #
         # e2 = etree.SubElement(rec, SR+"LogicalCapacityUsed")
         # e2.text = str(endpoint.logicalcapacityused)
+        return xmlroot
 
-        xml_output = etree.tostring(xmlroot, pretty_print=True, encoding='unicode')
-        filename = output_dir + '/' + recid + '.xml'
-        output = open(filename, 'w')
-        output.write(xml_output)
-        output.close()
+
 
 class S3StorageStats(StorageStats):
     """
@@ -1343,6 +1343,27 @@ def convert_size_to_bytes(size):
         print('Malformed input for option: "storagestats.quota"')
         exit()
 
+def output_StAR_xml(endpoints, output_dir="/tmp"):
+    """
+    Create a single StAR XML file for all endpoints passed to this function.
+    """
+    SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
+    SR = "{%s}" % SR_namespace
+    NSMAP = {"sr": SR_namespace}
+    xmlroot = etree.Element(SR+"StorageUsageRecords", nsmap=NSMAP)
+
+    for endpoint in endpoints:
+        data = endpoint.create_StAR_xml()
+        root = data.getroottree().getroot()
+        sub_element = copy.deepcopy(root[0])
+        xmlroot.append(sub_element)
+
+    xml_output = etree.tostring(xmlroot, pretty_print=True, encoding='unicode')
+    filename = output_dir + '/' + 'chale' + '.xml'
+    output = open(filename, 'w')
+    output.write(xml_output)
+    output.close()
+
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     """
     Define the output format that the warnings.warn method will use.
@@ -1384,6 +1405,6 @@ if __name__ == '__main__':
         if options.output_stdout:
             endpoint.output_to_stdout(options)
 
-        # Create StAR Storagestats XML files for each endpoint.
-        if options.output_xml:
-            endpoint.output_StAR_xml()
+    # Create StAR Storagestats XML files for each endpoint.
+    if options.output_xml:
+        output_StAR_xml(endpoints)
