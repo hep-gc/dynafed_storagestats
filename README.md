@@ -115,7 +115,7 @@ favor of rfc4331
 
 ##### rfc4331
 
-This option will query the DAV server according to RFC4331.
+This option will query the DAV server according to [RFC4331](https://tools.ietf.org/html/rfc4331).
 
 ### S3
 
