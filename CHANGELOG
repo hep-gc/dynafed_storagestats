@@ -1,0 +1,61 @@
+v0.0.1 Works with cephS3 AdminAPI.
+v0.0.2 Added AWS list-type2 API to list all objects in bucket and add object size.
+       Added memcached format and upload each endpoint obtained.
+v0.0.3 Added support for python3
+v0.0.4 Changed from single configration file to all *.conf files in given directory.
+v0.0.5 Added module import checks.
+v0.0.6 StorageStats object class chosen dynamically based on configured plugin.
+v0.0.7 Added options
+v0.1.0 Changed aws-list to generic and now uses boto3 for generality.
+v0.2.0 Added validators key and 'validate_options' function.
+v0.2.1 Cleaned up code to PEP8.
+v0.2.2 Exception for plugint types not yet implemented.
+v0.2.3 Fixed bucket-name issue if not at paths' root and non-standard ports for
+        S3 endpoints.
+v0.2.4 Added URL schema validator function and updated code. Works for dav,davs.
+v0.2.5 Moved schema validator from fuction to class method. Added for S3.
+v0.2.6 Tested with Minio
+v0.2.7 Added files counted to S3 Generic.
+v0.2.8 Changed S3 generic API from list_objects_v2 to list_objects as CephS3
+       doesn't have the "NextContinuationToken" directive and thus would only
+       list the first 1000. This needs to be updated one Ceph has this as
+       v1 is sort of deprecated.
+v0.2.9 Added ability to specify S3 signature version.
+v0.2.10 Added options for memcached, stdoutput and some debugging.
+v0.2.11 Fixed issue with ID names with multiple "."
+v0.3.0 Added DAV/Http support.
+v0.3.1 Added exceptions and logic when ceph-admin option fails.
+v0.3.2 Added bytesfree counts for S3 endpoints and exception for aws
+       ceph-admin error.
+v0.3.3 Fixed exception handling for python3 syntax.
+v0.3.4 Fixed json parsing from requests using it's native json function to
+       solve issue with json module of python 3.4.
+v0.4.0 Re-wrote the exception classes and how they are treated in code. Added
+       warnings.
+v0.4.1 Added exceptions and error handling for S3 storagestats ceph-admin.
+v0.4.2 Added exceptions and error handling for S3 storagestats, generic.
+v0.4.3 Added exceptions for configuration file errors, missing options,
+       unsupported plugins.
+v0.4.4 Added exceptions and error handling for DAV storagestats.
+v0.4.5 Changed error to use the exception names. Works better and cleaner.
+v0.4.6 ssl_check now uses the ca_path if declared and ssl_check is true.
+v0.4.7 Removed the warnings and instead added a status and debug attribute
+       to StorageStats objects. Status appends the last ERROR. Debug appends
+       all the ones that occur with more detail if available.
+v0.4.8 Improved memcached and status/debug output.
+v0.4.9 Added starttime and execbeat output.
+v0.5.0 Added memcached exceptions, error messages. Added option for execbeat
+       output.
+v0.6.0 Added quota options and logic to S3 and DAV operations.
+v0.6.1 Moved ouptut to object class method.
+v0.6.2 Added debug output.
+v0.6.3 Renamed storagestats attribute from options to plugin_options.
+v0.7.0 Functions don't depend on cli options. Module can be used from the
+       interpreter.
+v0.7.1 XML StAR files output implemented for S3 and DAV.
+v0.7.2 Added generic DAV method to list and obtain used space. Renamed required
+       options from quota to storagetats.quota and s3.api to storagestats.api.
+v0.7.3 Bug fixes when storagestats.api in DAV was not specified. Cleaned up
+       unused parameters in exception classes. Added documentation to all
+       exception classes. Cleaned code according to pep8 guidelines.
+v0.7.4 Single XML StAR file output with all endpoints' stats.
