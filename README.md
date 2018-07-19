@@ -91,6 +91,25 @@ of 1TB will be used.
 ##### bytes
 The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase.
 
+### DAV/HTTP
+
+```
+locplugin.<ID>.storagestats.api: [generic, rfc4331]
+```
+
+##### generic
+
+This option will list all objects behind the bucket and add the individual
+sizes. For this method to recrusivley get all objects, the DAV server needs
+to header "Depth" with attribute "infinity". This is not recommended as
+it is an expensive method, can use a lot of memory and is suceptible to 
+denial of service. Therefore this option should be avoided if possible in
+favor of rfc4331
+
+##### rfc4331
+
+This option will query the DAV server according to RFC4331.
+
 ### S3
 
 ```
