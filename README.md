@@ -73,7 +73,14 @@ Options:
 ## Endpoints Configuration
 
 In order to use the correct methods for each storage type some options should
-be added to the endpoints.conf configuration file:
+be added to the endpoints.conf configuration file.
+
+### Known issues
+
+No support for global options. (e.g. locplugin.*.ca_path)
+
+Module boto3, used for S3 endpoints, does not support a folder path for the
+Certificate Authority. An individual file needs to be specified.
 
 ### General
 
