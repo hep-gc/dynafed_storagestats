@@ -1140,7 +1140,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     """
     endpoints = {}
     os.chdir(config_dir)
-    for config_file in glob.glob("*.conf"):
+    for config_file in sorted(glob.glob("*.conf")):
         with open(config_file, "r") as f:
             for line in f:
                 line = line.strip()
