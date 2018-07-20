@@ -12,7 +12,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.7.4"
+__version__ = "v0.7.5"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
