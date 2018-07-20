@@ -20,6 +20,7 @@ import sys
 import time
 import uuid
 import warnings
+import logging
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
 import copy
@@ -763,7 +764,7 @@ class S3StorageStats(StorageStats):
             },
             's3.region': {
                 'default': 'us-east-1',
-                'required': True,
+                'required': False,
             },
             's3.signature_ver': {
                 'default': 's3v4',
@@ -1302,6 +1303,30 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     output.write(xml_output)
     output.close()
 
+def setup_logging( logfile="dynafed_storagestats.log", level="DEBUG"):
+    # create logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    # Set logger format
+    log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
+    log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
+
+    # Create console handler and set level to WARNING. This will be used to log
+    # onto memcached.
+    log_handler_memcached = logging.StreamHandler()
+    log_handler_memcached.setLevel(logging.WARNING)
+    log_handler_memcached.setFormatter(log_format_memcached)
+
+    # Create file handler and set level from cli or default to options.log
+    log_handler_file = logging.FileHandler(logfile, mode='a')
+    log_handler_file.setLevel(logging.DEBUG)
+    log_handler_file.setFormatter(log_format_file)
+
+    # Add handlers
+    logger.addHandler(log_handler_memcached)
+    logger.addHandler(log_handler_file)
+
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     """
     Define the output format that the warnings.warn method will use.
@@ -1318,6 +1343,9 @@ if __name__ == '__main__':
     if options.debug is False:
         warnings.simplefilter("ignore")
     warnings.formatwarning = warning_on_one_line
+
+    # Setup logging
+    setup_logging()
 
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
