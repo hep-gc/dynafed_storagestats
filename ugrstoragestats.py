@@ -12,7 +12,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.7.5"
+__version__ = "v0.7.6"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
@@ -1147,7 +1147,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                 if not line.startswith("#"):
 
                     if "glb.locplugin[]" in line:
-                        _plugin, _id, _concurrency, _url = line.split(" ")[1::]
+                        _plugin, _id, _concurrency, _url = line.split()[1::]
                         endpoints.setdefault(_id, {})
                         endpoints[_id].update({'id':_id.strip()})
                         endpoints[_id].update({'url':_url.strip()})
