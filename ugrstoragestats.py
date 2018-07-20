@@ -477,9 +477,13 @@ class StorageStats(object):
 
         try:
             if mc.set(memcached_index, storagestats) == 0:
-                raise UGRMemcachedConnectionError()
+                raise UGRMemcachedConnectionError(
+                    status_code = "400",
+                    error="MemcachedConnectionError",
+                )
 
         except UGRMemcachedConnectionError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             self.debug.append(ERR.debug)
             self.status = ERR.message
 
@@ -501,6 +505,7 @@ class StorageStats(object):
                     )
 
         except UGRMemcachedIndexError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             self.debug.append(ERR.debug)
             self.status = ERR.message
             memcached_contents = '%%'.join([
@@ -550,6 +555,7 @@ class StorageStats(object):
                             option_default=self.validators[ep_option]['default'],
                             )
                 except UGRBaseWarning as WARN:
+                    logger.warn("[%s]%s" % (self.id, WARN.debug))
                     self.debug.append(WARN.debug)
                     self.status = WARN.message
                     self.plugin_options.update({ep_option: self.validators[ep_option]['default']})
@@ -776,6 +782,7 @@ class S3StorageStats(StorageStats):
         try:
             self.validate_plugin_options()
         except UGRConfigFileError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = ERR.message
@@ -1024,6 +1031,7 @@ class DAVStorageStats(StorageStats):
         try:
             self.validate_plugin_options()
         except UGRConfigFileError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = ERR.message
@@ -1089,6 +1097,7 @@ class DAVStorageStats(StorageStats):
                             error="UnsupportedMethod"
                             )
                 except UGRStorageStatsError as ERR:
+                    logger.error("[%s]%s" % (self.id, ERR.debug))
                     self.stats['bytesused'] = -1
                     self.stats['bytesfree'] = -1
                     self.stats['quota'] = -1
@@ -1169,6 +1178,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                     line=line.split(":")[0],
                                     )
                         except UGRConfigFileError as ERR:
+                            logger.error("[%s]%s" % (self.id, ERR.debug))
                             print(ERR.debug)
                             sys.exit(1)
                             # self.debug.append(ERR.debug)
@@ -1214,6 +1224,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
 
         except UGRUnsupportedPluginError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             ep = StorageStats(endpoints[endpoint])
             ep.debug.append(ERR.debug)
             ep.status = ERR.message
@@ -1303,7 +1314,7 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     output.write(xml_output)
     output.close()
 
-def setup_logging( logfile="dynafed_storagestats.log", level="DEBUG"):
+def setup_logger( logfile="dynafed_storagestats.log", level="DEBUG"):
     # create logger
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -1324,8 +1335,10 @@ def setup_logging( logfile="dynafed_storagestats.log", level="DEBUG"):
     log_handler_file.setFormatter(log_format_file)
 
     # Add handlers
-    logger.addHandler(log_handler_memcached)
+    # logger.addHandler(log_handler_memcached)
     logger.addHandler(log_handler_file)
+
+    return logger
 
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     """
@@ -1345,7 +1358,7 @@ if __name__ == '__main__':
     warnings.formatwarning = warning_on_one_line
 
     # Setup logging
-    setup_logging()
+    logger = setup_logger()
 
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
@@ -1355,9 +1368,11 @@ if __name__ == '__main__':
         try:
             endpoint.get_storagestats()
         except UGRStorageStatsWarning as WARN:
+            logger.warn("[%s]%s" % (endpoint.id, WARN.debug))
             endpoint.debug.append(WARN.debug)
             endpoint.status = WARN.message
         except UGRStorageStatsError as ERR:
+            logger.error("[%s]%s" % (endpoint.id, ERR.debug))
             endpoint.debug.append(ERR.debug)
             endpoint.status = ERR.message
 
