@@ -12,7 +12,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.7.6"
+__version__ = "v0.7.7"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
@@ -129,7 +129,7 @@ options, args = parser.parse_args()
 
 class UGRBaseException(Exception):
     """
-    Base exception class for ugrstoragestats module.
+    Base exception class for dynafed_storagestats module.
     """
     def __init__(self, message=None, debug=None):
         if message is None:
@@ -1314,7 +1314,7 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     output.write(xml_output)
     output.close()
 
-def setup_logger( logfile="dynafed_storagestats.log", level="DEBUG"):
+def setup_logger( logfile="/tmp/dynafed_storagestats.log", level="DEBUG"):
     # create logger
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
