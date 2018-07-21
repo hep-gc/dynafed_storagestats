@@ -12,7 +12,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.7.6"
+__version__ = "v0.7.7"
 __author__ = "Fernando Fernandez Galindo"
 
 import os
@@ -20,6 +20,7 @@ import sys
 import time
 import uuid
 import warnings
+import logging
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
 import copy
@@ -128,7 +129,7 @@ options, args = parser.parse_args()
 
 class UGRBaseException(Exception):
     """
-    Base exception class for ugrstoragestats module.
+    Base exception class for dynafed_storagestats module.
     """
     def __init__(self, message=None, debug=None):
         if message is None:
@@ -476,9 +477,13 @@ class StorageStats(object):
 
         try:
             if mc.set(memcached_index, storagestats) == 0:
-                raise UGRMemcachedConnectionError()
+                raise UGRMemcachedConnectionError(
+                    status_code = "400",
+                    error="MemcachedConnectionError",
+                )
 
         except UGRMemcachedConnectionError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             self.debug.append(ERR.debug)
             self.status = ERR.message
 
@@ -500,6 +505,7 @@ class StorageStats(object):
                     )
 
         except UGRMemcachedIndexError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             self.debug.append(ERR.debug)
             self.status = ERR.message
             memcached_contents = '%%'.join([
@@ -549,6 +555,7 @@ class StorageStats(object):
                             option_default=self.validators[ep_option]['default'],
                             )
                 except UGRBaseWarning as WARN:
+                    logger.warn("[%s]%s" % (self.id, WARN.debug))
                     self.debug.append(WARN.debug)
                     self.status = WARN.message
                     self.plugin_options.update({ep_option: self.validators[ep_option]['default']})
@@ -763,7 +770,7 @@ class S3StorageStats(StorageStats):
             },
             's3.region': {
                 'default': 'us-east-1',
-                'required': True,
+                'required': False,
             },
             's3.signature_ver': {
                 'default': 's3v4',
@@ -775,6 +782,7 @@ class S3StorageStats(StorageStats):
         try:
             self.validate_plugin_options()
         except UGRConfigFileError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = ERR.message
@@ -1023,6 +1031,7 @@ class DAVStorageStats(StorageStats):
         try:
             self.validate_plugin_options()
         except UGRConfigFileError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = ERR.message
@@ -1088,6 +1097,7 @@ class DAVStorageStats(StorageStats):
                             error="UnsupportedMethod"
                             )
                 except UGRStorageStatsError as ERR:
+                    logger.error("[%s]%s" % (self.id, ERR.debug))
                     self.stats['bytesused'] = -1
                     self.stats['bytesfree'] = -1
                     self.stats['quota'] = -1
@@ -1168,6 +1178,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                     line=line.split(":")[0],
                                     )
                         except UGRConfigFileError as ERR:
+                            logger.error("[%s]%s" % (self.id, ERR.debug))
                             print(ERR.debug)
                             sys.exit(1)
                             # self.debug.append(ERR.debug)
@@ -1213,6 +1224,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
 
         except UGRUnsupportedPluginError as ERR:
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             ep = StorageStats(endpoints[endpoint])
             ep.debug.append(ERR.debug)
             ep.status = ERR.message
@@ -1302,6 +1314,32 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     output.write(xml_output)
     output.close()
 
+def setup_logger( logfile="/tmp/dynafed_storagestats.log", level="DEBUG"):
+    # create logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    # Set logger format
+    log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
+    log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
+
+    # Create console handler and set level to WARNING. This will be used to log
+    # onto memcached.
+    log_handler_memcached = logging.StreamHandler()
+    log_handler_memcached.setLevel(logging.WARNING)
+    log_handler_memcached.setFormatter(log_format_memcached)
+
+    # Create file handler and set level from cli or default to options.log
+    log_handler_file = logging.FileHandler(logfile, mode='a')
+    log_handler_file.setLevel(logging.DEBUG)
+    log_handler_file.setFormatter(log_format_file)
+
+    # Add handlers
+    # logger.addHandler(log_handler_memcached)
+    logger.addHandler(log_handler_file)
+
+    return logger
+
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     """
     Define the output format that the warnings.warn method will use.
@@ -1319,6 +1357,9 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore")
     warnings.formatwarning = warning_on_one_line
 
+    # Setup logging
+    logger = setup_logger()
+
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
 
@@ -1327,9 +1368,11 @@ if __name__ == '__main__':
         try:
             endpoint.get_storagestats()
         except UGRStorageStatsWarning as WARN:
+            logger.warn("[%s]%s" % (endpoint.id, WARN.debug))
             endpoint.debug.append(WARN.debug)
             endpoint.status = WARN.message
         except UGRStorageStatsError as ERR:
+            logger.error("[%s]%s" % (endpoint.id, ERR.debug))
             endpoint.debug.append(ERR.debug)
             endpoint.status = ERR.message
 

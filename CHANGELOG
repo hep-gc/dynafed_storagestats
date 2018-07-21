@@ -59,3 +59,6 @@ v0.7.3 Bug fixes when storagestats.api in DAV was not specified. Cleaned up
        unused parameters in exception classes. Added documentation to all
        exception classes. Cleaned code according to pep8 guidelines.
 v0.7.4 Single XML StAR file output with all endpoints' stats.
+v0.7.5 Conf files to be processed A->Z
+v0.7.6 Fixes multiple whitelines in config files.
+v0.7.7 Added logging to files, pwd and WARNING and above.

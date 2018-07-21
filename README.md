@@ -1,4 +1,4 @@
-# ugrstoragestats.py
+# dynafed_storagestats.py
 
 Module to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints and upload the
@@ -29,7 +29,7 @@ an appropriate location for this.
 First run with the following flags:
 
 ```
-./ugrstoragestats.py -d /etc/ugr/conf.d --stdout -m --debug
+./dynafed_storagestats.py -d /etc/ugr/conf.d --stdout -m --debug
 ```
 
 This will give is the best way to test if there are any options missing in the
@@ -40,14 +40,14 @@ When everything is in place and working as desired, the following command is
 what would normally used with cron:
 
 ```
-./ugrstoragestats.py -d /etc/ugr/conf.d -m
+./dynafed_storagestats.py -d /etc/ugr/conf.d -m
 ```
 
 To get help:
 ```
-ugrstoragestats -h
+dynafed_storagestats -h
 
-Usage: ugrstoragestats.py [options]
+Usage: dynafed_storagestats.py [options]
 
 Options:
   -h, --help            show this help message and exit
@@ -109,7 +109,7 @@ locplugin.<ID>.storagestats.api: [generic, rfc4331]
 This option will list all objects behind the bucket and add the individual
 sizes. For this method to recrusivley get all objects, the DAV server needs
 to header "Depth" with attribute "infinity". This is not recommended as
-it is an expensive method, can use a lot of memory and is suceptible to 
+it is an expensive method, can use a lot of memory and is suceptible to
 denial of service. Therefore this option should be avoided if possible in
 favor of rfc4331
 
