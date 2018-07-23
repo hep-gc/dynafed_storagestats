@@ -128,7 +128,10 @@ options, args = parser.parse_args()
 
 ### Log Handler Classes
 class TailLogHandler(logging.Handler):
-
+    """
+    Logger Handler used in conjuction with the TailLogger class which allows
+    to grab log messages genereated by the logging module into variables.
+    """
     def __init__(self, log_queue):
         logging.Handler.__init__(self)
         self.log_queue = log_queue
@@ -138,7 +141,10 @@ class TailLogHandler(logging.Handler):
 
 
 class TailLogger(object):
-
+    """
+    Creates Logger with the TailLogHandler and sets how many lines to keep
+    with maxlen.
+    """
     def __init__(self, maxlen):
         self._log_queue = collections.deque(maxlen=maxlen)
         self._log_handler = TailLogHandler(self._log_queue)
@@ -1347,6 +1353,12 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     output.close()
 
 def setup_logger( logfile="/tmp/dynafed_storagestats.log", level="DEBUG"):
+    """
+    Setup the loggers to be used throughout the script. We need at least two,
+    one to log onto a logfile and a second with the TailLogger class defined
+    above to log onto attribute StorageStats.status which will be logged onto
+    memcached.
+    """
     ## create file logger
     flogger = logging.getLogger(__name__)
     # flogger.setLevel(logging.DEBUG)
@@ -1364,7 +1376,7 @@ def setup_logger( logfile="/tmp/dynafed_storagestats.log", level="DEBUG"):
     # Set memcached logger format
     log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
     # Create console handler and set level to WARNING.
-    memcached_logline = TailLogger(1)
+    memcached_logline = TailLogger(1) #We just want one line at a time.
     log_handler_memcached = memcached_logline.log_handler
     log_handler_memcached.setLevel(logging.WARNING)
     log_handler_memcached.setFormatter(log_format_memcached)
