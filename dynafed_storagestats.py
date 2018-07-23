@@ -127,6 +127,31 @@ options, args = parser.parse_args()
 ## Exception Classes ##
 #######################
 
+### Log Handler Classes
+class TailLogHandler(logging.Handler):
+
+    def __init__(self, log_queue):
+        logging.Handler.__init__(self)
+        self.log_queue = log_queue
+
+    def emit(self, record):
+        self.log_queue.append(self.format(record))
+
+
+class TailLogger(object):
+
+    def __init__(self, maxlen):
+        self._log_queue = collections.deque(maxlen=maxlen)
+        self._log_handler = TailLogHandler(self._log_queue)
+
+    def contents(self):
+        return '\n'.join(self._log_queue)
+
+    @property
+    def log_handler(self):
+        return self._log_handler
+
+### Exception Classes
 class UGRBaseException(Exception):
     """
     Base exception class for dynafed_storagestats module.
@@ -152,9 +177,9 @@ class UGRBaseError(UGRBaseException):
     def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "[ERROR][ERROR][000] A unkown error occured."
+            self.message = "[ERROR][000] A unkown error occured."
         else:
-            self.message = "[ERROR]" + message
+            self.message = message
         self.debug = debug
         super(UGRBaseError, self).__init__(self.message, self.debug)
 
@@ -323,9 +348,9 @@ class UGRBaseWarning(UGRBaseException):
     def __init__(self, message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = '[WARN][WARN][000] A unkown error occured.'
+            self.message = '[WARNING][000] A unkown error occured.'
         else:
-            self.message = '[WARN]' + message
+            self.message = message
         self.debug = debug
         super(UGRBaseWarning, self).__init__(self.message, self.debug)
 
@@ -483,9 +508,10 @@ class StorageStats(object):
                 )
 
         except UGRMemcachedConnectionError as ERR:
-            logger.error("[%s]%s" % (self.id, ERR.debug))
+            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             self.debug.append(ERR.debug)
-            self.status = ERR.message
+            self.status = memcached_logline.contents()
 
     def get_from_memcached(self, memcached_ip='127.0.0.1', memcached_port='11211'):
         """
@@ -505,9 +531,10 @@ class StorageStats(object):
                     )
 
         except UGRMemcachedIndexError as ERR:
-            logger.error("[%s]%s" % (self.id, ERR.debug))
+            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             self.debug.append(ERR.debug)
-            self.status = ERR.message
+            self.status = memcached_logline.contents()
             memcached_contents = '%%'.join([
                 self.id,
                 self.storageprotocol,
@@ -555,9 +582,10 @@ class StorageStats(object):
                             option_default=self.validators[ep_option]['default'],
                             )
                 except UGRBaseWarning as WARN:
-                    logger.warn("[%s]%s" % (self.id, WARN.debug))
+                    flogger.warn("[%s]%s" % (self.id, WARN.debug))
+                    mlogger.warn("%s" % (WARN.message))
                     self.debug.append(WARN.debug)
-                    self.status = WARN.message
+                    self.status = memcached_logline.contents()
                     self.plugin_options.update({ep_option: self.validators[ep_option]['default']})
 
             # If the ep_option has been defined, check against a list of valid
@@ -782,10 +810,11 @@ class S3StorageStats(StorageStats):
         try:
             self.validate_plugin_options()
         except UGRConfigFileError as ERR:
-            logger.error("[%s]%s" % (self.id, ERR.debug))
+            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             print(ERR.debug)
             self.debug.append(ERR.debug)
-            self.status = ERR.message
+            self.status = memcached_logline.contents()
 
         if self.plugin_options['s3.alternate'].lower() == 'true'\
         or self.plugin_options['s3.alternate'].lower() == 'yes':
@@ -1031,10 +1060,11 @@ class DAVStorageStats(StorageStats):
         try:
             self.validate_plugin_options()
         except UGRConfigFileError as ERR:
-            logger.error("[%s]%s" % (self.id, ERR.debug))
+            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             print(ERR.debug)
             self.debug.append(ERR.debug)
-            self.status = ERR.message
+            self.status = memcached_logline.contents()
 
     def get_storagestats(self):
         """
@@ -1097,12 +1127,13 @@ class DAVStorageStats(StorageStats):
                             error="UnsupportedMethod"
                             )
                 except UGRStorageStatsError as ERR:
-                    logger.error("[%s]%s" % (self.id, ERR.debug))
+                    flogger.error("[%s]%s" % (self.id, ERR.debug))
+                    mlogger.error("%s" % (ERR.message))
                     self.stats['bytesused'] = -1
                     self.stats['bytesfree'] = -1
                     self.stats['quota'] = -1
                     self.debug.append(ERR.debug)
-                    self.status = ERR.message
+                    self.status = memcached_logline.contents()
 
                 else:
                     self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
@@ -1178,11 +1209,12 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                     line=line.split(":")[0],
                                     )
                         except UGRConfigFileError as ERR:
-                            logger.error("[%s]%s" % (self.id, ERR.debug))
+                            flogger.error("[%s]%s" % (self.id, ERR.debug))
+                            mlogger.warn("%s" % (WARN.message))
                             print(ERR.debug)
                             sys.exit(1)
                             # self.debug.append(ERR.debug)
-                            # self.status = ERR.message
+                            # self.status = memcached_logline.contents()
                     else:
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
@@ -1224,10 +1256,11 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
 
         except UGRUnsupportedPluginError as ERR:
-            logger.error("[%s]%s" % (self.id, ERR.debug))
+            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             ep = StorageStats(endpoints[endpoint])
             ep.debug.append(ERR.debug)
-            ep.status = ERR.message
+            ep.status = memcached_logline.contents()
 
         storage_objects.append(ep)
 
@@ -1315,30 +1348,31 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     output.close()
 
 def setup_logger( logfile="/tmp/dynafed_storagestats.log", level="DEBUG"):
-    # create logger
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-
-    # Set logger format
-    log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
+    ## create file logger
+    flogger = logging.getLogger(__name__)
+    # flogger.setLevel(logging.DEBUG)
+    # Set file logger format
     log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
-
-    # Create console handler and set level to WARNING. This will be used to log
-    # onto memcached.
-    log_handler_memcached = logging.StreamHandler()
-    log_handler_memcached.setLevel(logging.WARNING)
-    log_handler_memcached.setFormatter(log_format_memcached)
-
     # Create file handler and set level from cli or default to options.log
     log_handler_file = logging.FileHandler(logfile, mode='a')
     log_handler_file.setLevel(logging.DEBUG)
     log_handler_file.setFormatter(log_format_file)
-
     # Add handlers
-    # logger.addHandler(log_handler_memcached)
-    logger.addHandler(log_handler_file)
+    flogger.addHandler(log_handler_file)
 
-    return logger
+    ## create memcached logger
+    mlogger = logging.getLogger('memcached_logger')
+    # Set memcached logger format
+    log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
+    # Create console handler and set level to WARNING.
+    memcached_logline = TailLogger(1)
+    log_handler_memcached = memcached_logline.log_handler
+    log_handler_memcached.setLevel(logging.WARNING)
+    log_handler_memcached.setFormatter(log_format_memcached)
+    # Add handlers
+    mlogger.addHandler(log_handler_memcached)
+
+    return flogger, mlogger, memcached_logline
 
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     """
@@ -1358,7 +1392,7 @@ if __name__ == '__main__':
     warnings.formatwarning = warning_on_one_line
 
     # Setup logging
-    logger = setup_logger()
+    flogger, mlogger, memcached_logline = setup_logger()
 
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
@@ -1368,13 +1402,15 @@ if __name__ == '__main__':
         try:
             endpoint.get_storagestats()
         except UGRStorageStatsWarning as WARN:
-            logger.warn("[%s]%s" % (endpoint.id, WARN.debug))
+            flogger.warn("[%s]%s" % (endpoint.id, WARN.debug))
+            mlogger.warn("%s" % (WARN.message))
             endpoint.debug.append(WARN.debug)
-            endpoint.status = WARN.message
+            endpoint.status = memcached_logline.contents()
         except UGRStorageStatsError as ERR:
-            logger.error("[%s]%s" % (endpoint.id, ERR.debug))
+            flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             endpoint.debug.append(ERR.debug)
-            endpoint.status = ERR.message
+            endpoint.status = memcached_logline.contents()
 
         # finally: # Here add code to tadd the logs/debug attributes.
 
