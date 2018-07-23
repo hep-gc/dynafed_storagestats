@@ -18,7 +18,6 @@ import os
 import sys
 import time
 import uuid
-import warnings
 import logging
 import collections
 from io import BytesIO
@@ -1386,12 +1385,8 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 #############
 
 if __name__ == '__main__':
-    # Warning messages are disabled by default.
-    if options.debug is False:
-        warnings.simplefilter("ignore")
-    warnings.formatwarning = warning_on_one_line
 
-    # Setup logging
+    # Setup loggers
     flogger, mlogger, memcached_logline = setup_logger()
 
     # Create list of StorageStats objects, one for each configured endpoint.
