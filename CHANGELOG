@@ -62,3 +62,5 @@ v0.7.4 Single XML StAR file output with all endpoints' stats.
 v0.7.5 Conf files to be processed A->Z
 v0.7.6 Fixes multiple whitelines in config files.
 v0.7.7 Added logging to files, pwd and WARNING and above.
+v0.8.0 Logging module now takes care of creating log messages for file and
+       memcached status.
