@@ -20,6 +20,7 @@ import time
 import uuid
 import warnings
 import logging
+import collections
 from io import BytesIO
 from optparse import OptionParser, OptionGroup
 import copy
