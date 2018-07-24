@@ -118,6 +118,10 @@ group.add_option('--logfile',
                 dest='logfile', action='store', default='/tmp/dynafed_storagestats.log',
                 help='Change where to ouput logs. Default: /tmp/dynafed_storagestats.log'
                 )
+group.add_option('--loglevel',
+                dest='loglevel', action='store', default='WARNING',
+                help='Set file log level. Default: WARNING. Valid: DEBUG, INFO, WARNING, ERROR'
+                )
 parser.add_option_group(group)
 
 options, args = parser.parse_args()
@@ -505,7 +509,9 @@ class StorageStats(object):
             str(self.stats['bytesfree']),
             self.status,
             ])
-
+        flogger.info("[%s]Uploading stats to memcached server: %s" % (self.id, memcached_srv))
+        flogger.debug("[%s]Using memcached index: %s" % (self.id, memcached_index))
+        flogger.debug("[%s]String uploading to memcached: %s" % (self.id, storagestats))
         try:
             if mc.set(memcached_index, storagestats) == 0:
                 raise UGRMemcachedConnectionError(
@@ -566,7 +572,9 @@ class StorageStats(object):
         Check the endpoints plugin_options from UGR's configuration file against the
         set of default and valid plugin_options defined under the self.validators dict.
         """
+        flogger.info("[%s]Validating configured options." % (self.id))
         for ep_option in self.validators:
+            flogger.debug("[%s]Validating option: %s" % (self.id, ep_option))
             # First check if the option has been defined in the config file..
             # If it is missing, check if it is required, and exit if true
             # otherwise set it to the default value and print a warning.
@@ -637,6 +645,7 @@ class StorageStats(object):
         """
         Used to validate the URN's schema. SubClasses can have their own.
         """
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
         return scheme
 
     def output_to_stdout(self, options):
@@ -856,6 +865,7 @@ class S3StorageStats(StorageStats):
                 self.plugin_options['s3.region'],
                 's3',
                 )
+            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_options['storagestats.api'].lower(), payload))
             try:
                 r = requests.get(
                     url=api_url,
@@ -865,6 +875,9 @@ class S3StorageStats(StorageStats):
                     )
                 # Save time when data was obtained.
                 self.stats['endtime'] = int(time.time())
+
+                #Log contents of response
+                flogger.debug("[%s]Endpoint reply: %s" % (self.id, r.content))
 
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
@@ -955,6 +968,7 @@ class S3StorageStats(StorageStats):
             # server 1,000 objects per request. The 'NextMarker' tells where
             # to start the next 1,000. If no 'NextMarker' is received, all
             # objects have been obtained.
+            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_options['storagestats.api'].lower(), kwargs))
             while True:
                 try:
                     response = connection.list_objects(**kwargs)
@@ -984,6 +998,8 @@ class S3StorageStats(StorageStats):
                         )
 
                 else:
+                    # This produces a lot of information, migh not be necessary.
+                    # flogger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
                     try:
                         response['Contents']
                     except KeyError:
@@ -1023,12 +1039,16 @@ class S3StorageStats(StorageStats):
         Used to translate s3 into http/https since requests doesn't
         support the former schema.
         """
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
         if scheme == 's3':
             if self.plugin_options['ssl_check']:
+                flogger.debug("[%s]Using URN schema: https" % (self.id, scheme))
                 return 'https'
             else:
+                flogger.debug("[%s]Using URN schema: http" % (self.id, scheme))
                 return 'http'
         else:
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
             return scheme
 
     def output_StAR_xml(self, output_dir="/tmp"):
@@ -1087,6 +1107,8 @@ class DAVStorageStats(StorageStats):
             headers = {'Depth': '0',}
             data = create_free_space_request_content()
 
+        # flogger.debug("[%s]Requesting storage stats with:\nURN: %s\nAPI Method: %s\nHeaders: %s\nData: %s" % (self.id, api_url, self.plugin_options['storagestats.api'].lower(), headers, data ))
+        flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_options['storagestats.api'].lower(), headers, data ))
         try:
             response = requests.request(
                 method="PROPFIND",
@@ -1098,6 +1120,9 @@ class DAVStorageStats(StorageStats):
             )
             # Save time when data was obtained.
             self.stats['endtime'] = int(time.time())
+
+            #Log contents of response
+            flogger.debug("[%s]Endpoint reply: %s" % (self.id, response.content))
 
         except requests.ConnectionError as ERR:
             raise UGRStorageStatsConnectionError(
@@ -1166,9 +1191,12 @@ class DAVStorageStats(StorageStats):
             'davs': 'https',
         }
 
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
         if scheme in schema_translator:
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[scheme]))
             return schema_translator[scheme]
         else:
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
             return scheme
 
 ###############
@@ -1188,6 +1216,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     endpoints = {}
     os.chdir(config_dir)
     for config_file in sorted(glob.glob("*.conf")):
+        flogger.info("Reading file '%s'" % (os.path.realpath(config_file)))
         with open(config_file, "r") as f:
             for line in f:
                 line = line.strip()
@@ -1199,6 +1228,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                         endpoints[_id].update({'id':_id.strip()})
                         endpoints[_id].update({'url':_url.strip()})
                         endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
+                        flogger.info("Found endpoint '%s' using plugin '%s'. Reading configuration." % (endpoints[_id]['id'], endpoints[_id]['plugin']))
 
                     elif "locplugin" in line:
                         key, _val = line.partition(":")[::2]
@@ -1216,7 +1246,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                     )
                         except UGRConfigFileError as ERR:
                             flogger.error("[%s]%s" % (self.id, ERR.debug))
-                            mlogger.warn("%s" % (WARN.message))
+                            mlogger.error("%s" % (ERR.message))
                             print(ERR.debug)
                             sys.exit(1)
                             # self.debug.append(ERR.debug)
@@ -1256,11 +1286,13 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     endpoint configured in UGR's configuration files.
     """
     storage_objects = []
+    flogger.info("Looking for storage endpoint configuration files in '%s'" % (options.configs_directory))
     endpoints = get_config(config_dir)
     for endpoint in endpoints:
+        flogger.debug("[%s]Requesting object class" % (endpoints[endpoint]['id']))
         try:
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
-
+            flogger.debug("[%s]Object class returned: %s" % (endpoints[endpoint]['id'], type(ep)))
         except UGRUnsupportedPluginError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
@@ -1353,7 +1385,7 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     output.write(xml_output)
     output.close()
 
-def setup_logger( logfile="/tmp/dynafed_storagestats.log", level="DEBUG"):
+def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     """
     Setup the loggers to be used throughout the script. We need at least two,
     one to log onto a logfile and a second with the TailLogger class defined
@@ -1362,36 +1394,29 @@ def setup_logger( logfile="/tmp/dynafed_storagestats.log", level="DEBUG"):
     """
     ## create file logger
     flogger = logging.getLogger(__name__)
-    # flogger.setLevel(logging.DEBUG)
+    num_loglevel = getattr(logging, loglevel.upper())
+    flogger.setLevel(num_loglevel)
     # Set file logger format
     log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
     # Create file handler and set level from cli or default to options.log
     log_handler_file = logging.FileHandler(logfile, mode='a')
-    log_handler_file.setLevel(logging.DEBUG)
     log_handler_file.setFormatter(log_format_file)
     # Add handlers
     flogger.addHandler(log_handler_file)
 
     ## create memcached logger
     mlogger = logging.getLogger('memcached_logger')
+    mlogger.setLevel(logging.WARNING)
     # Set memcached logger format
     log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
     # Create console handler and set level to WARNING.
     memcached_logline = TailLogger(1) #We just want one line at a time.
     log_handler_memcached = memcached_logline.log_handler
-    log_handler_memcached.setLevel(logging.WARNING)
     log_handler_memcached.setFormatter(log_format_memcached)
     # Add handlers
     mlogger.addHandler(log_handler_memcached)
 
     return flogger, mlogger, memcached_logline
-
-def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
-    """
-    Define the output format that the warnings.warn method will use.
-    """
-    #return '%s:%s: %s: %s\n' % (filename, lineno, category.__name__, message)
-    return '%s\n' % (message)
 
 #############
 # Self-Test #
@@ -1400,13 +1425,17 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 if __name__ == '__main__':
 
     # Setup loggers
-    flogger, mlogger, memcached_logline = setup_logger(logfile=options.logfile)
+    flogger, mlogger, memcached_logline = setup_logger(
+        logfile=options.logfile,
+        loglevel=options.loglevel,
+        )
 
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
 
     # Call get_storagestats method for each endpoint to obtain Storage Stats.
     for endpoint in endpoints:
+        flogger.info("[%s] Contacting endpoint." % (endpoint.id))
         try:
             endpoint.get_storagestats()
         except UGRStorageStatsWarning as WARN:
