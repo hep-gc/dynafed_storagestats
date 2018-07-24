@@ -12,7 +12,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.0"
+__version__ = "v0.8.1"
 
 import os
 import sys
@@ -75,9 +75,6 @@ except ImportError:
 usage = "usage: %prog [options]"
 parser = OptionParser(usage)
 
-# parser.add_option('-v', '--verbose',
-#                   dest='verbose', action='count',
-#                   help='Increase verbosity level for debugging this script (on stderr)')
 parser.add_option('-d', '--dir',
                   dest='configs_directory', action='store', default='/etc/ugr/conf.d',
                   help="Path to UGR's endpoint .conf files."
@@ -108,15 +105,19 @@ group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout.'
                 )
+# parser.add_option('-v', '--verbose',
+#                   dest='verbose', action='count',
+#                   help='Increase verbosity level for debugging this script (on stderr)'
+#                   )
 group.add_option('--xml',
                  dest='output_xml', action='store_true', default=False,
                  help='Set to output xml file with StAR format.'
                 )
 
-#group.add_option('-o', '--outputfile',
-#                 dest='out_file', action='store', default=None,
-#                 help='Change where to ouput the data. Default: None'
-#                )
+group.add_option('--logfile',
+                dest='logfile', action='store', default='/tmp/dynafed_storagestats.log',
+                help='Change where to ouput logs. Default: /tmp/dynafed_storagestats.log'
+                )
 parser.add_option_group(group)
 
 options, args = parser.parse_args()
@@ -1399,7 +1400,7 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 if __name__ == '__main__':
 
     # Setup loggers
-    flogger, mlogger, memcached_logline = setup_logger()
+    flogger, mlogger, memcached_logline = setup_logger(logfile=options.logfile)
 
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
