@@ -65,3 +65,4 @@ v0.7.7 Added logging to files, pwd and WARNING and above.
 v0.8.0 Logging module now takes care of creating log messages for file and
        memcached status.
 v0.8.1 Added option to specify ouptut logfile.
+v0.8.2 Adding INFO and DEBUG file logs
