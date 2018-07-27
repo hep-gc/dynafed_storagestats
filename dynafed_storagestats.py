@@ -12,7 +12,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.1"
+__version__ = "v0.8.3"
 
 import os
 import sys
