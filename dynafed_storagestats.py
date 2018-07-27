@@ -901,7 +901,7 @@ class S3StorageStats(StorageStats):
                 self.stats['endtime'] = int(time.time())
 
                 #Log contents of response
-                flogger.debug("[%s]Endpoint reply: %s" % (self.id, r.content))
+                flogger.debug("[%s]Endpoint reply: %s" % (self.id, r.text))
 
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
@@ -920,7 +920,7 @@ class S3StorageStats(StorageStats):
                         error="NoContent",
                         status_code=r.status_code,
                         api=self.plugin_options['storagestats.api'],
-                        debug=r.content,
+                        debug=r.text,
                         )
 
                 # Make sure we get a Bucket Usage information.
@@ -1154,7 +1154,7 @@ class DAVStorageStats(StorageStats):
             self.stats['endtime'] = int(time.time())
 
             #Log contents of response
-            flogger.debug("[%s]Endpoint reply: %s" % (self.id, response.content))
+            flogger.debug("[%s]Endpoint reply: %s" % (self.id, response.text))
 
         except requests.ConnectionError as ERR:
             raise UGRStorageStatsConnectionError(
@@ -1174,44 +1174,52 @@ class DAVStorageStats(StorageStats):
                 )
 
         else:
-            if self.plugin_options['storagestats.api'].lower() == 'generic':
-                self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
-                self.stats['quota'] = self.plugin_options['storagestats.quota']
-                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+            # Check that we got a 200
+            if response.status_code == 200:
+                if self.plugin_options['storagestats.api'].lower() == 'generic':
+                    self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
+                    self.stats['quota'] = self.plugin_options['storagestats.quota']
+                    self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
-            elif self.plugin_options['storagestats.api'].lower() == 'rfc4331':
-                tree = etree.fromstring(response.content)
-                try:
-                    node = tree.find('.//{DAV:}quota-available-bytes').text
-                    if node is not None:
-                        pass
-                    else:
-                        raise UGRStorageStatsErrorDAVQuotaMethod(
-                            error="UnsupportedMethod"
-                            )
-                except UGRStorageStatsError as ERR:
-                    flogger.error("[%s]%s" % (self.id, ERR.debug))
-                    mlogger.error("%s" % (ERR.message))
-                    self.stats['bytesused'] = -1
-                    self.stats['bytesfree'] = -1
-                    self.stats['quota'] = -1
-                    self.debug.append(ERR.debug)
-                    self.status = memcached_logline.contents()
+                elif self.plugin_options['storagestats.api'].lower() == 'rfc4331':
+                    tree = etree.fromstring(response.content)
+                    try:
+                        node = tree.find('.//{DAV:}quota-available-bytes').text
+                        if node is not None:
+                            pass
+                        else:
+                            raise UGRStorageStatsErrorDAVQuotaMethod(
+                                error="UnsupportedMethod"
+                                )
+                    except UGRStorageStatsError as ERR:
+                        flogger.error("[%s]%s" % (self.id, ERR.debug))
+                        mlogger.error("%s" % (ERR.message))
+                        self.stats['bytesused'] = -1
+                        self.stats['bytesfree'] = -1
+                        self.stats['quota'] = -1
+                        self.debug.append(ERR.debug)
+                        self.status = memcached_logline.contents()
 
-                else:
-                    self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
-                    self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-                    if self.plugin_options['storagestats.quota'] == 'api':
-                        # If quota-available-bytes is reported as '0' is because no quota is
-                        # provided, so we use the one from the config file or default.
-                        if self.stats['bytesfree'] != 0:
-                            self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
                     else:
-                        self.stats['quota'] = self.plugin_options['storagestats.quota']
-        #        except TypeError:
-        #            raise MethodNotSupported(name='free', server=hostname)
-        #        except etree.XMLSyntaxError:
-        #            return str()
+                        self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
+                        self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
+                        if self.plugin_options['storagestats.quota'] == 'api':
+                            # If quota-available-bytes is reported as '0' is because no quota is
+                            # provided, so we use the one from the config file or default.
+                            if self.stats['bytesfree'] != 0:
+                                self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                        else:
+                            self.stats['quota'] = self.plugin_options['storagestats.quota']
+            #        except TypeError:
+            #            raise MethodNotSupported(name='free', server=hostname)
+            #        except etree.XMLSyntaxError:
+            #            return str()
+            else:
+                raise UGRStorageStatsConnectionError(
+                    error='ConnectionError',
+                    status_code=response.status_code,
+                    debug=response.text,
+                )
 
     def validate_schema(self, scheme):
         """
