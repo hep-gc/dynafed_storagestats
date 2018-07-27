@@ -37,7 +37,8 @@ configuration or errors contacting or obtaining the information from each endpoi
 It will also show the information uploaded to memcached and if there were issues.
 
 When everything is in place and working as desired, the following command is
-what would normally used with cron:
+what would normally used with cron, which will create a log file at
+/tmp/dynafed_storagestats.log with WARNING level:
 
 ```
 ./dynafed_storagestats.py -d /etc/ugr/conf.d -m
@@ -67,6 +68,11 @@ Options:
     -m, --memcached     Declare to enable uploading information to memcached.
     --stdout            Set to output stats on stdout.
     --xml               Set to output xml file with StAR format.
+    --logfile=LOGFILE   Change where to ouput logs. Default:
+                        /tmp/dynafed_storagestats.log
+    --loglevel=LOGLEVEL
+                        Set file log level. Default: WARNING. Valid: DEBUG,
+                        INFO, WARNING, ERROR
 ```
 
 
