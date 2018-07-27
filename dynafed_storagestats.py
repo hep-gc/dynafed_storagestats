@@ -1286,7 +1286,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     endpoint configured in UGR's configuration files.
     """
     storage_objects = []
-    flogger.info("Looking for storage endpoint configuration files in '%s'" % (options.configs_directory))
+    flogger.info("Looking for storage endpoint configuration files in '%s'" % (config_dir))
     endpoints = get_config(config_dir)
     for endpoint in endpoints:
         flogger.debug("[%s]Requesting object class" % (endpoints[endpoint]['id']))
