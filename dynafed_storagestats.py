@@ -438,6 +438,10 @@ class StorageStats(object):
     for earch storage endpoint. As well as how to obtain stats and output it.
     """
     def __init__(self, _ep):
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         self.stats = {
             'bytesused': 0,
             'bytesfree': 0,
@@ -670,10 +674,6 @@ class StorageStats(object):
         the last warning/error, and if proper flags set, memcached indices and
         contents and full warning/error debug information from the exceptions.
         """
-        ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
-        ###############################################
         mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
         memcached_contents = self.get_from_memcached(options.memcached_ip, options.memcached_port)
@@ -703,10 +703,6 @@ class StorageStats(object):
         Heavily based on the star-accounting.py script by Fabrizion Furano
         http://svnweb.cern.ch/world/wsvn/lcgdm/lcg-dm/trunk/scripts/StAR-accounting/star-accounting.py
         """
-        ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
-        ###############################################
         SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
         SR = "{%s}" % SR_namespace
         NSMAP = {"sr": SR_namespace}
@@ -816,6 +812,10 @@ class S3StorageStats(StorageStats):
         the storage status check can proceed.
         Extend the uri attribute with S3 specific attributes like bucket.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         super(S3StorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "S3"
         self.validators.update({
@@ -1080,8 +1080,10 @@ class S3StorageStats(StorageStats):
             return scheme
 
     def output_StAR_xml(self, output_dir="/tmp"):
+        """
+        Overriding or setting fields needed for the StAR XML format.
+        """
         self.star_fields['storageshare'] = self.uri['bucket']
-
 
         super(S3StorageStats, self).output_StAR_xml()
 
@@ -1095,6 +1097,10 @@ class DAVStorageStats(StorageStats):
         Extend the object's validators unique to the storage type to make sure
         the storage status check can proceed.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         super(DAVStorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "DAV"
         self.validators.update({
@@ -1349,6 +1355,8 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
         try:
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
             flogger.debug("[%s]Object class returned: %s" % (endpoints[endpoint]['id'], type(ep)))
+            flogger.debug("[%s]Object.plugin: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin']))
+            flogger.debug("[%s]Object.plugin_options: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin_options']))
         except UGRUnsupportedPluginError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
