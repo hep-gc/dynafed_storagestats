@@ -497,6 +497,10 @@ class StorageStats(object):
         Connects to a memcached instance and uploads the endpoints storage stats:
         self.id, self.stats['quota'], self.stats['bytesused']
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
         memcached_index = "Ugrstoragestats_" + self.id
@@ -532,6 +536,10 @@ class StorageStats(object):
         is found, the stats are created in the same style as upload_to_memcached
         with error information for debugging and logging
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         mc = memcache.Client([memcached_ip + ':' + memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
         try:
@@ -572,6 +580,10 @@ class StorageStats(object):
         Check the endpoints plugin_options from UGR's configuration file against the
         set of default and valid plugin_options defined under the self.validators dict.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         flogger.info("[%s]Validating configured options." % (self.id))
         for ep_option in self.validators:
             flogger.debug("[%s]Validating option: %s" % (self.id, ep_option))
@@ -645,6 +657,10 @@ class StorageStats(object):
         """
         Used to validate the URN's schema. SubClasses can have their own.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
         return scheme
 
@@ -654,6 +670,10 @@ class StorageStats(object):
         the last warning/error, and if proper flags set, memcached indices and
         contents and full warning/error debug information from the exceptions.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
         memcached_contents = self.get_from_memcached(options.memcached_ip, options.memcached_port)
@@ -683,6 +703,10 @@ class StorageStats(object):
         Heavily based on the star-accounting.py script by Fabrizion Furano
         http://svnweb.cern.ch/world/wsvn/lcgdm/lcg-dm/trunk/scripts/StAR-accounting/star-accounting.py
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
         SR = "{%s}" % SR_namespace
         NSMAP = {"sr": SR_namespace}
@@ -843,10 +867,10 @@ class S3StorageStats(StorageStats):
         Connect to the storage endpoint with the defined or generic API's
         to obtain the storage status.
         """
-        # Split the URL in the configuration file for validation and proper
-        # formatting according to the method's needs.
-        # u = urlsplit(self.url)
-        # scheme = self.validate_schema(u.scheme)
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
 
         # Getting the storage Stats CephS3's Admin API
         if self.plugin_options['storagestats.api'].lower() == 'ceph-admin':
@@ -1039,6 +1063,10 @@ class S3StorageStats(StorageStats):
         Used to translate s3 into http/https since requests doesn't
         support the former schema.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
         if scheme == 's3':
             if self.plugin_options['ssl_check']:
@@ -1098,6 +1126,10 @@ class DAVStorageStats(StorageStats):
         method as defined by RFC 4331 if "api" option is selected. Or use PROPFIND
         with Depth: Infinity to scan all files and add the contentlegth.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
         if self.plugin_options['storagestats.api'].lower() == 'generic':
             headers = {'Depth': 'infinity',}
@@ -1186,6 +1218,10 @@ class DAVStorageStats(StorageStats):
         Used to translate dav/davs into http/https since requests doesn't
         support the former schema.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         schema_translator = {
             'dav': 'http',
             'davs': 'https',
@@ -1213,6 +1249,10 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     each parent SE key, and the locplugin as keys for the dictionary "plugin_options" under
     each parent SE key.
     """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
     endpoints = {}
     os.chdir(config_dir)
     for config_file in sorted(glob.glob("*.conf")):
@@ -1263,6 +1303,10 @@ def factory(plugin):
     Return object class to use based on the plugin specified in the UGR's
     configuration files.
     """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
     plugin_dict = {
         'libugrlocplugin_dav.so': DAVStorageStats,
         'libugrlocplugin_http.so': DAVStorageStats,
@@ -1285,6 +1329,10 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     Returns list of storage endpoint objects whose class represents each storage
     endpoint configured in UGR's configuration files.
     """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
     storage_objects = []
     flogger.info("Looking for storage endpoint configuration files in '%s'" % (config_dir))
     endpoints = get_config(config_dir)
@@ -1310,6 +1358,10 @@ def create_free_space_request_content():
 
     :return: the XML string of request content.
     """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
     root = etree.Element("propfind", xmlns="DAV:")
     prop = etree.SubElement(root, "prop")
     etree.SubElement(prop, "quota-available-bytes")
@@ -1324,6 +1376,10 @@ def add_xml_getcontentlength(content):
     Iterates and sums through all the "contentlegth sub-elements" returing the
     total byte count.
     """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
     xml = etree.fromstring(content)
     bytesused = 0
     filescount = 0
@@ -1337,6 +1393,10 @@ def convert_size_to_bytes(size):
     """
     Converts given sizse into bytes.
     """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
     multipliers = {
         'kib': 1024,
         'mib': 1024**2,
@@ -1368,6 +1428,10 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     """
     Create a single StAR XML file for all endpoints passed to this function.
     """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
     SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
     SR = "{%s}" % SR_namespace
     NSMAP = {"sr": SR_namespace}
