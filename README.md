@@ -17,7 +17,7 @@ dCache via WebDAV
 
 ## Prerequisites (older versions might work, but these are the oldest one that have been tested):
 Python Modules:
-- boto3 >= 1.7.28 (CentOS 7.5 does not have python3 repo modules, use pip3 install boto3)
+- boto3 >= 1.6.1 (CentOS 7.5 does not have python3 repo modules, use pip3 install boto3)
 - lxml >= 4.2.1   (CentOS 7.5 does not have python3 repo modules, use pip3 install lxml)
 - python-memcache >= 1.59
 - requests >= 2.12.5
@@ -86,9 +86,6 @@ be added to the endpoints.conf configuration file.
 ### Known issues
 
 No support for global options. (e.g. locplugin.*.ca_path)
-
-Module boto3, used for S3 endpoints, does not support a folder path for the
-Certificate Authority. An individual file needs to be specified.
 
 ### General
 
