@@ -4,7 +4,9 @@ Module to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints and upload the
 information to memcahe.
 
-While it works under Python2 it is recommended to be run with Python3.
+Tested with Python >= 3.4.8
+
+Might work with >= 2.7.5 but is not actively tested.
 
 So far it supports has been tested with:
 AWS S3
