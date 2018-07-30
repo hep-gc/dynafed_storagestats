@@ -1180,8 +1180,8 @@ class DAVStorageStats(StorageStats):
                 )
 
         else:
-            # Check that we got a 200
-            if response.status_code == 200:
+            # Check that we did not get an erorr code:
+            if response.status_code < 400:
                 if self.plugin_options['storagestats.api'].lower() == 'generic':
                     self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
                     self.stats['quota'] = self.plugin_options['storagestats.quota']
@@ -1472,6 +1472,8 @@ def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     above to log onto attribute StorageStats.status which will be logged onto
     memcached.
     """
+    ## To capture warnings emitted by modules.
+    logging.captureWarnings(True)
     ## create file logger
     flogger = logging.getLogger(__name__)
     num_loglevel = getattr(logging, loglevel.upper())
