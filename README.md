@@ -76,7 +76,7 @@ Options:
                         Set file log level. Default: WARNING. Valid: DEBUG,
                         INFO, WARNING, ERROR
 ```
-
+**Important Note: DEBUG level might an enormous amount of data as it will log the contents obtained from requests. In the case of the generic methods this will print all the stats for each file being parsed. It is recommended to use this level with a file with only the endpoint one wants to troulbeshoot.**
 
 ## Endpoints Configuration
 
