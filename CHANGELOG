@@ -68,3 +68,5 @@ v0.8.1 Added option to specify ouptut logfile.
 v0.8.2 Adding INFO and DEBUG file logs
 v0.8.3 Added logger definitions to all functions. Added 200 status code check
        and handler for DAV endpoints.
+v0.8.4 Global settings mechanism and renamed options to settings, in all vars
+       comments and docs.
