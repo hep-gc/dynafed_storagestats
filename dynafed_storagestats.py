@@ -1023,7 +1023,7 @@ class S3StorageStats(StorageStats):
 
                 else:
                     # This produces a lot of information, migh not be necessary.
-                    # flogger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
+                    flogger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
                     try:
                         response['Contents']
                     except KeyError:
