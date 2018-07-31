@@ -1268,6 +1268,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     mlogger = logging.getLogger('memcached_logger')
     ###############################################
     endpoints = {}
+    global_settings = {}
     os.chdir(config_dir)
     for config_file in sorted(glob.glob("*.conf")):
         flogger.info("Reading file '%s'" % (os.path.realpath(config_file)))
@@ -1285,14 +1286,19 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                         flogger.info("Found endpoint '%s' using plugin '%s'. Reading configuration." % (endpoints[_id]['id'], endpoints[_id]['plugin']))
 
                     elif "locplugin" in line:
-                        key, _val = line.partition(":")[::2]
+                        key, value = line.partition(":")[::2]
                         # Match an _id in key
                         try:
-                            if _id in key:
+                            if '*' in key:
+                            # Add any global options to its own key.
+                                _option = key.split('*'+'.')[-1]
+                                global_settings.update({_option:value.strip()})
+                                flogger.info("Found global option '%s': %s." %(key, value))
+                            elif _id in key:
                                 _option = key.split(_id+'.')[-1]
                                 endpoints.setdefault(_id, {})
                                 endpoints[_id].setdefault('plugin_options', {})
-                                endpoints[_id]['plugin_options'].update({_option:_val.strip()})
+                                endpoints[_id]['plugin_options'].update({_option:value.strip()})
                             else:
                                 raise UGRConfigFileErrorIDMismatch(
                                     error="OptionIDMismatch",
@@ -1309,6 +1315,13 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
                         pass
+    # If any global options were found, apply them to any endpoint missing
+    # that particular option. Endpoint specific options supersede global ones.
+    for setting, value in global_settings.items():
+        for endpoint in endpoints:
+            if setting not in endpoints[endpoint]['plugin_options']:
+                endpoints[endpoint]['plugin_options'].update({setting:value})
+                flogger.debug("[%s]Applying global setting '%s': %s" % (endpoints[endpoint]['id'], setting, value))
 
     return endpoints
 
