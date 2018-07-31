@@ -8,7 +8,7 @@ It uses the python3 format.
 class NewTypeStorageStats (StorageStats):
     """
     Define the type of storage endpoint this subclass will interface with
-    and any API options it can use.
+    and any API settings it can use.
     """
     def __init__(self, *args, **kwargs):
         """
@@ -23,20 +23,20 @@ class NewTypeStorageStats (StorageStats):
         self.storageprotocol = "Protocol"
 
         # Add any validators specific to the storage type so the script can
-        # check that all the necessary options are in place in the endpoints.conf
-        # files. Define any required, valid and/or default options here using
+        # check that all the necessary settings are in place in the endpoints.conf
+        # files. Define any required, valid and/or default settings here using
         # to following format. Note that the only required key is "required".
         self.validators.update({
-            'option.name': {
-                'default': '', # Default value to use if option is missing.
-                'required': True/False, # Wheter this option must be present.
+            'setting.name': {
+                'default': '', # Default value to use if setting is missing.
+                'required': True/False, # Wheter this setting must be present.
                 'valid': ['', ''], # List of valid values to validate against.
             },
         })
 
-        # Invoke the validate_plugin_options() method
+        # Invoke the validate_plugin_settings() method
         try:
-            self.validate_plugin_options()
+            self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
             print(ERR.debug)
             self.debug.append(ERR.debug)

@@ -12,7 +12,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.3"
+__version__ = "v0.8.4"
 
 import os
 import sys
@@ -228,27 +228,27 @@ class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
         self.debug = debug
         super(UGRConfigFileErrorIDMismatch, self).__init__(self.message, self.debug)
 
-class UGRConfigFileErrorMissingRequiredOption(UGRConfigFileError):
+class UGRConfigFileErrorMissingRequiredSetting(UGRConfigFileError):
     """
-    Exception error when an option required by this module to obtain the Storage
+    Exception error when an setting required by this module to obtain the Storage
     Stats is missing from the config files for the endpoint being processed.
     """
-    def __init__(self, option, error=None, status_code="000", debug=None):
+    def __init__(self, setting, error=None, status_code="000", debug=None):
         self.message = '[%s][%s] "%s" is required. Check your configuration.' \
-                  % (error, status_code, option)
+                  % (error, status_code, setting)
         self.debug = debug
-        super(UGRConfigFileErrorMissingRequiredOption, self).__init__(self.message, self.debug)
+        super(UGRConfigFileErrorMissingRequiredSetting, self).__init__(self.message, self.debug)
 
-class UGRConfigFileErrorInvalidOption(UGRConfigFileError):
+class UGRConfigFileErrorInvalidSetting(UGRConfigFileError):
     """
-    Exception error when the value given for an option in the configuration file
+    Exception error when the value given for an setting in the configuration file
     does not match the 'valid' values specified in the 'validators' attribute.
     """
-    def __init__(self, option, valid_plugin_options, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Incorrect value given in option "%s". Valid plugin_options: %s' \
-                  % (error, status_code, option, valid_plugin_options)
+    def __init__(self, setting, valid_plugin_settings, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Incorrect value given in setting "%s". Valid plugin_settings: %s' \
+                  % (error, status_code, setting, valid_plugin_settings)
         self.debug = debug
-        super(UGRConfigFileErrorInvalidOption, self).__init__(self.message, self.debug)
+        super(UGRConfigFileErrorInvalidSetting, self).__init__(self.message, self.debug)
 
 class UGRMemcachedError(UGRBaseError):
     """
@@ -376,18 +376,18 @@ class UGRConfigFileWarning(UGRBaseWarning):
         self.debug = debug
         super(UGRConfigFileWarning, self).__init__(self.message, self.debug)
 
-class UGRConfigFileWarningMissingOption(UGRConfigFileWarning):
+class UGRConfigFileWarningMissingSetting(UGRConfigFileWarning):
     """
-    Exception warning when an option not flaggged as required by this module
+    Exception warning when an setting not flaggged as required by this module
     to obtain the storage stats is missing from the config file(s). Prints
-    out the default option given by the 'validators' attribute that will be used
+    out the default setting given by the 'validators' attribute that will be used
     in this absence.
     """
-    def __init__(self, option, option_default, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Unspecified "%s" option. Using default value "%s"' \
-                  % (error, status_code, option, option_default)
+    def __init__(self, setting, setting_default, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Unspecified "%s" setting. Using default value "%s"' \
+                  % (error, status_code, setting, setting_default)
         self.debug = debug
-        super(UGRConfigFileWarningMissingOption, self).__init__(self.message, self.debug)
+        super(UGRConfigFileWarningMissingSetting, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsWarning(UGRBaseWarning):
     """
@@ -438,6 +438,10 @@ class StorageStats(object):
     for earch storage endpoint. As well as how to obtain stats and output it.
     """
     def __init__(self, _ep):
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         self.stats = {
             'bytesused': 0,
             'bytesfree': 0,
@@ -449,11 +453,11 @@ class StorageStats(object):
 
         self.id = _ep['id']
         self.storageprotocol = 'Undefined'
-        self.plugin_options = _ep['plugin_options']
-        # We add the url form the conf file to the plugin_options as the one
+        self.plugin_settings = _ep['plugin_settings']
+        # We add the url form the conf file to the plugin_settings as the one
         # in the uri attribute below will be modified depending on the enpoint's
         # protocol.
-        self.plugin_options.update({'url': _ep['url']})
+        self.plugin_settings.update({'url': _ep['url']})
         self.plugin = _ep['plugin']
 
         _url = urlsplit(_ep['url'])
@@ -575,81 +579,81 @@ class StorageStats(object):
         """
         pass
 
-    def validate_plugin_options(self):
+    def validate_plugin_settings(self):
         """
-        Check the endpoints plugin_options from UGR's configuration file against the
-        set of default and valid plugin_options defined under the self.validators dict.
+        Check the endpoints plugin_settings from UGR's configuration file against the
+        set of default and valid plugin_settings defined under the self.validators dict.
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
         ###############################################
-        flogger.info("[%s]Validating configured options." % (self.id))
-        for ep_option in self.validators:
-            flogger.debug("[%s]Validating option: %s" % (self.id, ep_option))
-            # First check if the option has been defined in the config file..
+        flogger.info("[%s]Validating configured settings." % (self.id))
+        for ep_setting in self.validators:
+            flogger.debug("[%s]Validating setting: %s" % (self.id, ep_setting))
+            # First check if the setting has been defined in the config file..
             # If it is missing, check if it is required, and exit if true
             # otherwise set it to the default value and print a warning.
             try:
-                self.plugin_options[ep_option]
+                self.plugin_settings[ep_setting]
 
             except KeyError:
                 try:
-                    if self.validators[ep_option]['required']:
-                        self.plugin_options.update({ep_option: ''})
-                        raise UGRConfigFileErrorMissingRequiredOption(
-                            error="MissingRequiredOption",
-                            option=ep_option,
+                    if self.validators[ep_setting]['required']:
+                        self.plugin_settings.update({ep_setting: ''})
+                        raise UGRConfigFileErrorMissingRequiredSetting(
+                            error="MissingRequiredSetting",
+                            setting=ep_setting,
                             )
                     else:
-                        raise UGRConfigFileWarningMissingOption(
-                            error="MissingOption",
-                            option=ep_option,
-                            option_default=self.validators[ep_option]['default'],
+                        raise UGRConfigFileWarningMissingSetting(
+                            error="MissingSetting",
+                            setting=ep_setting,
+                            setting_default=self.validators[ep_setting]['default'],
                             )
                 except UGRBaseWarning as WARN:
                     flogger.warn("[%s]%s" % (self.id, WARN.debug))
                     mlogger.warn("%s" % (WARN.message))
                     self.debug.append(WARN.debug)
                     self.status = memcached_logline.contents()
-                    self.plugin_options.update({ep_option: self.validators[ep_option]['default']})
+                    self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
 
-            # If the ep_option has been defined, check against a list of valid
-            # plugin_options (if defined, otherwise contiune). Also transform to boolean
+            # If the ep_setting has been defined, check against a list of valid
+            # plugin_settings (if defined, otherwise contiune). Also transform to boolean
             # form those that have the "boolean" key set as true.
             else:
                 try:
-                    if self.plugin_options[ep_option] not in self.validators[ep_option]['valid']:
-                        raise UGRConfigFileErrorInvalidOption(
-                            error="InvalidOption",
-                            option=ep_option,
-                            valid_plugin_options=self.validators[ep_option]['valid']
+                    if self.plugin_settings[ep_setting] not in self.validators[ep_setting]['valid']:
+                        raise UGRConfigFileErrorInvalidSetting(
+                            error="InvalidSetting",
+                            setting=ep_setting,
+                            valid_plugin_settings=self.validators[ep_setting]['valid']
                             )
                     else:
                         try:
-                            self.validators[ep_option]['boolean']
+                            self.validators[ep_setting]['boolean']
                         except KeyError:
                             pass
                         else:
-                            if self.plugin_options[ep_option].lower() == 'false'\
-                            or self.plugin_options[ep_option].lower() == 'no':
-                                self.plugin_options.update({ep_option: False})
+                            if self.plugin_settings[ep_setting].lower() == 'false'\
+                            or self.plugin_settings[ep_setting].lower() == 'no':
+                                self.plugin_settings.update({ep_setting: False})
                             else:
-                                self.plugin_options.update({ep_option: True})
+                                self.plugin_settings.update({ep_setting: True})
                 except KeyError:
                     # The 'valid' key is not required to exist.
                     pass
         # If user has specified an SSL CA bundle:
-        if self.plugin_options['ssl_check']:
+        if self.plugin_settings['ssl_check']:
             try:
-                self.plugin_options['ssl_check'] = self.plugin_options['ca_path']
+                self.plugin_settings['ssl_check'] = self.plugin_settings['ca_path']
             except KeyError:
                 # The ssl_check will stay True and standard CA bundle will be used.
                 pass
 
-        # Check the quota option and transform it into bytes if necessary.
-        if self.plugin_options['storagestats.quota'] != "api":
-            self.plugin_options['storagestats.quota'] = convert_size_to_bytes(self.plugin_options['storagestats.quota'])
+        # Check the quota setting and transform it into bytes if necessary.
+        if self.plugin_settings['storagestats.quota'] != "api":
+            self.plugin_settings['storagestats.quota'] = convert_size_to_bytes(self.plugin_settings['storagestats.quota'])
 
 
 
@@ -670,10 +674,6 @@ class StorageStats(object):
         the last warning/error, and if proper flags set, memcached indices and
         contents and full warning/error debug information from the exceptions.
         """
-        ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
-        ###############################################
         mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
         memcached_contents = self.get_from_memcached(options.memcached_ip, options.memcached_port)
@@ -703,10 +703,6 @@ class StorageStats(object):
         Heavily based on the star-accounting.py script by Fabrizion Furano
         http://svnweb.cern.ch/world/wsvn/lcgdm/lcg-dm/trunk/scripts/StAR-accounting/star-accounting.py
         """
-        ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
-        ###############################################
         SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
         SR = "{%s}" % SR_namespace
         NSMAP = {"sr": SR_namespace}
@@ -816,6 +812,10 @@ class S3StorageStats(StorageStats):
         the storage status check can proceed.
         Extend the uri attribute with S3 specific attributes like bucket.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         super(S3StorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "S3"
         self.validators.update({
@@ -847,7 +847,7 @@ class S3StorageStats(StorageStats):
         })
 
         try:
-            self.validate_plugin_options()
+            self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
@@ -855,8 +855,8 @@ class S3StorageStats(StorageStats):
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
 
-        if self.plugin_options['s3.alternate'].lower() == 'true'\
-        or self.plugin_options['s3.alternate'].lower() == 'yes':
+        if self.plugin_settings['s3.alternate'].lower() == 'true'\
+        or self.plugin_settings['s3.alternate'].lower() == 'yes':
             self.uri['bucket'] = self.uri['path'].rpartition("/")[-1]
 
         else:
@@ -873,10 +873,10 @@ class S3StorageStats(StorageStats):
         ###############################################
 
         # Getting the storage Stats CephS3's Admin API
-        if self.plugin_options['storagestats.api'].lower() == 'ceph-admin':
+        if self.plugin_settings['storagestats.api'].lower() == 'ceph-admin':
 
-            if self.plugin_options['s3.alternate'].lower() == 'true'\
-            or self.plugin_options['s3.alternate'].lower() == 'yes':
+            if self.plugin_settings['s3.alternate'].lower() == 'true'\
+            or self.plugin_settings['s3.alternate'].lower() == 'yes':
                 api_url = '{scheme}://{netloc}/admin/bucket?format=json'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'])
             else:
                 api_url = '{scheme}://{domain}/admin/{bucket}?format=json'.format(scheme=self.uri['scheme'], domain=self.uri['domain'], bucket=self.uri['bucket'])
@@ -884,18 +884,18 @@ class S3StorageStats(StorageStats):
             payload = {'bucket': self.uri['bucket'], 'stats': 'True'}
 
             auth = AWS4Auth(
-                self.plugin_options['s3.pub_key'],
-                self.plugin_options['s3.priv_key'],
-                self.plugin_options['s3.region'],
+                self.plugin_settings['s3.pub_key'],
+                self.plugin_settings['s3.priv_key'],
+                self.plugin_settings['s3.region'],
                 's3',
                 )
-            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_options['storagestats.api'].lower(), payload))
+            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), payload))
             try:
                 r = requests.get(
                     url=api_url,
                     params=payload,
                     auth=auth,
-                    verify=self.plugin_options['ssl_check'],
+                    verify=self.plugin_settings['ssl_check'],
                     )
                 # Save time when data was obtained.
                 self.stats['endtime'] = int(time.time())
@@ -919,7 +919,7 @@ class S3StorageStats(StorageStats):
                     raise UGRStorageStatsConnectionErrorS3API(
                         error="NoContent",
                         status_code=r.status_code,
-                        api=self.plugin_options['storagestats.api'],
+                        api=self.plugin_settings['storagestats.api'],
                         debug=r.text,
                         )
 
@@ -940,8 +940,8 @@ class S3StorageStats(StorageStats):
                         # If the bucket is emtpy, then just keep going we
                         self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
 
-                    if self.plugin_options['storagestats.quota'] != 'api':
-                        self.stats['quota'] = self.plugin_options['storagestats.quota']
+                    if self.plugin_settings['storagestats.quota'] != 'api':
+                        self.stats['quota'] = self.plugin_settings['storagestats.quota']
                         self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
                     else:
@@ -963,27 +963,27 @@ class S3StorageStats(StorageStats):
                                 )
 
         # Getting the storage Stats AWS S3 API
-        #elif self.plugin_options['storagestats.api'].lower() == 'aws-cloudwatch':
+        #elif self.plugin_settings['storagestats.api'].lower() == 'aws-cloudwatch':
 
         # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
         # API, should work for any compatible S3 endpoint.
-        elif self.plugin_options['storagestats.api'].lower() == 'generic':
+        elif self.plugin_settings['storagestats.api'].lower() == 'generic':
 
-            if self.plugin_options['s3.alternate'].lower() == 'true'\
-            or self.plugin_options['s3.alternate'].lower() == 'yes':
+            if self.plugin_settings['s3.alternate'].lower() == 'true'\
+            or self.plugin_settings['s3.alternate'].lower() == 'yes':
                 api_url = '{scheme}://{netloc}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'])
 
             else:
                 api_url = '{scheme}://{domain}'.format(scheme=self.uri['scheme'], domain=self.uri['domain'])
 
             connection = boto3.client('s3',
-                                      region_name=self.plugin_options['s3.region'],
+                                      region_name=self.plugin_settings['s3.region'],
                                       endpoint_url=api_url,
-                                      aws_access_key_id=self.plugin_options['s3.pub_key'],
-                                      aws_secret_access_key=self.plugin_options['s3.priv_key'],
+                                      aws_access_key_id=self.plugin_settings['s3.pub_key'],
+                                      aws_secret_access_key=self.plugin_settings['s3.priv_key'],
                                       use_ssl=True,
-                                      verify=self.plugin_options['ssl_check'],
-                                      config=Config(signature_version=self.plugin_options['s3.signature_ver']),
+                                      verify=self.plugin_settings['ssl_check'],
+                                      config=Config(signature_version=self.plugin_settings['s3.signature_ver']),
                                      )
             total_bytes = 0
             total_files = 0
@@ -992,7 +992,7 @@ class S3StorageStats(StorageStats):
             # server 1,000 objects per request. The 'NextMarker' tells where
             # to start the next 1,000. If no 'NextMarker' is received, all
             # objects have been obtained.
-            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_options['storagestats.api'].lower(), kwargs))
+            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), kwargs))
             while True:
                 try:
                     response = connection.list_objects(**kwargs)
@@ -1023,7 +1023,7 @@ class S3StorageStats(StorageStats):
 
                 else:
                     # This produces a lot of information, migh not be necessary.
-                    # flogger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
+                    flogger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
                     try:
                         response['Contents']
                     except KeyError:
@@ -1044,7 +1044,7 @@ class S3StorageStats(StorageStats):
 
             self.stats['bytesused'] = total_bytes
 
-            if self.plugin_options['storagestats.quota'] == 'api':
+            if self.plugin_settings['storagestats.quota'] == 'api':
                 self.stats['quota'] = convert_size_to_bytes("1TB")
                 self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
@@ -1054,7 +1054,7 @@ class S3StorageStats(StorageStats):
                 )
 
             else:
-                self.stats['quota'] = self.plugin_options['storagestats.quota']
+                self.stats['quota'] = self.plugin_settings['storagestats.quota']
                 self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
@@ -1069,7 +1069,7 @@ class S3StorageStats(StorageStats):
         ###############################################
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
         if scheme == 's3':
-            if self.plugin_options['ssl_check']:
+            if self.plugin_settings['ssl_check']:
                 flogger.debug("[%s]Using URN schema: https" % (self.id, scheme))
                 return 'https'
             else:
@@ -1080,8 +1080,10 @@ class S3StorageStats(StorageStats):
             return scheme
 
     def output_StAR_xml(self, output_dir="/tmp"):
+        """
+        Overriding or setting fields needed for the StAR XML format.
+        """
         self.star_fields['storageshare'] = self.uri['bucket']
-
 
         super(S3StorageStats, self).output_StAR_xml()
 
@@ -1095,6 +1097,10 @@ class DAVStorageStats(StorageStats):
         Extend the object's validators unique to the storage type to make sure
         the storage status check can proceed.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         super(DAVStorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "DAV"
         self.validators.update({
@@ -1112,7 +1118,7 @@ class DAVStorageStats(StorageStats):
         })
 
         try:
-            self.validate_plugin_options()
+            self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
@@ -1123,7 +1129,7 @@ class DAVStorageStats(StorageStats):
     def get_storagestats(self):
         """
         Connect to the storage endpoint and will try WebDAV's quota and bytesfree
-        method as defined by RFC 4331 if "api" option is selected. Or use PROPFIND
+        method as defined by RFC 4331 if "api" setting is selected. Or use PROPFIND
         with Depth: Infinity to scan all files and add the contentlegth.
         """
         ############# Creating loggers ################
@@ -1131,23 +1137,23 @@ class DAVStorageStats(StorageStats):
         mlogger = logging.getLogger('memcached_logger')
         ###############################################
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
-        if self.plugin_options['storagestats.api'].lower() == 'generic':
+        if self.plugin_settings['storagestats.api'].lower() == 'generic':
             headers = {'Depth': 'infinity',}
             data = ''
 
-        elif self.plugin_options['storagestats.api'].lower() == 'rfc4331':
+        elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
             headers = {'Depth': '0',}
             data = create_free_space_request_content()
 
-        # flogger.debug("[%s]Requesting storage stats with:\nURN: %s\nAPI Method: %s\nHeaders: %s\nData: %s" % (self.id, api_url, self.plugin_options['storagestats.api'].lower(), headers, data ))
-        flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_options['storagestats.api'].lower(), headers, data ))
+        # flogger.debug("[%s]Requesting storage stats with:\nURN: %s\nAPI Method: %s\nHeaders: %s\nData: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data ))
+        flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data ))
         try:
             response = requests.request(
                 method="PROPFIND",
                 url=api_url,
-                cert=(self.plugin_options['cli_certificate'], self.plugin_options['cli_private_key']),
+                cert=(self.plugin_settings['cli_certificate'], self.plugin_settings['cli_private_key']),
                 headers=headers,
-                verify=self.plugin_options['ssl_check'],
+                verify=self.plugin_settings['ssl_check'],
                 data=data
             )
             # Save time when data was obtained.
@@ -1174,14 +1180,14 @@ class DAVStorageStats(StorageStats):
                 )
 
         else:
-            # Check that we got a 200
-            if response.status_code == 200:
-                if self.plugin_options['storagestats.api'].lower() == 'generic':
+            # Check that we did not get an erorr code:
+            if response.status_code < 400:
+                if self.plugin_settings['storagestats.api'].lower() == 'generic':
                     self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
-                    self.stats['quota'] = self.plugin_options['storagestats.quota']
+                    self.stats['quota'] = self.plugin_settings['storagestats.quota']
                     self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
-                elif self.plugin_options['storagestats.api'].lower() == 'rfc4331':
+                elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
                     tree = etree.fromstring(response.content)
                     try:
                         node = tree.find('.//{DAV:}quota-available-bytes').text
@@ -1203,13 +1209,13 @@ class DAVStorageStats(StorageStats):
                     else:
                         self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
                         self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-                        if self.plugin_options['storagestats.quota'] == 'api':
+                        if self.plugin_settings['storagestats.quota'] == 'api':
                             # If quota-available-bytes is reported as '0' is because no quota is
                             # provided, so we use the one from the config file or default.
                             if self.stats['bytesfree'] != 0:
                                 self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
                         else:
-                            self.stats['quota'] = self.plugin_options['storagestats.quota']
+                            self.stats['quota'] = self.plugin_settings['storagestats.quota']
             #        except TypeError:
             #            raise MethodNotSupported(name='free', server=hostname)
             #        except etree.XMLSyntaxError:
@@ -1253,8 +1259,8 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     storage endpoint defined in the ugr configuration files. These files will
     be any *.conf file defined under the config_dir variable.
     The default directory is "/etc/ugr/conf.d/"
-    All the glb.locplugin options defined for each are stored as dictionary keys under
-    each parent SE key, and the locplugin as keys for the dictionary "plugin_options" under
+    All the glb.locplugin settings defined for each are stored as dictionary keys under
+    each parent SE key, and the locplugin as keys for the dictionary "plugin_settings" under
     each parent SE key.
     """
     ############# Creating loggers ################
@@ -1262,6 +1268,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     mlogger = logging.getLogger('memcached_logger')
     ###############################################
     endpoints = {}
+    global_settings = {}
     os.chdir(config_dir)
     for config_file in sorted(glob.glob("*.conf")):
         flogger.info("Reading file '%s'" % (os.path.realpath(config_file)))
@@ -1279,17 +1286,22 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                         flogger.info("Found endpoint '%s' using plugin '%s'. Reading configuration." % (endpoints[_id]['id'], endpoints[_id]['plugin']))
 
                     elif "locplugin" in line:
-                        key, _val = line.partition(":")[::2]
+                        key, value = line.partition(":")[::2]
                         # Match an _id in key
                         try:
-                            if _id in key:
-                                _option = key.split(_id+'.')[-1]
+                            if '*' in key:
+                            # Add any global settings to its own key.
+                                _setting = key.split('*'+'.')[-1]
+                                global_settings.update({_setting:value.strip()})
+                                flogger.info("Found global setting '%s': %s." %(key, value))
+                            elif _id in key:
+                                _setting = key.split(_id+'.')[-1]
                                 endpoints.setdefault(_id, {})
-                                endpoints[_id].setdefault('plugin_options', {})
-                                endpoints[_id]['plugin_options'].update({_option:_val.strip()})
+                                endpoints[_id].setdefault('plugin_settings', {})
+                                endpoints[_id]['plugin_settings'].update({_setting:value.strip()})
                             else:
                                 raise UGRConfigFileErrorIDMismatch(
-                                    error="OptionIDMismatch",
+                                    error="SettingIDMismatch",
                                     line=line.split(":")[0],
                                     )
                         except UGRConfigFileError as ERR:
@@ -1303,6 +1315,13 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                         # Ignore any other lines
                         #print( "I don't know what to do with %s", line)
                         pass
+    # If any global settings were found, apply them to any endpoint missing
+    # that particular setting. Endpoint specific settings supersede global ones.
+    for setting, value in global_settings.items():
+        for endpoint in endpoints:
+            if setting not in endpoints[endpoint]['plugin_settings']:
+                endpoints[endpoint]['plugin_settings'].update({setting:value})
+                flogger.debug("[%s]Applying global setting '%s': %s" % (endpoints[endpoint]['id'], setting, value))
 
     return endpoints
 
@@ -1349,6 +1368,8 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
         try:
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
             flogger.debug("[%s]Object class returned: %s" % (endpoints[endpoint]['id'], type(ep)))
+            flogger.debug("[%s]Object.plugin: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin']))
+            flogger.debug("[%s]Object.plugin_settings: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin_settings']))
         except UGRUnsupportedPluginError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
@@ -1429,7 +1450,7 @@ def convert_size_to_bytes(size):
     try:
         return int(size)
     except ValueError: # for example "1024x"
-        print('Malformed input for option: "storagestats.quota"')
+        print('Malformed input for setting: "storagestats.quota"')
         exit()
 
 def output_StAR_xml(endpoints, output_dir="/tmp"):
@@ -1464,13 +1485,15 @@ def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     above to log onto attribute StorageStats.status which will be logged onto
     memcached.
     """
+    ## To capture warnings emitted by modules.
+    logging.captureWarnings(True)
     ## create file logger
     flogger = logging.getLogger(__name__)
     num_loglevel = getattr(logging, loglevel.upper())
     flogger.setLevel(num_loglevel)
     # Set file logger format
     log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
-    # Create file handler and set level from cli or default to options.log
+    # Create file handler and set level from cli or default to settings.log
     log_handler_file = logging.FileHandler(logfile, mode='a')
     log_handler_file.setFormatter(log_format_file)
     # Add handlers
