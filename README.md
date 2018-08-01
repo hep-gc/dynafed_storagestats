@@ -105,6 +105,17 @@ of 1TB will be used.
 ##### bytes
 The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase.
 
+### Azure
+
+```
+locplugin.<ID>.storagestats.api: [generic]
+```
+
+##### generic
+
+This setting will list all objects in a blob container and add the individual
+sizes.
+
 ### DAV/HTTP
 
 ```
@@ -113,7 +124,7 @@ locplugin.<ID>.storagestats.api: [generic, rfc4331]
 
 ##### generic
 
-This setting will list all objects behind the bucket and add the individual
+This setting will list all objects behind the endpoint and add the individual
 sizes. For this method to recrusivley get all objects, the DAV server needs
 to header "Depth" with attribute "infinity". This is not recommended as
 it is an expensive method, can use a lot of memory and is suceptible to
