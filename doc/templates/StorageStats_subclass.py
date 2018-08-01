@@ -61,11 +61,11 @@ class NewTypeStorageStats (StorageStats):
             flogger = logging.getLogger(__name__)
             mlogger = logging.getLogger('memcached_logger')
             ###############################################
-            self.stats.bytesfree = 0
-            self.stats.bytesused = 0
-            self.stats.quota = 0
+            self.stats['bytesfree'] = 0
+            self.stats['bytesused'] = 0
+            self.stats['quota'] = 0
             # Not required, but is useful for reporting/accounting:
-            self.stats.filecount = 0
+            self.stats['filecount'] = 0
 
         def validate_schema(self, scheme):
             """
