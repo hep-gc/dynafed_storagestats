@@ -5,14 +5,16 @@ storage status information from various types of endpoints.
 
 Prerequisites:
     Modules:
-    - lxml
-    - memcache
-    - requests
-    - requests_aws4auth
+        - azure-storage >= 0.36.0
+        - boto3 >= 1.6.1
+        - lxml >= 4.2.1
+        - python-memcache >= 1.59
+        - requests >= 2.12.5
+        - requests_aws4auth >= 0.9
 """
 from __future__ import print_function
 
-__version__ = "v0.8.4"
+__version__ = "v0.8.5"
 
 import os
 import sys
@@ -32,6 +34,14 @@ if IS_PYTHON2:
     from urlparse import urlsplit
 else:
     from urllib.parse import urlsplit
+
+try:
+    from azure.storage.blob import BlockBlobService, PublicAccess
+except ImportError:
+    print('ImportError: Please install "azure-storage" modules')
+    sys.exit(1)
+else:
+    import azure.common
 
 try:
     import boto3
@@ -307,6 +317,26 @@ class UGRStorageStatsConnectionError(UGRStorageStatsError):
                        % (error, status_code)
         self.debug = debug
         super(UGRStorageStatsConnectionError, self).__init__(self.message, self.debug)
+
+class UGRStorageStatsConnectionErrorAzureAPI(UGRStorageStatsError):
+    """
+    Exception error when there is an issue connecting to an S3 endpoint's API.
+    """
+    def __init__(self, error=None, status_code="000", api=None, debug=None):
+        self.message = '[%s][%s] Error requesting stats using API "%s".' \
+                  % (error, status_code, api)
+        self.debug = debug
+        super(UGRStorageStatsConnectionErrorAzureAPI, self).__init__(self.message, self.debug)
+
+class UGRStorageStatsErrorAzureContainerNotFound(UGRStorageStatsError):
+    """
+    Exception error when no bucket usage stats could be found.
+    """
+    def __init__(self, error=None, status_code="000", debug=None, container=''):
+        self.message = '[%s][%s] Container tried: %s' \
+                  % (error, status_code, container)
+        self.debug = debug
+        super(UGRStorageStatsErrorAzureContainerNotFound, self).__init__(self.message, self.debug)
 
 class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     """
@@ -687,6 +717,7 @@ class StorageStats(object):
               '\n{0:12}{1}'.format('Quota:', self.stats['quota']), \
               '\n{0:12}{1}'.format('Bytes Used:', self.stats['bytesused']), \
               '\n{0:12}{1}'.format('Bytes Free:', self.stats['bytesfree']), \
+              '\n{0:12}{1}'.format('FileCount:', self.stats['filecount']), \
               '\n{0:12}{1}'.format('Status:', self.status), \
               )
         print('\n{0:12}{1}'.format('Memcached:', memcached_index), \
@@ -801,6 +832,92 @@ class StorageStats(object):
         return xmlroot
 
 
+
+class AzureStorageStats (StorageStats):
+    """
+    Define the type of storage endpoint this subclass will interface with
+    and any API settings it can use.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Extend or replace any object attributes specific to the type of
+        storage endpoint. Below are the most common ones, but add as necessary.
+        """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
+        # First we call the super function to initialize the initial atributes
+        # given by the StorageStats class.
+        super().__init__(*args, **kwargs)
+        self.storageprotocol = "Azure"
+        self.validators.update({
+            'azure.key': {
+                'required': True,
+            },
+        })
+
+        # Invoke the validate_plugin_settings() method
+        try:
+            self.validate_plugin_settings()
+        except UGRConfigFileError as ERR:
+            print(ERR.debug)
+            self.debug.append(ERR.debug)
+            self.status = ERR.message
+
+        # Obtain account name and domain from URN
+        self.uri['account'], self.uri['domain'] = self.uri['netloc'].partition('.')[::2]
+        self.uri['container'] = self.uri['path'].strip('/')
+
+    def get_storagestats(self):
+        """
+        Uses Azure's API to obtain the storage usage.
+        "generic": parses every blob in the account and sums the content-length.
+        """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
+
+        if self.plugin_settings['storagestats.api'].lower() == 'generic':
+            total_bytes = 0
+            total_files = 0
+
+            block_blob_service = BlockBlobService(account_name=self.uri['account'], account_key=self.plugin_settings['azure.key'])
+            container_name = self.uri['container']
+            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Account: %s Container: %s" % (self.id, self.uri['url'], self.plugin_settings['storagestats.api'].lower(), self.uri['account'], self.uri['container']))
+            try:
+                blobs = block_blob_service.list_blobs(container_name, timeout=10)
+            except azure.common.AzureMissingResourceHttpError as ERR:
+                raise UGRStorageStatsErrorAzureContainerNotFound(
+                    error='ContainerNotFound',
+                    status_code=404,
+                    debug=str(ERR),
+                    container=container_name,
+                    )
+            except azure.common.AzureHttpError as ERR:
+                raise UGRStorageStatsConnectionErrorAzureAPI(
+                    error='ConnectionError',
+                    status_code=400,
+                    debug=str(ERR),
+                    api=self.plugin_settings['storagestats.api'],
+                    )
+            except azure.common.AzureException as ERR:
+                raise UGRStorageStatsConnectionError(
+                    error='ConnectionError',
+                    status_code=400,
+                    debug=str(ERR),
+                    )
+            else:
+                for blob in blobs:
+                    total_bytes += blob.properties.content_length
+                    total_files += 1
+
+                self.stats['bytesused'] = total_bytes
+                self.stats['quota'] = self.plugin_settings['storagestats.quota']
+                self.stats['bytesfree'] = self.stats['quota'] - total_bytes
+                # Not required, but is useful for reporting/accounting:
+                self.stats['filecount'] = total_files
 
 class S3StorageStats(StorageStats):
     """
@@ -1338,7 +1455,7 @@ def factory(plugin):
         'libugrlocplugin_dav.so': DAVStorageStats,
         'libugrlocplugin_http.so': DAVStorageStats,
         'libugrlocplugin_s3.so': S3StorageStats,
-        #'libugrlocplugin_azure.so': AzureStorageStats,
+        'libugrlocplugin_azure.so': AzureStorageStats,
         #'libugrlocplugin_davrucio.so': RucioStorageStats,
         #'libugrlocplugin_dmliteclient.so': DMLiteStorageStats,
     }
@@ -1371,7 +1488,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
             flogger.debug("[%s]Object.plugin: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin']))
             flogger.debug("[%s]Object.plugin_settings: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin_settings']))
         except UGRUnsupportedPluginError as ERR:
-            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            flogger.error("[%s]%s" % (endpoints[endpoint]['id'], ERR.debug))
             mlogger.error("%s" % (ERR.message))
             ep = StorageStats(endpoints[endpoint])
             ep.debug.append(ERR.debug)

@@ -15,6 +15,10 @@ class NewTypeStorageStats (StorageStats):
         Extend or replace any object attributes specific to the type of
         storage endpoint. Below are the most common ones, but add as necessary.
         """
+        ############# Creating loggers ################
+        flogger = logging.getLogger(__name__)
+        mlogger = logging.getLogger('memcached_logger')
+        ###############################################
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
         super().__init__(*args, **kwargs)
@@ -38,9 +42,11 @@ class NewTypeStorageStats (StorageStats):
         try:
             self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
+            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             print(ERR.debug)
             self.debug.append(ERR.debug)
-            self.status = ERR.message
+            self.status = memcached_logline.contents()
 
         # Add any other attributes needed for this subclass.
 
@@ -51,11 +57,15 @@ class NewTypeStorageStats (StorageStats):
             Ideally we need to assing values to the following attributes, either
             obtained from the endpoint, from the endpoints.conf file or defaults
             """
-            self.bytesfree = 0
-            self.bytesused = 0
-            self.quota = 0
+            ############# Creating loggers ################
+            flogger = logging.getLogger(__name__)
+            mlogger = logging.getLogger('memcached_logger')
+            ###############################################
+            self.stats['bytesfree'] = 0
+            self.stats['bytesused'] = 0
+            self.stats['quota'] = 0
             # Not required, but is useful for reporting/accounting:
-            self.filecount = 0
+            self.stats['filecount'] = 0
 
         def validate_schema(self, scheme):
             """
@@ -63,12 +73,20 @@ class NewTypeStorageStats (StorageStats):
             protocol schema in the URN that requires some logic to figure out.
             Example below if for the DAVStorageStats.
             """
+            ############# Creating loggers ################
+            flogger = logging.getLogger(__name__)
+            mlogger = logging.getLogger('memcached_logger')
+            ###############################################
+
             schema_translator = {
                 'dav': 'http',
                 'davs': 'https',
             }
 
+            flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
             if scheme in schema_translator:
-                return (schema_translator[scheme])
+                flogger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[scheme]))
+                return schema_translator[scheme]
             else:
-                return (scheme)
+                flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
+                return scheme
