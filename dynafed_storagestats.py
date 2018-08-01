@@ -5,14 +5,16 @@ storage status information from various types of endpoints.
 
 Prerequisites:
     Modules:
-    - lxml
-    - memcache
-    - requests
-    - requests_aws4auth
+        - azure-storage >= 0.36.0
+        - boto3 >= 1.6.1
+        - lxml >= 4.2.1
+        - python-memcache >= 1.59
+        - requests >= 2.12.5
+        - requests_aws4auth >= 0.9
 """
 from __future__ import print_function
 
-__version__ = "v0.8.4"
+__version__ = "v0.8.5"
 
 import os
 import sys

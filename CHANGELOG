@@ -70,3 +70,5 @@ v0.8.3 Added logger definitions to all functions. Added 200 status code check
        and handler for DAV endpoints.
 v0.8.4 Global settings mechanism and renamed options to settings, in all vars
        comments and docs.
+v0.8.5 Added Azure support. Utilizes azure-storage module's list_blobs function.
+       Added the necessary exceptions. Stdout shows filecount, when available.
