@@ -115,6 +115,7 @@ locplugin.<ID>.storagestats.api: [generic]
 
 This setting will list all objects in a blob container and add the individual
 sizes.
+Each GET request obtains 5,000 objects. Therefore 10,005 objects cost 3 GET's.
 
 ### DAV/HTTP
 
@@ -145,6 +146,7 @@ locplugin.<ID>.storagestats.api: [generic, ceph-admin]
 
 This setting will list all objects behind the bucket and add the individual
 sizes.
+Each GET request obtains 1,000 objects. Therefore 2,005 objects cost 3 GET's
 
 ##### ceph-admin
 
