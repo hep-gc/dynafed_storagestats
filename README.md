@@ -9,6 +9,7 @@ Tested with Python >= 3.4.8
 Might work with >= 2.7.5 but is not actively tested.
 
 So far it supports has been tested with:
+Azure Storage Blob
 AWS S3
 Ceph S3
 Minio S3
