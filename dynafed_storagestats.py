@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.5"
+__version__ = "v0.8.6"
 
 import os
 import sys
@@ -1187,10 +1187,10 @@ class S3StorageStats(StorageStats):
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
         if scheme == 's3':
             if self.plugin_settings['ssl_check']:
-                flogger.debug("[%s]Using URN schema: https" % (self.id, scheme))
+                flogger.debug("[%s]Using URN schema: https" % (self.id))
                 return 'https'
             else:
-                flogger.debug("[%s]Using URN schema: http" % (self.id, scheme))
+                flogger.debug("[%s]Using URN schema: http" % (self.id))
                 return 'http'
         else:
             flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
