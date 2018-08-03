@@ -74,3 +74,4 @@ v0.8.5 Added Azure support. Utilizes azure-storage module's list_blobs function.
        Added the necessary exceptions. Stdout shows filecount, when available.
 v0.8.6 Removed schema arguments for debug reporting on S3 schema validation
        which are not used and caused the program to fail.
+v0.8.7 Added filecount for S3 ceph-admin api.       
