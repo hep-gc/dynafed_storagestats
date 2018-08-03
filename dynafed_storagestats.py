@@ -111,6 +111,10 @@ group.add_option('-m', '--memcached',
                  dest='output_memcached', action='store_true', default=False,
                  help='Declare to enable uploading information to memcached.'
                 )
+group.add_option('--json',
+                 dest='output_json', action='store_true', default=False,
+                 help='Set to output json file with storage stats.'
+                )
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout.'
@@ -1596,6 +1600,49 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     output.write(xml_output)
     output.close()
 
+def output_json(endpoints, output_dir="/tmp"):
+    """
+    Create a single json file for all endpoints passed to this function.
+    """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
+
+    #Create the json structure in python terms
+    skeleton = {}
+    storageservice = {}
+    storageendpoints = []
+
+    for endpoint in endpoints:
+        storageendpoint = {
+            "name": endpoint.id,
+            "id": 'tbd',
+            "endpointurl": endpoint.uri['url'],
+            "interfacetype": endpoint.storageprotocol,
+            "timestamp": endpoint.stats['starttime'],
+            "totalsize": endpoint.stats['quota'],
+            "numberoffiles": endpoint.stats['filecount'],
+            "path": endpoint.plugin_settings['xlatepfx']
+        }
+        storageendpoints.append(storageendpoint)
+
+    storageservice = {
+        'name': os.uname()[1],
+        'id': 'tbd',
+        'servicetype': 'tbd',
+        'implementation': 'dynafed',
+        'implementationversion': 'tbd',
+        'latesupdate': int(time.time()),
+        'storageendpoints': storageendpoints,
+        }
+    skeleton = {"storageservice": storageservice}
+
+    filename = output_dir + '/' + 'wlcg' + '.json'
+    output = open(filename, 'w')
+    output.write(json.dumps(skeleton, indent=4))
+    output.close()
+
 def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     """
     Setup the loggers to be used throughout the script. We need at least two,
@@ -1675,3 +1722,7 @@ if __name__ == '__main__':
     # Create StAR Storagestats XML files for each endpoint.
     if options.output_xml:
         output_StAR_xml(endpoints)
+
+    # Create json file with storagestats
+    if options.output_json:
+        output_json(endpoints)
