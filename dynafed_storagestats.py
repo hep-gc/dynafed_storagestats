@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.6"
+__version__ = "v0.8.7"
 
 import os
 import sys
@@ -1054,8 +1054,9 @@ class S3StorageStats(StorageStats):
                         )
                 else:
                     if len(stats['usage']) != 0:
-                        # If the bucket is emtpy, then just keep going we
+                        # If the bucket is emtpy, then just keep going
                         self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
+                        self.stats['filecount'] = stats['usage']['rgw.main']['num_objects']
 
                     if self.plugin_settings['storagestats.quota'] != 'api':
                         self.stats['quota'] = self.plugin_settings['storagestats.quota']
