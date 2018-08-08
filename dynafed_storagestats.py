@@ -1610,11 +1610,15 @@ def output_json(endpoints, output_dir="/tmp"):
     ###############################################
 
     #Create the json structure in python terms
+    dynafed_usedsize = 0
+    dynafed_totalsize = 0
     skeleton = {}
     storageservice = {}
     storageendpoints = []
 
     for endpoint in endpoints:
+        dynafed_usedsize += endpoint.stats['bytesused']
+        dynafed_totalsize += endpoint.stats['quota']
         storageendpoint = {
             "name": endpoint.id,
             "id": 'tbd',
@@ -1622,6 +1626,7 @@ def output_json(endpoints, output_dir="/tmp"):
             "interfacetype": endpoint.storageprotocol,
             "timestamp": endpoint.stats['starttime'],
             "totalsize": endpoint.stats['quota'],
+            "usedsize": endpoint.stats['bytesused'],
             "numberoffiles": endpoint.stats['filecount'],
             "path": endpoint.plugin_settings['xlatepfx']
         }
@@ -1634,6 +1639,8 @@ def output_json(endpoints, output_dir="/tmp"):
         'implementation': 'dynafed',
         'implementationversion': 'tbd',
         'latesupdate': int(time.time()),
+        "totalsize": dynafed_totalsize,
+        "usedsize": dynafed_usedsize,
         'storageendpoints': storageendpoints,
         }
     skeleton = {"storageservice": storageservice}
