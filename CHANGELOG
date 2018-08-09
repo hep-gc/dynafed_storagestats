@@ -78,3 +78,4 @@ v0.8.7 Added filecount for S3 ceph-admin api.
 v0.8.8 Adds option to specify output directory for storagestats files as
        dynafed_storagestats with its corresponding extension. Adds json file
        output.
+v0.8.9 Adds plain txt file output.
