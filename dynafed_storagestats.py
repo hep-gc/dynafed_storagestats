@@ -115,6 +115,10 @@ group.add_option('--json',
                  dest='output_json', action='store_true', default=False,
                  help='Set to output json file with storage stats.'
                 )
+group.add_option('-o', '--output_dir',
+                 dest='output_dir', action='store', default='/tmp',
+                 help='Directory to output storage stat files. Defautl: /tmp'
+                 )
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout.'
@@ -127,7 +131,9 @@ group.add_option('--xml',
                  dest='output_xml', action='store_true', default=False,
                  help='Set to output xml file with StAR format.'
                 )
+parser.add_option_group(group)
 
+group = OptionGroup(parser, "Logging options")
 group.add_option('--logfile',
                 dest='logfile', action='store', default='/tmp/dynafed_storagestats.log',
                 help='Change where to ouput logs. Default: /tmp/dynafed_storagestats.log'
@@ -1595,7 +1601,7 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
         xmlroot.append(sub_element)
 
     xml_output = etree.tostring(xmlroot, pretty_print=True, encoding='unicode')
-    filename = output_dir + '/' + 'chale' + '.xml'
+    filename = output_dir + '/' + 'dynafed_storagestats' + '.xml'
     output = open(filename, 'w')
     output.write(xml_output)
     output.close()
@@ -1645,7 +1651,7 @@ def output_json(endpoints, output_dir="/tmp"):
         }
     skeleton = {"storageservice": storageservice}
 
-    filename = output_dir + '/' + 'wlcg' + '.json'
+    filename = output_dir + '/' + 'dynafed_storagestats' + '.json'
     output = open(filename, 'w')
     output.write(json.dumps(skeleton, indent=4))
     output.close()
@@ -1728,8 +1734,8 @@ if __name__ == '__main__':
 
     # Create StAR Storagestats XML files for each endpoint.
     if options.output_xml:
-        output_StAR_xml(endpoints)
+        output_StAR_xml(endpoints, options.output_dir)
 
     # Create json file with storagestats
     if options.output_json:
-        output_json(endpoints)
+        output_json(endpoints, options.output_dir)
