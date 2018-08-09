@@ -1621,7 +1621,7 @@ def output_json(endpoints, output_dir="/tmp"):
         dynafed_totalsize += endpoint.stats['quota']
         storageendpoint = {
             "name": endpoint.id,
-            "id": 'tbd',
+            # "id": 'tbd',
             "endpointurl": endpoint.uri['url'],
             "interfacetype": endpoint.storageprotocol,
             "timestamp": endpoint.stats['starttime'],
@@ -1634,10 +1634,10 @@ def output_json(endpoints, output_dir="/tmp"):
 
     storageservice = {
         'name': os.uname()[1],
-        'id': 'tbd',
-        'servicetype': 'tbd',
+        # 'id': 'tbd',
+        # 'servicetype': 'tbd',
         'implementation': 'dynafed',
-        'implementationversion': 'tbd',
+        # 'implementationversion': 'tbd',
         'latesupdate': int(time.time()),
         "totalsize": dynafed_totalsize,
         "usedsize": dynafed_usedsize,
