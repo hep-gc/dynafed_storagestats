@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.7"
+__version__ = "v0.8.8"
 
 import os
 import sys
