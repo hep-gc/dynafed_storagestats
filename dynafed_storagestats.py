@@ -1628,7 +1628,7 @@ def output_json(endpoints, output_dir="/tmp"):
             "totalsize": endpoint.stats['quota'],
             "usedsize": endpoint.stats['bytesused'],
             "numberoffiles": endpoint.stats['filecount'],
-            "path": endpoint.plugin_settings['xlatepfx']
+            "path": endpoint.plugin_settings['xlatepfx'].split()[0]
         }
         storageendpoints.append(storageendpoint)
 
