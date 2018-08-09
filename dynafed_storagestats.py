@@ -119,6 +119,10 @@ group.add_option('-o', '--output_dir',
                  dest='output_dir', action='store', default='/tmp',
                  help='Directory to output storage stat files. Defautl: /tmp'
                  )
+group.add_option('--plain',
+                 dest='output_plain', action='store_true', default=False,
+                 help='Set to output stats to plain txt file.'
+                )
 group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout.'
@@ -1656,6 +1660,42 @@ def output_json(endpoints, output_dir="/tmp"):
     output.write(json.dumps(skeleton, indent=4))
     output.close()
 
+def output_plain(endpoints, output_dir="/tmp"):
+    """
+    Create a single txt file for all endpoints passed to this function.
+    """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger('memcached_logger')
+    ###############################################
+
+    # Initialize total tally
+    dynafed_usedsize = 0
+    dynafed_totalsize = 0
+
+    # Open file handle to write to
+    filename = output_dir + '/' + 'dynafed_storagestats' + '.txt'
+    with open(filename, 'w') as output:
+        output.write("ID URL MountPoint Protocol Timestamp Quota BytesUsed BytesFree FileCount\n")
+
+        for endpoint in endpoints:
+            dynafed_usedsize += endpoint.stats['bytesused']
+            dynafed_totalsize += endpoint.stats['quota']
+            output.write("%s %s %s %s %d %d %d %d %d\n" % (
+                endpoint.id,
+                endpoint.uri['url'],
+                endpoint.plugin_settings['xlatepfx'].split()[0],
+                endpoint.storageprotocol,
+                endpoint.stats['starttime'],
+                endpoint.stats['quota'],
+                endpoint.stats['bytesused'],
+                endpoint.stats['bytesfree'],
+                endpoint.stats['filecount'],
+                )
+            )
+
+    output.close()
+
 def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     """
     Setup the loggers to be used throughout the script. We need at least two,
@@ -1739,3 +1779,7 @@ if __name__ == '__main__':
     # Create json file with storagestats
     if options.output_json:
         output_json(endpoints, options.output_dir)
+
+    # Create txt file with storagestats
+    if options.output_plain:
+        output_plain(endpoints, options.output_dir)
