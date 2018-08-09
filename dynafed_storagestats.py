@@ -1606,9 +1606,9 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
 
     xml_output = etree.tostring(xmlroot, pretty_print=True, encoding='unicode')
     filename = output_dir + '/' + 'dynafed_storagestats' + '.xml'
-    output = open(filename, 'w')
-    output.write(xml_output)
-    output.close()
+    with open(filename, 'w') as output:
+        output.write(xml_output)
+        output.close()
 
 def output_json(endpoints, output_dir="/tmp"):
     """
@@ -1656,9 +1656,9 @@ def output_json(endpoints, output_dir="/tmp"):
     skeleton = {"storageservice": storageservice}
 
     filename = output_dir + '/' + 'dynafed_storagestats' + '.json'
-    output = open(filename, 'w')
-    output.write(json.dumps(skeleton, indent=4))
-    output.close()
+    with open(filename, 'w') as output:
+        output.write(json.dumps(skeleton, indent=4))
+        output.close()
 
 def output_plain(endpoints, output_dir="/tmp"):
     """
@@ -1693,7 +1693,6 @@ def output_plain(endpoints, output_dir="/tmp"):
                 endpoint.stats['filecount'],
                 )
             )
-
     output.close()
 
 def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
