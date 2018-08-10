@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 """
 Module to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints.
@@ -524,7 +524,7 @@ class StorageStats(object):
             },
             'storagestats.api': {
                 'default': 'generic',
-                'required': True,
+                'required': False,
                 'valid': ['generic'],
             },
             'ssl_check': {
@@ -957,7 +957,7 @@ class S3StorageStats(StorageStats):
             },
             'storagestats.api': {
                 'default': 'generic',
-                'required': True,
+                'required': False,
                 'valid': ['ceph-admin', 'generic'],
             },
             's3.priv_key': {
