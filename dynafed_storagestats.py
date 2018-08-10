@@ -485,6 +485,7 @@ class StorageStats(object):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         self.stats = {
             'bytesused': 0,
@@ -510,7 +511,7 @@ class StorageStats(object):
             'netloc':   _url.netloc,
             'path':     _url.path,
             'port':     _url.port,
-            'scheme':   self.validate_schema(_url.scheme),
+            'scheme':   _url.scheme,
             'url':      _ep['url'],
             }
 
@@ -548,6 +549,7 @@ class StorageStats(object):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
@@ -587,6 +589,7 @@ class StorageStats(object):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         mc = memcache.Client([memcached_ip + ':' + memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
@@ -631,6 +634,7 @@ class StorageStats(object):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         flogger.info("[%s]Validating configured settings." % (self.id))
         for ep_setting in self.validators:
@@ -701,16 +705,16 @@ class StorageStats(object):
 
 
 
-    def validate_schema(self, scheme):
+    def validate_schema(self):
         """
         Used to validate the URN's schema. SubClasses can have their own.
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
-        return scheme
 
     def output_to_stdout(self, options):
         """
@@ -860,6 +864,7 @@ class AzureStorageStats (StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
@@ -879,6 +884,9 @@ class AzureStorageStats (StorageStats):
             self.debug.append(ERR.debug)
             self.status = ERR.message
 
+        # Invoke the validate_schema() method
+        self.validate_schema()
+
         # Obtain account name and domain from URN
         self.uri['account'], self.uri['domain'] = self.uri['netloc'].partition('.')[::2]
         self.uri['container'] = self.uri['path'].strip('/')
@@ -891,6 +899,7 @@ class AzureStorageStats (StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
 
         if self.plugin_settings['storagestats.api'].lower() == 'generic':
@@ -946,6 +955,7 @@ class S3StorageStats(StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         super(S3StorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "S3"
@@ -977,6 +987,7 @@ class S3StorageStats(StorageStats):
             },
         })
 
+        # Invoke the validate_plugin_settings() method
         try:
             self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
@@ -985,6 +996,9 @@ class S3StorageStats(StorageStats):
             print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
+
+        # Invoke the validate_schema() method
+        self.validate_schema()
 
         if self.plugin_settings['s3.alternate'].lower() == 'true'\
         or self.plugin_settings['s3.alternate'].lower() == 'yes':
@@ -1001,6 +1015,7 @@ class S3StorageStats(StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
 
         # Getting the storage Stats CephS3's Admin API
@@ -1190,7 +1205,7 @@ class S3StorageStats(StorageStats):
                 self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
-    def validate_schema(self, scheme):
+    def validate_schema(self):
         """
         Used to translate s3 into http/https since requests doesn't
         support the former schema.
@@ -1198,18 +1213,18 @@ class S3StorageStats(StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
-        if scheme == 's3':
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
+        if self.uri['scheme'] == 's3':
             if self.plugin_settings['ssl_check']:
                 flogger.debug("[%s]Using URN schema: https" % (self.id))
-                return 'https'
+                self.uri['scheme'] = 'https'
             else:
                 flogger.debug("[%s]Using URN schema: http" % (self.id))
-                return 'http'
+                self.uri['scheme'] = 'http'
         else:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
-            return scheme
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
 
     def output_StAR_xml(self, output_dir="/tmp"):
         """
@@ -1232,6 +1247,7 @@ class DAVStorageStats(StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         super(DAVStorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "DAV"
@@ -1249,6 +1265,7 @@ class DAVStorageStats(StorageStats):
             },
         })
 
+        # Invoke the validate_plugin_settings() method
         try:
             self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
@@ -1257,6 +1274,9 @@ class DAVStorageStats(StorageStats):
             print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
+
+        # Invoke the validate_schema() method
+        self.validate_schema()
 
     def get_storagestats(self):
         """
@@ -1267,6 +1287,7 @@ class DAVStorageStats(StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
         if self.plugin_settings['storagestats.api'].lower() == 'generic':
@@ -1359,7 +1380,7 @@ class DAVStorageStats(StorageStats):
                     debug=response.text,
                 )
 
-    def validate_schema(self, scheme):
+    def validate_schema(self):
         """
         Used to translate dav/davs into http/https since requests doesn't
         support the former schema.
@@ -1367,19 +1388,19 @@ class DAVStorageStats(StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         schema_translator = {
             'dav': 'http',
             'davs': 'https',
         }
 
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
-        if scheme in schema_translator:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[scheme]))
-            return schema_translator[scheme]
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
+        if self.uri['scheme'] in schema_translator:
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[self.uri['scheme']]))
+            self.uri['scheme'] = schema_translator[self.uri['scheme']]
         else:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
-            return scheme
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
 
 ###############
 ## Functions ##
@@ -1398,6 +1419,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
     endpoints = {}
     global_settings = {}
@@ -1465,6 +1487,7 @@ def factory(plugin):
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
     plugin_dict = {
         'libugrlocplugin_dav.so': DAVStorageStats,
@@ -1491,6 +1514,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
     storage_objects = []
     flogger.info("Looking for storage endpoint configuration files in '%s'" % (config_dir))
@@ -1522,6 +1546,7 @@ def create_free_space_request_content():
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
     root = etree.Element("propfind", xmlns="DAV:")
     prop = etree.SubElement(root, "prop")
@@ -1540,6 +1565,7 @@ def add_xml_getcontentlength(content):
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
     xml = etree.fromstring(content)
     bytesused = 0
@@ -1557,6 +1583,7 @@ def convert_size_to_bytes(size):
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
     multipliers = {
         'kib': 1024,
@@ -1592,6 +1619,7 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
     SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
     SR = "{%s}" % SR_namespace
@@ -1617,6 +1645,7 @@ def output_json(endpoints, output_dir="/tmp"):
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
 
     #Create the json structure in python terms
@@ -1667,6 +1696,7 @@ def output_plain(endpoints, output_dir="/tmp"):
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
     mlogger = logging.getLogger('memcached_logger')
+    memcached_logline = TailLogger(1)
     ###############################################
 
     # Initialize total tally

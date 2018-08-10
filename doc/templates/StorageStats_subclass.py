@@ -48,6 +48,9 @@ class NewTypeStorageStats (StorageStats):
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
 
+        # Invoke the validate_schema() method
+        self.validate_schema()
+
         # Add any other attributes needed for this subclass.
 
         def get_storagestats(self):
