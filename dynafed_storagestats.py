@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.9"
+__version__ = "v0.8.10"
 
 import os
 import sys
@@ -724,7 +724,7 @@ class StorageStats(object):
         mlogger = logging.getLogger(__name__+'memcached_logger')
         # memcached_logline = TailLogger(1)
         ###############################################
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
 
     def output_to_stdout(self, options):
         """
@@ -1059,6 +1059,13 @@ class S3StorageStats(StorageStats):
                 #Log contents of response
                 flogger.debug("[%s]Endpoint reply: %s" % (self.id, r.text))
 
+            except requests.exceptions.InvalidSchema as ERR:
+                raise UGRStorageStatsConnectionErrorInvalidSchema(
+                    error='InvalidSchema',
+                    status_code="000",
+                    schema=self.uri['scheme'],
+                    debug=str(ERR),
+                    )
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
                     error=ERR.__class__.__name__,
@@ -1157,6 +1164,13 @@ class S3StorageStats(StorageStats):
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,
                         status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
+                        debug=str(ERR),
+                        )
+                except botoRequestsExceptions.InvalidSchema as ERR:
+                    raise UGRStorageStatsConnectionErrorInvalidSchema(
+                        error='InvalidSchema',
+                        status_code="000",
+                        schema=self.uri['scheme'],
                         debug=str(ERR),
                         )
                 except botoRequestsExceptions.RequestException as ERR:
