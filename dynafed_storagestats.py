@@ -1751,7 +1751,7 @@ def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     mlogger.setLevel(logging.WARNING)
     # Set memcached logger format
     log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
-    # Create console handler and set level to WARNING.
+    # Create TailLogger
     memcached_logline = TailLogger(1) #We just want one line at a time.
     log_handler_memcached = memcached_logline.log_handler
     log_handler_memcached.setFormatter(log_format_memcached)
