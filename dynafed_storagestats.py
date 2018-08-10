@@ -484,7 +484,7 @@ class StorageStats(object):
     def __init__(self, _ep):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         self.stats = {
@@ -548,7 +548,7 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         memcached_srv = memcached_ip + ':' + memcached_port
@@ -588,7 +588,7 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         mc = memcache.Client([memcached_ip + ':' + memcached_port])
@@ -633,7 +633,7 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         flogger.info("[%s]Validating configured settings." % (self.id))
@@ -711,7 +711,7 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
@@ -863,7 +863,7 @@ class AzureStorageStats (StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         # First we call the super function to initialize the initial atributes
@@ -898,7 +898,7 @@ class AzureStorageStats (StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
 
@@ -954,7 +954,7 @@ class S3StorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         super(S3StorageStats, self).__init__(*args, **kwargs)
@@ -1014,7 +1014,7 @@ class S3StorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
 
@@ -1212,7 +1212,7 @@ class S3StorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
@@ -1246,7 +1246,7 @@ class DAVStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         super(DAVStorageStats, self).__init__(*args, **kwargs)
@@ -1286,7 +1286,7 @@ class DAVStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
@@ -1387,7 +1387,7 @@ class DAVStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
         memcached_logline = TailLogger(1)
         ###############################################
         schema_translator = {
@@ -1418,7 +1418,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
     endpoints = {}
@@ -1486,7 +1486,7 @@ def factory(plugin):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
     plugin_dict = {
@@ -1513,7 +1513,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
     storage_objects = []
@@ -1545,7 +1545,7 @@ def create_free_space_request_content():
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
     root = etree.Element("propfind", xmlns="DAV:")
@@ -1564,7 +1564,7 @@ def add_xml_getcontentlength(content):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
     xml = etree.fromstring(content)
@@ -1582,7 +1582,7 @@ def convert_size_to_bytes(size):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
     multipliers = {
@@ -1618,7 +1618,7 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
     SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
@@ -1644,7 +1644,7 @@ def output_json(endpoints, output_dir="/tmp"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
 
@@ -1695,7 +1695,7 @@ def output_plain(endpoints, output_dir="/tmp"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     memcached_logline = TailLogger(1)
     ###############################################
 
@@ -1747,12 +1747,13 @@ def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     flogger.addHandler(log_handler_file)
 
     ## create memcached logger
-    mlogger = logging.getLogger('memcached_logger')
+    # Create TailLogger
+    memcached_logline = TailLogger(1) #We just want one line at a time.
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     mlogger.setLevel(logging.WARNING)
     # Set memcached logger format
     log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
-    # Create TailLogger
-    memcached_logline = TailLogger(1) #We just want one line at a time.
+
     log_handler_memcached = memcached_logline.log_handler
     log_handler_memcached.setFormatter(log_format_memcached)
     # Add handlers
