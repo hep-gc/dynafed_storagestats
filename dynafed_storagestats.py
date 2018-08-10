@@ -215,7 +215,7 @@ class UGRBaseError(UGRBaseException):
         else:
             self.message = message
         self.debug = debug
-        super(UGRBaseError, self).__init__(self.message, self.debug)
+        super(UGRBaseError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileError(UGRBaseError):
     """
@@ -228,7 +228,7 @@ class UGRConfigFileError(UGRBaseError):
         else:
             self.message = message
         self.debug = debug
-        super(UGRConfigFileError, self).__init__(self.message, self.debug)
+        super(UGRConfigFileError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRUnsupportedPluginError(UGRConfigFileError):
     """
@@ -239,7 +239,7 @@ class UGRUnsupportedPluginError(UGRConfigFileError):
         self.message = '[%s][%s] StorageStats method for "%s" not implemented yet.' \
                        % (error, status_code, plugin)
         self.debug = debug
-        super(UGRUnsupportedPluginError, self).__init__(self.message, self.debug)
+        super(UGRUnsupportedPluginError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     """
@@ -250,7 +250,7 @@ class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
         self.message = '[%s][%s] Failed to match ID in line "%s". Check your configuration.' \
                        % (error, status_code, line)
         self.debug = debug
-        super(UGRConfigFileErrorIDMismatch, self).__init__(self.message, self.debug)
+        super(UGRConfigFileErrorIDMismatch, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorMissingRequiredSetting(UGRConfigFileError):
     """
@@ -261,7 +261,7 @@ class UGRConfigFileErrorMissingRequiredSetting(UGRConfigFileError):
         self.message = '[%s][%s] "%s" is required. Check your configuration.' \
                   % (error, status_code, setting)
         self.debug = debug
-        super(UGRConfigFileErrorMissingRequiredSetting, self).__init__(self.message, self.debug)
+        super(UGRConfigFileErrorMissingRequiredSetting, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorInvalidSetting(UGRConfigFileError):
     """
@@ -272,7 +272,7 @@ class UGRConfigFileErrorInvalidSetting(UGRConfigFileError):
         self.message = '[%s][%s] Incorrect value given in setting "%s". Valid plugin_settings: %s' \
                   % (error, status_code, setting, valid_plugin_settings)
         self.debug = debug
-        super(UGRConfigFileErrorInvalidSetting, self).__init__(self.message, self.debug)
+        super(UGRConfigFileErrorInvalidSetting, self).__init__(message=self.message, debug=self.debug)
 
 class UGRMemcachedError(UGRBaseError):
     """
@@ -285,7 +285,7 @@ class UGRMemcachedError(UGRBaseError):
         else:
             self.message = message
         self.debug = debug
-        super(UGRMemcachedError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRMemcachedConnectionError(UGRMemcachedError):
     """
@@ -296,7 +296,7 @@ class UGRMemcachedConnectionError(UGRMemcachedError):
         self.message = '[%s][%s] Failed to connect to memcached.' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRMemcachedConnectionError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedConnectionError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRMemcachedIndexError(UGRMemcachedError):
     """
@@ -306,7 +306,7 @@ class UGRMemcachedIndexError(UGRMemcachedError):
         self.message = '[%s][%s] Unable to get memcached index contents.' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRMemcachedIndexError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedIndexError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsError(UGRBaseError):
     """
@@ -320,7 +320,7 @@ class UGRStorageStatsError(UGRBaseError):
         else:
             self.message = message
         self.debug = debug
-        super(UGRStorageStatsError, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
     """
@@ -330,7 +330,7 @@ class UGRStorageStatsConnectionError(UGRStorageStatsError):
         self.message = '[%s][%s] Failed to establish a connection.' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsConnectionError, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorInvalidSchema(UGRStorageStatsError):
     """
@@ -340,7 +340,7 @@ class UGRStorageStatsConnectionErrorInvalidSchema(UGRStorageStatsError):
         self.message = '[%s][%s] Invalid schema "%s".' \
                   % (error, status_code, schema)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorInvalidSchema, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionErrorInvalidSchema, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorAzureAPI(UGRStorageStatsError):
     """
@@ -350,7 +350,7 @@ class UGRStorageStatsConnectionErrorAzureAPI(UGRStorageStatsError):
         self.message = '[%s][%s] Error requesting stats using API "%s".' \
                   % (error, status_code, api)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorAzureAPI, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionErrorAzureAPI, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorAzureContainerNotFound(UGRStorageStatsError):
     """
@@ -360,7 +360,7 @@ class UGRStorageStatsErrorAzureContainerNotFound(UGRStorageStatsError):
         self.message = '[%s][%s] Container tried: %s' \
                   % (error, status_code, container)
         self.debug = debug
-        super(UGRStorageStatsErrorAzureContainerNotFound, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsErrorAzureContainerNotFound, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     """
@@ -370,7 +370,7 @@ class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
         self.message = '[%s][%s] Error requesting stats using API "%s".' \
                   % (error, status_code, api)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorS3API, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionErrorS3API, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     """
@@ -380,7 +380,7 @@ class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
         self.message = '[%s][%s] Failed to get bucket usage information.' \
                   % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     """
@@ -390,7 +390,7 @@ class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
         self.message = '[%s][%s] WebDAV Quota Method.' \
                   % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     """
@@ -401,7 +401,7 @@ class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
         self.message = '[%s][%s] Invalid client certificate path "%s".' \
                   % (error, status_code, certfile)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(message=self.message, debug=self.debug)
 
 ### Defining Warning Exception Classes
 class UGRBaseWarning(UGRBaseException):
@@ -416,7 +416,7 @@ class UGRBaseWarning(UGRBaseException):
         else:
             self.message = message
         self.debug = debug
-        super(UGRBaseWarning, self).__init__(self.message, self.debug)
+        super(UGRBaseWarning, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileWarning(UGRBaseWarning):
     """
@@ -428,7 +428,7 @@ class UGRConfigFileWarning(UGRBaseWarning):
             self.message = '[%s][%s] An unkown error occured reading a configuration file.' \
                            % (error, status_code)
         self.debug = debug
-        super(UGRConfigFileWarning, self).__init__(self.message, self.debug)
+        super(UGRConfigFileWarning, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileWarningMissingSetting(UGRConfigFileWarning):
     """
@@ -441,7 +441,7 @@ class UGRConfigFileWarningMissingSetting(UGRConfigFileWarning):
         self.message = '[%s][%s] Unspecified "%s" setting. Using default value "%s"' \
                   % (error, status_code, setting, setting_default)
         self.debug = debug
-        super(UGRConfigFileWarningMissingSetting, self).__init__(self.message, self.debug)
+        super(UGRConfigFileWarningMissingSetting, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsWarning(UGRBaseWarning):
     """
@@ -455,7 +455,7 @@ class UGRStorageStatsWarning(UGRBaseWarning):
         else:
             self.message = message
         self.debug = debug
-        super(UGRStorageStatsWarning, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsWarning, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
     """
@@ -468,7 +468,7 @@ class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
         self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsQuotaWarning, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsQuotaWarning, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
     """
@@ -479,7 +479,7 @@ class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
         self.message = '[%s][%s] Bucket quota is disabled. Using default of 1TB' \
                   % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(message=self.message, debug=self.debug)
 
 
 #####################
