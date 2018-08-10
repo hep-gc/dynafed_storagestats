@@ -199,7 +199,7 @@ class UGRBaseException(Exception):
         if debug is None:
             self.debug = message
         else:
-            self.debug = debug
+            self.debug = message + ' ' + debug
         super(UGRBaseException, self).__init__(self.message)
 
 ### Defining Error Exception Classes
