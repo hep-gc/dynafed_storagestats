@@ -18,6 +18,7 @@ class NewTypeStorageStats (StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        memcached_logline = TailLogger(1)
         ###############################################
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
