@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.9"
+__version__ = "v0.8.11"
 
 import os
 import sys
@@ -199,7 +199,7 @@ class UGRBaseException(Exception):
         if debug is None:
             self.debug = message
         else:
-            self.debug = debug
+            self.debug = message + ' ' + debug
         super(UGRBaseException, self).__init__(self.message)
 
 ### Defining Error Exception Classes
@@ -215,7 +215,7 @@ class UGRBaseError(UGRBaseException):
         else:
             self.message = message
         self.debug = debug
-        super(UGRBaseError, self).__init__(self.message, self.debug)
+        super(UGRBaseError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileError(UGRBaseError):
     """
@@ -228,7 +228,7 @@ class UGRConfigFileError(UGRBaseError):
         else:
             self.message = message
         self.debug = debug
-        super(UGRConfigFileError, self).__init__(self.message, self.debug)
+        super(UGRConfigFileError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRUnsupportedPluginError(UGRConfigFileError):
     """
@@ -239,7 +239,7 @@ class UGRUnsupportedPluginError(UGRConfigFileError):
         self.message = '[%s][%s] StorageStats method for "%s" not implemented yet.' \
                        % (error, status_code, plugin)
         self.debug = debug
-        super(UGRUnsupportedPluginError, self).__init__(self.message, self.debug)
+        super(UGRUnsupportedPluginError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     """
@@ -250,7 +250,7 @@ class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
         self.message = '[%s][%s] Failed to match ID in line "%s". Check your configuration.' \
                        % (error, status_code, line)
         self.debug = debug
-        super(UGRConfigFileErrorIDMismatch, self).__init__(self.message, self.debug)
+        super(UGRConfigFileErrorIDMismatch, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorMissingRequiredSetting(UGRConfigFileError):
     """
@@ -261,7 +261,7 @@ class UGRConfigFileErrorMissingRequiredSetting(UGRConfigFileError):
         self.message = '[%s][%s] "%s" is required. Check your configuration.' \
                   % (error, status_code, setting)
         self.debug = debug
-        super(UGRConfigFileErrorMissingRequiredSetting, self).__init__(self.message, self.debug)
+        super(UGRConfigFileErrorMissingRequiredSetting, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorInvalidSetting(UGRConfigFileError):
     """
@@ -272,7 +272,7 @@ class UGRConfigFileErrorInvalidSetting(UGRConfigFileError):
         self.message = '[%s][%s] Incorrect value given in setting "%s". Valid plugin_settings: %s' \
                   % (error, status_code, setting, valid_plugin_settings)
         self.debug = debug
-        super(UGRConfigFileErrorInvalidSetting, self).__init__(self.message, self.debug)
+        super(UGRConfigFileErrorInvalidSetting, self).__init__(message=self.message, debug=self.debug)
 
 class UGRMemcachedError(UGRBaseError):
     """
@@ -285,7 +285,7 @@ class UGRMemcachedError(UGRBaseError):
         else:
             self.message = message
         self.debug = debug
-        super(UGRMemcachedError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRMemcachedConnectionError(UGRMemcachedError):
     """
@@ -296,7 +296,7 @@ class UGRMemcachedConnectionError(UGRMemcachedError):
         self.message = '[%s][%s] Failed to connect to memcached.' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRMemcachedConnectionError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedConnectionError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRMemcachedIndexError(UGRMemcachedError):
     """
@@ -306,7 +306,7 @@ class UGRMemcachedIndexError(UGRMemcachedError):
         self.message = '[%s][%s] Unable to get memcached index contents.' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRMemcachedIndexError, self).__init__(self.message, self.debug)
+        super(UGRMemcachedIndexError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsError(UGRBaseError):
     """
@@ -320,7 +320,7 @@ class UGRStorageStatsError(UGRBaseError):
         else:
             self.message = message
         self.debug = debug
-        super(UGRStorageStatsError, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsError, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
     """
@@ -330,7 +330,17 @@ class UGRStorageStatsConnectionError(UGRStorageStatsError):
         self.message = '[%s][%s] Failed to establish a connection.' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsConnectionError, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionError, self).__init__(message=self.message, debug=self.debug)
+
+class UGRStorageStatsConnectionErrorInvalidSchema(UGRStorageStatsError):
+    """
+    Exception error when there is an issue connecting to an S3 endpoint's API.
+    """
+    def __init__(self, error=None, status_code="000", schema=None, debug=None):
+        self.message = '[%s][%s] Invalid schema "%s".' \
+                  % (error, status_code, schema)
+        self.debug = debug
+        super(UGRStorageStatsConnectionErrorInvalidSchema, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorAzureAPI(UGRStorageStatsError):
     """
@@ -340,7 +350,7 @@ class UGRStorageStatsConnectionErrorAzureAPI(UGRStorageStatsError):
         self.message = '[%s][%s] Error requesting stats using API "%s".' \
                   % (error, status_code, api)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorAzureAPI, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionErrorAzureAPI, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorAzureContainerNotFound(UGRStorageStatsError):
     """
@@ -350,7 +360,7 @@ class UGRStorageStatsErrorAzureContainerNotFound(UGRStorageStatsError):
         self.message = '[%s][%s] Container tried: %s' \
                   % (error, status_code, container)
         self.debug = debug
-        super(UGRStorageStatsErrorAzureContainerNotFound, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsErrorAzureContainerNotFound, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     """
@@ -360,7 +370,7 @@ class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
         self.message = '[%s][%s] Error requesting stats using API "%s".' \
                   % (error, status_code, api)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorS3API, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionErrorS3API, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     """
@@ -370,7 +380,7 @@ class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
         self.message = '[%s][%s] Failed to get bucket usage information.' \
                   % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     """
@@ -380,7 +390,7 @@ class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
         self.message = '[%s][%s] WebDAV Quota Method.' \
                   % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     """
@@ -391,7 +401,7 @@ class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
         self.message = '[%s][%s] Invalid client certificate path "%s".' \
                   % (error, status_code, certfile)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(message=self.message, debug=self.debug)
 
 ### Defining Warning Exception Classes
 class UGRBaseWarning(UGRBaseException):
@@ -406,7 +416,7 @@ class UGRBaseWarning(UGRBaseException):
         else:
             self.message = message
         self.debug = debug
-        super(UGRBaseWarning, self).__init__(self.message, self.debug)
+        super(UGRBaseWarning, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileWarning(UGRBaseWarning):
     """
@@ -418,7 +428,7 @@ class UGRConfigFileWarning(UGRBaseWarning):
             self.message = '[%s][%s] An unkown error occured reading a configuration file.' \
                            % (error, status_code)
         self.debug = debug
-        super(UGRConfigFileWarning, self).__init__(self.message, self.debug)
+        super(UGRConfigFileWarning, self).__init__(message=self.message, debug=self.debug)
 
 class UGRConfigFileWarningMissingSetting(UGRConfigFileWarning):
     """
@@ -431,7 +441,7 @@ class UGRConfigFileWarningMissingSetting(UGRConfigFileWarning):
         self.message = '[%s][%s] Unspecified "%s" setting. Using default value "%s"' \
                   % (error, status_code, setting, setting_default)
         self.debug = debug
-        super(UGRConfigFileWarningMissingSetting, self).__init__(self.message, self.debug)
+        super(UGRConfigFileWarningMissingSetting, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsWarning(UGRBaseWarning):
     """
@@ -445,7 +455,7 @@ class UGRStorageStatsWarning(UGRBaseWarning):
         else:
             self.message = message
         self.debug = debug
-        super(UGRStorageStatsWarning, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsWarning, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
     """
@@ -458,7 +468,7 @@ class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
         self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
                        % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsQuotaWarning, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsQuotaWarning, self).__init__(message=self.message, debug=self.debug)
 
 class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
     """
@@ -469,7 +479,7 @@ class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
         self.message = '[%s][%s] Bucket quota is disabled. Using default of 1TB' \
                   % (error, status_code)
         self.debug = debug
-        super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(self.message, self.debug)
+        super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(message=self.message, debug=self.debug)
 
 
 #####################
@@ -484,7 +494,8 @@ class StorageStats(object):
     def __init__(self, _ep):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         self.stats = {
             'bytesused': 0,
@@ -510,7 +521,7 @@ class StorageStats(object):
             'netloc':   _url.netloc,
             'path':     _url.path,
             'port':     _url.port,
-            'scheme':   self.validate_schema(_url.scheme),
+            'scheme':   _url.scheme,
             'url':      _ep['url'],
             }
 
@@ -547,7 +558,8 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
@@ -586,7 +598,8 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         mc = memcache.Client([memcached_ip + ':' + memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
@@ -630,7 +643,8 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         flogger.info("[%s]Validating configured settings." % (self.id))
         for ep_setting in self.validators:
@@ -701,16 +715,16 @@ class StorageStats(object):
 
 
 
-    def validate_schema(self, scheme):
+    def validate_schema(self):
         """
         Used to validate the URN's schema. SubClasses can have their own.
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
-        return scheme
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
 
     def output_to_stdout(self, options):
         """
@@ -859,7 +873,8 @@ class AzureStorageStats (StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
@@ -879,6 +894,9 @@ class AzureStorageStats (StorageStats):
             self.debug.append(ERR.debug)
             self.status = ERR.message
 
+        # Invoke the validate_schema() method
+        self.validate_schema()
+
         # Obtain account name and domain from URN
         self.uri['account'], self.uri['domain'] = self.uri['netloc'].partition('.')[::2]
         self.uri['container'] = self.uri['path'].strip('/')
@@ -890,7 +908,8 @@ class AzureStorageStats (StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
 
         if self.plugin_settings['storagestats.api'].lower() == 'generic':
@@ -945,7 +964,8 @@ class S3StorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         super(S3StorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "S3"
@@ -977,6 +997,7 @@ class S3StorageStats(StorageStats):
             },
         })
 
+        # Invoke the validate_plugin_settings() method
         try:
             self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
@@ -985,6 +1006,9 @@ class S3StorageStats(StorageStats):
             print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
+
+        # Invoke the validate_schema() method
+        self.validate_schema()
 
         if self.plugin_settings['s3.alternate'].lower() == 'true'\
         or self.plugin_settings['s3.alternate'].lower() == 'yes':
@@ -1000,7 +1024,8 @@ class S3StorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
 
         # Getting the storage Stats CephS3's Admin API
@@ -1034,6 +1059,13 @@ class S3StorageStats(StorageStats):
                 #Log contents of response
                 flogger.debug("[%s]Endpoint reply: %s" % (self.id, r.text))
 
+            except requests.exceptions.InvalidSchema as ERR:
+                raise UGRStorageStatsConnectionErrorInvalidSchema(
+                    error='InvalidSchema',
+                    status_code="000",
+                    schema=self.uri['scheme'],
+                    debug=str(ERR),
+                    )
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
                     error=ERR.__class__.__name__,
@@ -1119,7 +1151,10 @@ class S3StorageStats(StorageStats):
                                      )
             total_bytes = 0
             total_files = 0
-            kwargs = {'Bucket': self.uri['bucket']}
+            # We define the arguments for the API call. Delimiter is set to *
+            # to get all keys. This is necessary for AWS to return the "NextMarker"
+            # attribute necessary to iterate when there are > 1,000 objects.
+            kwargs = {'Bucket': self.uri['bucket'], 'Delimiter': '*'}
             # This loop is needed to obtain all objects as the API can only
             # server 1,000 objects per request. The 'NextMarker' tells where
             # to start the next 1,000. If no 'NextMarker' is received, all
@@ -1128,10 +1163,18 @@ class S3StorageStats(StorageStats):
             while True:
                 try:
                     response = connection.list_objects(**kwargs)
+
                 except botoExceptions.ClientError as ERR:
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,
                         status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
+                        debug=str(ERR),
+                        )
+                except botoRequestsExceptions.InvalidSchema as ERR:
+                    raise UGRStorageStatsConnectionErrorInvalidSchema(
+                        error='InvalidSchema',
+                        status_code="000",
+                        schema=self.uri['scheme'],
                         debug=str(ERR),
                         )
                 except botoRequestsExceptions.RequestException as ERR:
@@ -1190,26 +1233,26 @@ class S3StorageStats(StorageStats):
                 self.stats['filecount'] = total_files
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
-    def validate_schema(self, scheme):
+    def validate_schema(self):
         """
         Used to translate s3 into http/https since requests doesn't
         support the former schema.
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
-        if scheme == 's3':
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
+        if self.uri['scheme'] == 's3':
             if self.plugin_settings['ssl_check']:
                 flogger.debug("[%s]Using URN schema: https" % (self.id))
-                return 'https'
+                self.uri['scheme'] = 'https'
             else:
                 flogger.debug("[%s]Using URN schema: http" % (self.id))
-                return 'http'
+                self.uri['scheme'] = 'http'
         else:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
-            return scheme
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
 
     def output_StAR_xml(self, output_dir="/tmp"):
         """
@@ -1231,7 +1274,8 @@ class DAVStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         super(DAVStorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "DAV"
@@ -1249,6 +1293,7 @@ class DAVStorageStats(StorageStats):
             },
         })
 
+        # Invoke the validate_plugin_settings() method
         try:
             self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
@@ -1258,6 +1303,9 @@ class DAVStorageStats(StorageStats):
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
 
+        # Invoke the validate_schema() method
+        self.validate_schema()
+
     def get_storagestats(self):
         """
         Connect to the storage endpoint and will try WebDAV's quota and bytesfree
@@ -1266,7 +1314,8 @@ class DAVStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
         if self.plugin_settings['storagestats.api'].lower() == 'generic':
@@ -1279,6 +1328,7 @@ class DAVStorageStats(StorageStats):
 
         # flogger.debug("[%s]Requesting storage stats with:\nURN: %s\nAPI Method: %s\nHeaders: %s\nData: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data ))
         flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data ))
+
         try:
             response = requests.request(
                 method="PROPFIND",
@@ -1294,6 +1344,13 @@ class DAVStorageStats(StorageStats):
             #Log contents of response
             flogger.debug("[%s]Endpoint reply: %s" % (self.id, response.text))
 
+        except requests.exceptions.InvalidSchema as ERR:
+            raise UGRStorageStatsConnectionErrorInvalidSchema(
+                error='InvalidSchema',
+                status_code="000",
+                schema=self.uri['scheme'],
+                debug=str(ERR),
+                )
         except requests.ConnectionError as ERR:
             raise UGRStorageStatsConnectionError(
                 error=ERR.__class__.__name__,
@@ -1359,27 +1416,27 @@ class DAVStorageStats(StorageStats):
                     debug=response.text,
                 )
 
-    def validate_schema(self, scheme):
+    def validate_schema(self):
         """
         Used to translate dav/davs into http/https since requests doesn't
         support the former schema.
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
+        mlogger = logging.getLogger(__name__+'memcached_logger')
+        # memcached_logline = TailLogger(1)
         ###############################################
         schema_translator = {
             'dav': 'http',
             'davs': 'https',
         }
 
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
-        if scheme in schema_translator:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[scheme]))
-            return schema_translator[scheme]
+        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
+        if self.uri['scheme'] in schema_translator:
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[self.uri['scheme']]))
+            self.uri['scheme'] = schema_translator[self.uri['scheme']]
         else:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
-            return scheme
+            flogger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
 
 ###############
 ## Functions ##
@@ -1397,7 +1454,8 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
     endpoints = {}
     global_settings = {}
@@ -1464,7 +1522,8 @@ def factory(plugin):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
     plugin_dict = {
         'libugrlocplugin_dav.so': DAVStorageStats,
@@ -1490,7 +1549,8 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
     storage_objects = []
     flogger.info("Looking for storage endpoint configuration files in '%s'" % (config_dir))
@@ -1521,7 +1581,8 @@ def create_free_space_request_content():
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
     root = etree.Element("propfind", xmlns="DAV:")
     prop = etree.SubElement(root, "prop")
@@ -1539,7 +1600,8 @@ def add_xml_getcontentlength(content):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
     xml = etree.fromstring(content)
     bytesused = 0
@@ -1556,7 +1618,8 @@ def convert_size_to_bytes(size):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
     multipliers = {
         'kib': 1024,
@@ -1591,7 +1654,8 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
     SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
     SR = "{%s}" % SR_namespace
@@ -1616,7 +1680,8 @@ def output_json(endpoints, output_dir="/tmp"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
 
     #Create the json structure in python terms
@@ -1666,7 +1731,8 @@ def output_plain(endpoints, output_dir="/tmp"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger('memcached_logger')
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
     ###############################################
 
     # Initialize total tally
@@ -1717,12 +1783,13 @@ def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     flogger.addHandler(log_handler_file)
 
     ## create memcached logger
-    mlogger = logging.getLogger('memcached_logger')
+    # Create TailLogger
+    memcached_logline = TailLogger(1) #We just want one line at a time.
+    mlogger = logging.getLogger(__name__+'memcached_logger')
     mlogger.setLevel(logging.WARNING)
     # Set memcached logger format
     log_format_memcached = logging.Formatter('[%(levelname)s]%(message)s')
-    # Create console handler and set level to WARNING.
-    memcached_logline = TailLogger(1) #We just want one line at a time.
+
     log_handler_memcached = memcached_logline.log_handler
     log_handler_memcached.setFormatter(log_format_memcached)
     # Add handlers

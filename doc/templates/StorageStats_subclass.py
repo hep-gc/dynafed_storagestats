@@ -18,6 +18,7 @@ class NewTypeStorageStats (StorageStats):
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
         mlogger = logging.getLogger('memcached_logger')
+        #memcached_logline = TailLogger(1)
         ###############################################
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
@@ -47,6 +48,9 @@ class NewTypeStorageStats (StorageStats):
             print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
+
+        # Invoke the validate_schema() method
+        self.validate_schema()
 
         # Add any other attributes needed for this subclass.
 

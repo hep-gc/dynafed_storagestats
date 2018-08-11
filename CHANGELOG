@@ -79,3 +79,8 @@ v0.8.8 Adds option to specify output directory for storagestats files as
        dynafed_storagestats with its corresponding extension. Adds json file
        output.
 v0.8.9 Adds plain txt file output.
+v0.8.10 Fixed wrong schema error by having the plugin_settings being validated
+        before the schema. Added exception for SchemaIssues. Fixed issue with
+        exceptions by adding keywords to the "supr" calls. Added exception
+        message to the debug so the --debug output contains the full information.
+v0.8.11 Added 'Delimiter': '*' to S3 generic, necessary to iterate AWS buckets.
