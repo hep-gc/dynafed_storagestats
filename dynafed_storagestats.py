@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.10"
+__version__ = "v0.8.11"
 
 import os
 import sys
@@ -1151,7 +1151,10 @@ class S3StorageStats(StorageStats):
                                      )
             total_bytes = 0
             total_files = 0
-            kwargs = {'Bucket': self.uri['bucket']}
+            # We define the arguments for the API call. Delimiter is set to *
+            # to get all keys. This is necessary for AWS to return the "NextMarker"
+            # attribute necessary to iterate when there are > 1,000 objects.
+            kwargs = {'Bucket': self.uri['bucket'], 'Delimiter': '*'}
             # This loop is needed to obtain all objects as the API can only
             # server 1,000 objects per request. The 'NextMarker' tells where
             # to start the next 1,000. If no 'NextMarker' is received, all
@@ -1160,6 +1163,7 @@ class S3StorageStats(StorageStats):
             while True:
                 try:
                     response = connection.list_objects(**kwargs)
+
                 except botoExceptions.ClientError as ERR:
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,
