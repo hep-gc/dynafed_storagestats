@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.11"
+__version__ = "v0.8.12"
 
 import os
 import sys
@@ -118,7 +118,7 @@ group.add_option('--json',
 group.add_option('-o', '--output_dir',
                  dest='output_dir', action='store', default='/tmp',
                  help='Directory to output storage stat files. Defautl: /tmp'
-                 )
+                )
 group.add_option('--plain',
                  dest='output_plain', action='store_true', default=False,
                  help='Set to output stats to plain txt file.'
@@ -139,12 +139,12 @@ parser.add_option_group(group)
 
 group = OptionGroup(parser, "Logging options")
 group.add_option('--logfile',
-                dest='logfile', action='store', default='/tmp/dynafed_storagestats.log',
-                help='Change where to ouput logs. Default: /tmp/dynafed_storagestats.log'
+                 dest='logfile', action='store', default='/tmp/dynafed_storagestats.log',
+                 help='Change where to ouput logs. Default: /tmp/dynafed_storagestats.log'
                 )
 group.add_option('--loglevel',
-                dest='loglevel', action='store', default='WARNING',
-                help='Set file log level. Default: WARNING. Valid: DEBUG, INFO, WARNING, ERROR'
+                 dest='loglevel', action='store', default='WARNING',
+                 help='Set file log level. Default: WARNING. Valid: DEBUG, INFO, WARNING, ERROR'
                 )
 parser.add_option_group(group)
 
@@ -579,7 +579,7 @@ class StorageStats(object):
         try:
             if mc.set(memcached_index, storagestats) == 0:
                 raise UGRMemcachedConnectionError(
-                    status_code = "400",
+                    status_code="400",
                     error="MemcachedConnectionError",
                 )
 
@@ -670,8 +670,8 @@ class StorageStats(object):
                             setting_default=self.validators[ep_setting]['default'],
                             )
                 except UGRBaseWarning as WARN:
-                    flogger.warn("[%s]%s" % (self.id, WARN.debug))
-                    mlogger.warn("%s" % (WARN.message))
+                    flogger.warning("[%s]%s" % (self.id, WARN.debug))
+                    mlogger.warning("%s" % (WARN.message))
                     self.debug.append(WARN.debug)
                     self.status = memcached_logline.contents()
                     self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
@@ -861,7 +861,7 @@ class StorageStats(object):
 
 
 
-class AzureStorageStats (StorageStats):
+class AzureStorageStats(StorageStats):
     """
     Define the type of storage endpoint this subclass will interface with
     and any API settings it can use.
@@ -1047,11 +1047,13 @@ class S3StorageStats(StorageStats):
                 )
             flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), payload))
             try:
-                r = requests.get(
+                r = requests.request(
+                    method="GET",
                     url=api_url,
                     params=payload,
                     auth=auth,
                     verify=self.plugin_settings['ssl_check'],
+                    timeout=5
                     )
                 # Save time when data was obtained.
                 self.stats['endtime'] = int(time.time())
@@ -1147,7 +1149,11 @@ class S3StorageStats(StorageStats):
                                       aws_secret_access_key=self.plugin_settings['s3.priv_key'],
                                       use_ssl=True,
                                       verify=self.plugin_settings['ssl_check'],
-                                      config=Config(signature_version=self.plugin_settings['s3.signature_ver']),
+                                      config=Config(
+                                          signature_version=self.plugin_settings['s3.signature_ver'],
+                                          connect_timeout=5,
+                                          retries=dict(max_attempts=0)
+                                      ),
                                      )
             total_bytes = 0
             total_files = 0
@@ -1327,7 +1333,7 @@ class DAVStorageStats(StorageStats):
             data = create_free_space_request_content()
 
         # flogger.debug("[%s]Requesting storage stats with:\nURN: %s\nAPI Method: %s\nHeaders: %s\nData: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data ))
-        flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data ))
+        flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data))
 
         try:
             response = requests.request(
@@ -1336,7 +1342,8 @@ class DAVStorageStats(StorageStats):
                 cert=(self.plugin_settings['cli_certificate'], self.plugin_settings['cli_private_key']),
                 headers=headers,
                 verify=self.plugin_settings['ssl_check'],
-                data=data
+                data=data,
+                timeout=5
             )
             # Save time when data was obtained.
             self.stats['endtime'] = int(time.time())
@@ -1761,7 +1768,7 @@ def output_plain(endpoints, output_dir="/tmp"):
             )
     output.close()
 
-def setup_logger( logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
+def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     """
     Setup the loggers to be used throughout the script. We need at least two,
     one to log onto a logfile and a second with the TailLogger class defined
@@ -1818,8 +1825,8 @@ if __name__ == '__main__':
         try:
             endpoint.get_storagestats()
         except UGRStorageStatsWarning as WARN:
-            flogger.warn("[%s]%s" % (endpoint.id, WARN.debug))
-            mlogger.warn("%s" % (WARN.message))
+            flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
+            mlogger.warning("%s" % (WARN.message))
             endpoint.debug.append(WARN.debug)
             endpoint.status = memcached_logline.contents()
         except UGRStorageStatsError as ERR:
