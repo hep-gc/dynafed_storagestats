@@ -27,6 +27,7 @@ from optparse import OptionParser, OptionGroup
 import copy
 import glob
 import json
+from multiprocessing.dummy import Pool as ThreadPool
 
 IS_PYTHON2 = sys.version_info[0] == 2
 
@@ -1804,6 +1805,38 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
 
     return flogger, mlogger, memcached_logline
 
+def get_storagestats(endpoint, options):
+    """
+    Create a single StAR XML file for all endpoints passed to this function.
+    """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
+    ###############################################
+    flogger.info("[%s] Contacting endpoint." % (endpoint.id))
+    try:
+        endpoint.get_storagestats()
+    except UGRStorageStatsWarning as WARN:
+        flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
+        mlogger.warning("%s" % (WARN.message))
+        endpoint.debug.append(WARN.debug)
+        endpoint.status = memcached_logline.contents()
+    except UGRStorageStatsError as ERR:
+        flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+        mlogger.error("%s" % (ERR.message))
+        endpoint.debug.append(ERR.debug)
+        endpoint.status = memcached_logline.contents()
+
+    # finally: # Here add code to tadd the logs/debug attributes.
+
+    # Upload Storagestats into memcached.
+    if options.output_memcached:
+        endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
+
+    # Print Storagestats to the standard output.
+    if options.output_stdout:
+        endpoint.output_to_stdout(options)
 #############
 # Self-Test #
 #############
@@ -1818,32 +1851,9 @@ if __name__ == '__main__':
 
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
-
-    # Call get_storagestats method for each endpoint to obtain Storage Stats.
-    for endpoint in endpoints:
-        flogger.info("[%s] Contacting endpoint." % (endpoint.id))
-        try:
-            endpoint.get_storagestats()
-        except UGRStorageStatsWarning as WARN:
-            flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
-            mlogger.warning("%s" % (WARN.message))
-            endpoint.debug.append(WARN.debug)
-            endpoint.status = memcached_logline.contents()
-        except UGRStorageStatsError as ERR:
-            flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            endpoint.debug.append(ERR.debug)
-            endpoint.status = memcached_logline.contents()
-
-        # finally: # Here add code to tadd the logs/debug attributes.
-
-        # Upload Storagestats into memcached.
-        if options.output_memcached:
-            endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
-
-        # Print Storagestats to the standard output.
-        if options.output_stdout:
-            endpoint.output_to_stdout(options)
+    array = [(endpoint, options) for endpoint in endpoints]
+    pool = ThreadPool(4)
+    pool.starmap(get_storagestats, array)
 
     # Create StAR Storagestats XML files for each endpoint.
     if options.output_xml:
