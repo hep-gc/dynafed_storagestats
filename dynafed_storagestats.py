@@ -1862,19 +1862,22 @@ if __name__ == '__main__':
     c_stats = get_connectionstats(endpoints)
     # Call get_storagestats method for each endpoint to obtain Storage Stats.
     for endpoint in endpoints:
-        flogger.info("[%s] Contacting endpoint." % (endpoint.id))
-        try:
-            endpoint.get_storagestats()
-        except UGRStorageStatsWarning as WARN:
-            flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
-            mlogger.warning("%s" % (WARN.message))
-            endpoint.debug.append(WARN.debug)
-            endpoint.status = memcached_logline.contents()
-        except UGRStorageStatsError as ERR:
-            flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            endpoint.debug.append(ERR.debug)
-            endpoint.status = memcached_logline.contents()
+        if endpoint.stats['check'] is 0:
+            flogger.info("[%s] Endpoint Offline. Bypassing stats check." % (endpoint.id))
+        elif endpoint.stats['check'] is 1:
+            flogger.info("[%s] Contacting endpoint." % (endpoint.id))
+            try:
+                endpoint.get_storagestats()
+            except UGRStorageStatsWarning as WARN:
+                flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
+                mlogger.warning("%s" % (WARN.message))
+                endpoint.debug.append(WARN.debug)
+                endpoint.status = memcached_logline.contents()
+            except UGRStorageStatsError as ERR:
+                flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+                mlogger.error("%s" % (ERR.message))
+                endpoint.debug.append(ERR.debug)
+                endpoint.status = memcached_logline.contents()
 
         # finally: # Here add code to tadd the logs/debug attributes.
 
