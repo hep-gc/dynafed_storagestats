@@ -134,7 +134,7 @@ group.add_option('--stdout',
 #                   )
 group.add_option('-v', '--verbose',
                  dest='verbose', action='store_true', default=False,
-                 help='Show on stderr events according to loglevel down to INFO.'
+                 help='Show on stderr events according to loglevel.'
                 )
 group.add_option('--xml',
                  dest='output_xml', action='store_true', default=False,
@@ -1873,7 +1873,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
     if verbose:
         log_format_stderr = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
         log_handler_stderr = logging.StreamHandler()
-        log_handler_stderr.setLevel('INFO')
+        log_handler_stderr.setLevel(num_loglevel)
         log_handler_stderr.setFormatter(log_format_stderr)
         # Add handler
         flogger.addHandler(log_handler_stderr)
