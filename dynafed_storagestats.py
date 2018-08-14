@@ -504,6 +504,7 @@ class StorageStats(object):
             'filecount': 0,
             'quota': 1000**4,
             'starttime': int(time.time()),
+            'check': 1, # To flag whether this endpoint should be contacted.
             }
 
         self.id = _ep['id']
@@ -1548,6 +1549,39 @@ def factory(plugin):
             plugin=plugin,
             )
 
+def get_connectionstats(memcached_ip='127.0.0.1', memcached_port='11211'):
+    # Setup connection to a memcache instance
+    memcached_srv = options.memcached_ip + ':' + options.memcached_port
+    mc = memcache.Client([memcached_srv])
+
+    # Obtain the latest index number used by UGR and transform to str if needed.
+    # Different versions of memcache module return bytes.
+    idx = mc.get('Ugrpluginstats_idx')
+    if isinstance(idx, bytes):
+        idx = str(idx, 'utf-8')
+
+    # Obtain the latest status uploaded by UGR and transform to str if needed.
+    # Different versions of memcache module return bytes.
+    connection_stats = mc.get('Ugrpluginstats_' + idx)
+    if isinstance(connection_stats, bytes):
+        connection_stats = str(connection_stats, 'utf-8')
+
+    # Remove the \x00 character.
+    connection_stats = connection_stats.rsplit('\x00', 1)[0]
+
+    # Split the stats per '&&' i.e. per storage endpoint.
+    connection_stats = connection_stats.rsplit('&&')
+
+    # For each endpoint then, we are going to obtain the individual stats from UGR
+    # and use the endpoint's ID to also obtain from memcache the storage stats (if any)
+    # and concatenate them (separated by '%%') together. Once this has been done for
+    # each endpoint, we concatenate all endpoints together onto one string
+    # (separated by '&&').
+
+    for element in connection_stats:
+        endpoint, stats = element.split("%%", 1)
+        print( endpoint + ': ' +stats)
+
 
 def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
@@ -1819,6 +1853,8 @@ if __name__ == '__main__':
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
 
+    # Get endpoint connection stats.
+    c_stats = get_connectionstats()
     # Call get_storagestats method for each endpoint to obtain Storage Stats.
     for endpoint in endpoints:
         flogger.info("[%s] Contacting endpoint." % (endpoint.id))
