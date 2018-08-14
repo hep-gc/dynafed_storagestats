@@ -1099,7 +1099,7 @@ class S3StorageStats(StorageStats):
                     raise UGRStorageStatsErrorS3MissingBucketUsage(
                         status_code=r.status_code,
                         error=stats['Code'],
-                        debug=stats
+                        debug=str(stats)
                         )
                 else:
                     if len(stats['usage']) != 0:
@@ -1550,43 +1550,68 @@ def factory(plugin):
             )
 
 def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='11211'):
+    """
+    Return object class to use based on the plugin specified in the UGR's
+    configuration files.
+    """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
+    ###############################################
     # Setup connection to a memcache instance
     memcached_srv = options.memcached_ip + ':' + options.memcached_port
     mc = memcache.Client([memcached_srv])
+    try:
+        # Obtain the latest index number used by UGR and transform to str if needed.
+        # Different versions of memcache module return bytes.
+        idx = mc.get('Ugrpluginstats_idx')
+        if idx is None:
+            raise UGRMemcachedConnectionError(
+                status_code="400",
+                error="MemcachedConnectionError",
+            )
 
-    # Obtain the latest index number used by UGR and transform to str if needed.
-    # Different versions of memcache module return bytes.
-    idx = mc.get('Ugrpluginstats_idx')
-    if isinstance(idx, bytes):
-        idx = str(idx, 'utf-8')
+        if isinstance(idx, bytes):
+            idx = str(idx, 'utf-8')
 
-    # Obtain the latest status uploaded by UGR and transform to str if needed.
-    # Different versions of memcache module return bytes.
-    connection_stats = mc.get('Ugrpluginstats_' + idx)
-    if isinstance(connection_stats, bytes):
-        connection_stats = str(connection_stats, 'utf-8')
+        # Obtain the latest status uploaded by UGR and transform to str if needed.
+        # Different versions of memcache module return bytes.
+        connection_stats = mc.get('Ugrpluginstats_' + idx)
+        if connection_stats is None:
+            raise UGRMemcachedIndexError(
+                status_code="400",
+                error="MemcachedConnectionError",
+            )
 
-    # Remove the \x00 character.
-    connection_stats = connection_stats.rsplit('\x00', 1)[0]
+        # Check if we actually got information
+    except UGRMemcachedIndexError as ERR:
+        flogger.error("Memcached server %s did not return data. %s" % (memcached_srv, ERR.debug))
+    else:
+        if isinstance(connection_stats, bytes):
+            connection_stats = str(connection_stats, 'utf-8')
 
-    # Split the stats per '&&' i.e. per storage endpoint.
-    connection_stats = connection_stats.rsplit('&&')
+        # Remove the \x00 character.
+        connection_stats = connection_stats.rsplit('\x00', 1)[0]
 
-    # For each endpoint then, we are going to obtain the individual stats from UGR
-    # and use the endpoint's ID to also obtain from memcache the storage stats (if any)
-    # and concatenate them (separated by '%%') together. Once this has been done for
-    # each endpoint, we concatenate all endpoints together onto one string
-    # (separated by '&&').
-    endpoints_c_stats = {}
-    for element in connection_stats:
-        endpoint, stats = element.split("%%", 1)
-        status = stats.split("%%")[2]
-        endpoints_c_stats[endpoint] = status
+        # Split the stats per '&&' i.e. per storage endpoint.
+        connection_stats = connection_stats.rsplit('&&')
 
-    for endpoint in endpoints:
-        if endpoint.id in endpoints_c_stats:
-            if endpoints_c_stats[endpoint.id] is '2':
-                endpoint.stats['check'] = 0
+        # For each endpoint then, we are going to obtain the individual stats from UGR
+        # and use the endpoint's ID to also obtain from memcache the storage stats (if any)
+        # and concatenate them (separated by '%%') together. Once this has been done for
+        # each endpoint, we concatenate all endpoints together onto one string
+        # (separated by '&&').
+        endpoints_c_stats = {}
+        for element in connection_stats:
+            endpoint, stats = element.split("%%", 1)
+            status = stats.split("%%")[2]
+            endpoints_c_stats[endpoint] = status
+
+        for endpoint in endpoints:
+            if endpoint.id in endpoints_c_stats:
+                if endpoints_c_stats[endpoint.id] is '2':
+                    endpoint.stats['check'] = 0
 
 def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
