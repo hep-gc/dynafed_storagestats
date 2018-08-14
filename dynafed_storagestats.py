@@ -1883,8 +1883,9 @@ if __name__ == '__main__':
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
 
-    # Get endpoint connection stats.
-    c_stats = get_connectionstats(endpoints)
+    # Flag endpoints that have been detected offline by Dynafed.
+    get_connectionstats(endpoints)
+
     # Call get_storagestats method for each endpoint to obtain Storage Stats.
     for endpoint in endpoints:
         if endpoint.stats['check'] is 0:
