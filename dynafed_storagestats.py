@@ -1940,7 +1940,7 @@ if __name__ == '__main__':
     ## arguments to the get_storagestats function.
     endpoints_tuple = [(endpoint, options) for endpoint in endpoints]
     ## Number of threads to use.
-    pool = ThreadPool(4)
+    pool = ThreadPool(len(endpoints))
     pool.starmap(get_storagestats, endpoints_tuple)
 
     for endpoint in endpoints:
