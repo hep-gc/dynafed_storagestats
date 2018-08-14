@@ -1851,9 +1851,14 @@ if __name__ == '__main__':
 
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
-    array = [(endpoint, options) for endpoint in endpoints]
+
+    # Process each endpoint using multithreading.
+    ## This tuple is necessary for the starmap function to send multiple
+    ## arguments to the get_storagestats function.
+    endpoints_tuple = [(endpoint, options) for endpoint in endpoints]
+    ## Number of threads to use.
     pool = ThreadPool(4)
-    pool.starmap(get_storagestats, array)
+    pool.starmap(get_storagestats, endpoints_tuple)
 
     # Create StAR Storagestats XML files for each endpoint.
     if options.output_xml:
