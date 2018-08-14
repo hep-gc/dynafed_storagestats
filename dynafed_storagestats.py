@@ -1916,13 +1916,7 @@ def get_storagestats(endpoint, options):
         endpoint.debug.append(ERR.debug)
         endpoint.status = memcached_logline.contents()
 
-    # Upload Storagestats into memcached.
-    if options.output_memcached:
-        endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
 
-    # Print Storagestats to the standard output.
-    if options.output_stdout:
-        endpoint.output_to_stdout(options)
 #############
 # Self-Test #
 #############
@@ -1948,6 +1942,15 @@ if __name__ == '__main__':
     ## Number of threads to use.
     pool = ThreadPool(4)
     pool.starmap(get_storagestats, endpoints_tuple)
+
+    for endpoint in endpoints:
+        # Upload Storagestats into memcached.
+        if options.output_memcached:
+            endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
+
+        # Print Storagestats to the standard output.
+        if options.output_stdout:
+            endpoint.output_to_stdout(options)
 
     # Create StAR Storagestats XML files for each endpoint.
     if options.output_xml:
