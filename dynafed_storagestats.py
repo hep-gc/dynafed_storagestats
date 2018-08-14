@@ -1880,7 +1880,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
 
     return flogger, mlogger, memcached_logline
 
-def get_storagestats(endpoint, options):
+def get_storagestats(endpoint):
     """
     Create a single StAR XML file for all endpoints passed to this function.
     """
@@ -1936,12 +1936,9 @@ if __name__ == '__main__':
     get_connectionstats(endpoints)
 
     # Process each endpoint using multithreading.
-    ## This tuple is necessary for the starmap function to send multiple
-    ## arguments to the get_storagestats function.
-    endpoints_tuple = [(endpoint, options) for endpoint in endpoints]
-    ## Number of threads to use.
+    # Number of threads to use.
     pool = ThreadPool(len(endpoints))
-    pool.starmap(get_storagestats, endpoints_tuple)
+    pool.map(get_storagestats, endpoints)
 
     for endpoint in endpoints:
         # Upload Storagestats into memcached.
