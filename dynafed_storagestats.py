@@ -373,6 +373,17 @@ class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
         self.debug = debug
         super(UGRStorageStatsConnectionErrorS3API, self).__init__(message=self.message, debug=self.debug)
 
+class UGRStorageStatsOfflineEndpointError(UGRStorageStatsError):
+    """
+    Exception error when and endpoint is detected to have been flagged as offline
+    by Dynafed's connection status check..
+    """
+    def __init__(self, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Dynafed has flagged this endpoint as offline.' \
+                       % (error, status_code)
+        self.debug = debug
+        super(UGRStorageStatsOfflineEndpointError, self).__init__(message=self.message, debug=self.debug)
+
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     """
     Exception error when no bucket usage stats could be found.
@@ -1878,22 +1889,32 @@ def get_storagestats(endpoint, options):
     mlogger = logging.getLogger(__name__+'memcached_logger')
     # memcached_logline = TailLogger(1)
     ###############################################
-    if endpoint.stats['check'] is 0:
-        flogger.warning("[%s] Endpoint Offline. Bypassing stats check." % (endpoint.id))
-    elif endpoint.stats['check'] is 1:
-        flogger.info("[%s] Contacting endpoint." % (endpoint.id))
-        try:
+    try:
+        if endpoint.stats['check'] is 0:
+            flogger.error("[%s] Endpoint Offline. Bypassing stats check." % (endpoint.id))
+            raise UGRStorageStatsOfflineEndpointError(
+                status_code="400",
+                error="EndpointOffline"
+            )
+        elif endpoint.stats['check'] is 1:
+            flogger.info("[%s] Contacting endpoint." % (endpoint.id))
             endpoint.get_storagestats()
-        except UGRStorageStatsWarning as WARN:
-            flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
-            mlogger.warning("%s" % (WARN.message))
-            endpoint.debug.append(WARN.debug)
-            endpoint.status = memcached_logline.contents()
-        except UGRStorageStatsError as ERR:
-            flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            endpoint.debug.append(ERR.debug)
-            endpoint.status = memcached_logline.contents()
+
+    except UGRStorageStatsOfflineEndpointError as ERR:
+        flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+        mlogger.error("%s" % (ERR.message))
+        endpoint.debug.append(ERR.debug)
+        endpoint.status = memcached_logline.contents()
+    except UGRStorageStatsWarning as WARN:
+        flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
+        mlogger.warning("%s" % (WARN.message))
+        endpoint.debug.append(WARN.debug)
+        endpoint.status = memcached_logline.contents()
+    except UGRStorageStatsError as ERR:
+        flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+        mlogger.error("%s" % (ERR.message))
+        endpoint.debug.append(ERR.debug)
+        endpoint.status = memcached_logline.contents()
 
     # Upload Storagestats into memcached.
     if options.output_memcached:
