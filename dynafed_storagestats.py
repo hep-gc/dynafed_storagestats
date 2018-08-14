@@ -134,7 +134,7 @@ group.add_option('--stdout',
 #                   )
 group.add_option('-v', '--verbose',
                  dest='verbose', action='store_true', default=False,
-                 help='Show on stderr events >= INFO loglevel.'
+                 help='Show on stderr events according to loglevel down to INFO.'
                 )
 group.add_option('--xml',
                  dest='output_xml', action='store_true', default=False,
