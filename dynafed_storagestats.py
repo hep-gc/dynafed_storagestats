@@ -1549,7 +1549,7 @@ def factory(plugin):
             plugin=plugin,
             )
 
-def get_connectionstats(memcached_ip='127.0.0.1', memcached_port='11211'):
+def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='11211'):
     # Setup connection to a memcache instance
     memcached_srv = options.memcached_ip + ':' + options.memcached_port
     mc = memcache.Client([memcached_srv])
@@ -1577,11 +1577,16 @@ def get_connectionstats(memcached_ip='127.0.0.1', memcached_port='11211'):
     # and concatenate them (separated by '%%') together. Once this has been done for
     # each endpoint, we concatenate all endpoints together onto one string
     # (separated by '&&').
-
+    endpoints_c_stats = {}
     for element in connection_stats:
         endpoint, stats = element.split("%%", 1)
-        print( endpoint + ': ' +stats)
+        status = stats.split("%%")[2]
+        endpoints_c_stats[endpoint] = status
 
+    for endpoint in endpoints:
+        if endpoint.id in endpoints_c_stats:
+            if endpoints_c_stats[endpoint.id] is '2':
+                endpoint.stats['check'] = 0
 
 def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
@@ -1854,7 +1859,7 @@ if __name__ == '__main__':
     endpoints = get_endpoints(options.configs_directory)
 
     # Get endpoint connection stats.
-    c_stats = get_connectionstats()
+    c_stats = get_connectionstats(endpoints)
     # Call get_storagestats method for each endpoint to obtain Storage Stats.
     for endpoint in endpoints:
         flogger.info("[%s] Contacting endpoint." % (endpoint.id))
