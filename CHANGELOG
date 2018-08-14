@@ -84,3 +84,4 @@ v0.8.10 Fixed wrong schema error by having the plugin_settings being validated
         exceptions by adding keywords to the "supr" calls. Added exception
         message to the debug so the --debug output contains the full information.
 v0.8.11 Added 'Delimiter': '*' to S3 generic, necessary to iterate AWS buckets.
+v0.8.12 Added timeouts to S3 and DAV methods of 5 seconds.
