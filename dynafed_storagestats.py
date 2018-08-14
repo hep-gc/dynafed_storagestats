@@ -510,10 +510,10 @@ class StorageStats(object):
         # memcached_logline = TailLogger(1)
         ###############################################
         self.stats = {
-            'bytesused': 0,
-            'bytesfree': 0,
+            'bytesused': -1,
+            'bytesfree': -1,
             'endtime': 0,
-            'filecount': 0,
+            'filecount': -1,
             'quota': 1000**4,
             'starttime': int(time.time()),
             'check': 1, # To flag whether this endpoint should be contacted.
