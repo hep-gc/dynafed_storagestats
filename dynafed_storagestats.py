@@ -132,6 +132,10 @@ group.add_option('--stdout',
 #                   dest='verbose', action='count',
 #                   help='Increase verbosity level for debugging this script (on stderr)'
 #                   )
+group.add_option('-v', '--verbose',
+                 dest='verbose', action='store_true', default=False,
+                 help='Show on stderr events >= INFO loglevel.'
+                )
 group.add_option('--xml',
                  dest='output_xml', action='store_true', default=False,
                  help='Set to output xml file with StAR format.'
@@ -1844,7 +1848,7 @@ def output_plain(endpoints, output_dir="/tmp"):
             )
     output.close()
 
-def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
+def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
     """
     Setup the loggers to be used throughout the script. We need at least two,
     one to log onto a logfile and a second with the TailLogger class defined
@@ -1862,8 +1866,17 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     # Create file handler and set level from cli or default to settings.log
     log_handler_file = logging.FileHandler(logfile, mode='a')
     log_handler_file.setFormatter(log_format_file)
-    # Add handlers
+    # Add handler
     flogger.addHandler(log_handler_file)
+
+    # Create STDERR hanler if verbose is requested.
+    if verbose:
+        log_format_stderr = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
+        log_handler_stderr = logging.StreamHandler()
+        log_handler_stderr.setLevel('INFO')
+        log_handler_stderr.setFormatter(log_format_stderr)
+        # Add handler
+        flogger.addHandler(log_handler_stderr)
 
     ## create memcached logger
     # Create TailLogger
@@ -1927,6 +1940,7 @@ if __name__ == '__main__':
     flogger, mlogger, memcached_logline = setup_logger(
         logfile=options.logfile,
         loglevel=options.loglevel,
+        verbose=options.verbose,
         )
 
     # Create list of StorageStats objects, one for each configured endpoint.
