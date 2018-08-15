@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.9.1"
+__version__ = "v0.9.2"
 
 import os
 import sys
@@ -520,7 +520,7 @@ class StorageStats(object):
             'filecount': -1,
             'quota': 1000**4,
             'starttime': int(time.time()),
-            'check': 1, # To flag whether this endpoint should be contacted.
+            'check': True, # To flag whether this endpoint should be contacted.
             }
 
         self.id = _ep['id']
@@ -699,6 +699,8 @@ class StorageStats(object):
             else:
                 try:
                     if self.plugin_settings[ep_setting] not in self.validators[ep_setting]['valid']:
+                        # Do not run get_storagestats with invalild settings.
+                        self.stats['check'] = 'InvalidSetting'
                         raise UGRConfigFileErrorInvalidSetting(
                             error="InvalidSetting",
                             setting=ep_setting,
@@ -907,7 +909,8 @@ class AzureStorageStats(StorageStats):
         try:
             self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
-            print(ERR.debug)
+            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             self.debug.append(ERR.debug)
             self.status = ERR.message
 
@@ -1020,7 +1023,6 @@ class S3StorageStats(StorageStats):
         except UGRConfigFileError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
-            print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
 
@@ -1323,7 +1325,6 @@ class DAVStorageStats(StorageStats):
         except UGRConfigFileError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
-            print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
 
@@ -1350,7 +1351,6 @@ class DAVStorageStats(StorageStats):
             headers = {'Depth': '0',}
             data = create_free_space_request_content()
 
-        # flogger.debug("[%s]Requesting storage stats with:\nURN: %s\nAPI Method: %s\nHeaders: %s\nData: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data ))
         flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data))
 
         try:
@@ -1628,7 +1628,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
         for endpoint in endpoints:
             if endpoint.id in endpoints_c_stats:
                 if endpoints_c_stats[endpoint.id] is '2':
-                    endpoint.stats['check'] = 0
+                    endpoint.stats['check'] = "EndpointOffline"
 
 def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
@@ -1905,15 +1905,17 @@ def get_storagestats(endpoint):
     # memcached_logline = TailLogger(1)
     ###############################################
     try:
-        if endpoint.stats['check'] is 0:
-            flogger.error("[%s] Endpoint Offline. Bypassing stats check." % (endpoint.id))
+        if endpoint.stats['check'] is True:
+            flogger.info("[%s] Contacting endpoint." % (endpoint.id))
+            endpoint.get_storagestats()
+        elif endpoint.stats['check'] is "EndpointOffline":
+            flogger.error("[%s][%s]. Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
             raise UGRStorageStatsOfflineEndpointError(
                 status_code="400",
                 error="EndpointOffline"
             )
-        elif endpoint.stats['check'] is 1:
-            flogger.info("[%s] Contacting endpoint." % (endpoint.id))
-            endpoint.get_storagestats()
+        else:
+            flogger.error("[%s][%s]. Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
 
     except UGRStorageStatsOfflineEndpointError as ERR:
         flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
