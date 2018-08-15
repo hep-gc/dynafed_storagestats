@@ -1051,6 +1051,7 @@ class S3StorageStats(StorageStats):
             if self.plugin_settings['s3.alternate'].lower() == 'true'\
             or self.plugin_settings['s3.alternate'].lower() == 'yes':
                 api_url = '{scheme}://{netloc}/admin/bucket?format=json'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'])
+
             else:
                 api_url = '{scheme}://{domain}/admin/{bucket}?format=json'.format(scheme=self.uri['scheme'], domain=self.uri['domain'], bucket=self.uri['bucket'])
 
@@ -1062,6 +1063,7 @@ class S3StorageStats(StorageStats):
                 self.plugin_settings['s3.region'],
                 's3',
                 )
+
             flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), payload))
             try:
                 r = requests.request(
@@ -1111,7 +1113,6 @@ class S3StorageStats(StorageStats):
                     stats['usage']
 
                 except KeyError as ERR:
-
                     raise UGRStorageStatsErrorS3MissingBucketUsage(
                         status_code=r.status_code,
                         error=stats['Code'],
@@ -1663,7 +1664,6 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
 def create_free_space_request_content():
     """
     Creates an XML for requesting of free space on remote WebDAV server.
-
     :return: the XML string of request content.
     """
     ############# Creating loggers ################
@@ -1895,7 +1895,9 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
 
 def get_storagestats(endpoint):
     """
-    Create a single StAR XML file for all endpoints passed to this function.
+    Runs get_storagestats() method for the endpoint passed as argument if
+    it has not been flagged as offline. It handles exceptions to failures
+    in obtaining the statas.
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
