@@ -70,8 +70,16 @@ Options:
   Output options:
     --debug             Declare to enable debug output on stdout.
     -m, --memcached     Declare to enable uploading information to memcached.
+    --json              Set to output json file with storage stats.
+    -o OUTPUT_DIR, --output_dir=OUTPUT_DIR
+                        Directory to output storage stat files. Defautl: /tmp
+    --plain             Set to output stats to plain txt file.
     --stdout            Set to output stats on stdout.
+    -v, --verbose       Show on stderr events according to loglevel down to
+                        INFO.
     --xml               Set to output xml file with StAR format.
+
+  Logging options:
     --logfile=LOGFILE   Change where to ouput logs. Default:
                         /tmp/dynafed_storagestats.log
     --loglevel=LOGLEVEL

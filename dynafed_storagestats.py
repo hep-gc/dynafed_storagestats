@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.8.12"
+__version__ = "v0.9.2"
 
 import os
 import sys
@@ -27,6 +27,7 @@ from optparse import OptionParser, OptionGroup
 import copy
 import glob
 import json
+from multiprocessing.dummy import Pool as ThreadPool
 
 IS_PYTHON2 = sys.version_info[0] == 2
 
@@ -131,6 +132,10 @@ group.add_option('--stdout',
 #                   dest='verbose', action='count',
 #                   help='Increase verbosity level for debugging this script (on stderr)'
 #                   )
+group.add_option('-v', '--verbose',
+                 dest='verbose', action='store_true', default=False,
+                 help='Show on stderr events according to loglevel.'
+                )
 group.add_option('--xml',
                  dest='output_xml', action='store_true', default=False,
                  help='Set to output xml file with StAR format.'
@@ -372,6 +377,17 @@ class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
         self.debug = debug
         super(UGRStorageStatsConnectionErrorS3API, self).__init__(message=self.message, debug=self.debug)
 
+class UGRStorageStatsOfflineEndpointError(UGRStorageStatsError):
+    """
+    Exception error when and endpoint is detected to have been flagged as offline
+    by Dynafed's connection status check..
+    """
+    def __init__(self, error=None, status_code="000", debug=None):
+        self.message = '[%s][%s] Dynafed has flagged this endpoint as offline.' \
+                       % (error, status_code)
+        self.debug = debug
+        super(UGRStorageStatsOfflineEndpointError, self).__init__(message=self.message, debug=self.debug)
+
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     """
     Exception error when no bucket usage stats could be found.
@@ -498,12 +514,13 @@ class StorageStats(object):
         # memcached_logline = TailLogger(1)
         ###############################################
         self.stats = {
-            'bytesused': 0,
-            'bytesfree': 0,
+            'bytesused': -1,
+            'bytesfree': -1,
             'endtime': 0,
-            'filecount': 0,
+            'filecount': -1,
             'quota': 1000**4,
             'starttime': int(time.time()),
+            'check': True, # To flag whether this endpoint should be contacted.
             }
 
         self.id = _ep['id']
@@ -682,6 +699,8 @@ class StorageStats(object):
             else:
                 try:
                     if self.plugin_settings[ep_setting] not in self.validators[ep_setting]['valid']:
+                        # Do not run get_storagestats with invalild settings.
+                        self.stats['check'] = 'InvalidSetting'
                         raise UGRConfigFileErrorInvalidSetting(
                             error="InvalidSetting",
                             setting=ep_setting,
@@ -890,7 +909,8 @@ class AzureStorageStats(StorageStats):
         try:
             self.validate_plugin_settings()
         except UGRConfigFileError as ERR:
-            print(ERR.debug)
+            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            mlogger.error("%s" % (ERR.message))
             self.debug.append(ERR.debug)
             self.status = ERR.message
 
@@ -1003,7 +1023,6 @@ class S3StorageStats(StorageStats):
         except UGRConfigFileError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
-            print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
 
@@ -1034,6 +1053,7 @@ class S3StorageStats(StorageStats):
             if self.plugin_settings['s3.alternate'].lower() == 'true'\
             or self.plugin_settings['s3.alternate'].lower() == 'yes':
                 api_url = '{scheme}://{netloc}/admin/bucket?format=json'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'])
+
             else:
                 api_url = '{scheme}://{domain}/admin/{bucket}?format=json'.format(scheme=self.uri['scheme'], domain=self.uri['domain'], bucket=self.uri['bucket'])
 
@@ -1045,6 +1065,7 @@ class S3StorageStats(StorageStats):
                 self.plugin_settings['s3.region'],
                 's3',
                 )
+
             flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), payload))
             try:
                 r = requests.request(
@@ -1094,11 +1115,10 @@ class S3StorageStats(StorageStats):
                     stats['usage']
 
                 except KeyError as ERR:
-
                     raise UGRStorageStatsErrorS3MissingBucketUsage(
                         status_code=r.status_code,
                         error=stats['Code'],
-                        debug=stats
+                        debug=str(stats)
                         )
                 else:
                     if len(stats['usage']) != 0:
@@ -1305,7 +1325,6 @@ class DAVStorageStats(StorageStats):
         except UGRConfigFileError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
-            print(ERR.debug)
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
 
@@ -1332,7 +1351,6 @@ class DAVStorageStats(StorageStats):
             headers = {'Depth': '0',}
             data = create_free_space_request_content()
 
-        # flogger.debug("[%s]Requesting storage stats with:\nURN: %s\nAPI Method: %s\nHeaders: %s\nData: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data ))
         flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data))
 
         try:
@@ -1548,6 +1566,69 @@ def factory(plugin):
             plugin=plugin,
             )
 
+def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='11211'):
+    """
+    Return object class to use based on the plugin specified in the UGR's
+    configuration files.
+    """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
+    ###############################################
+    # Setup connection to a memcache instance
+    memcached_srv = options.memcached_ip + ':' + options.memcached_port
+    mc = memcache.Client([memcached_srv])
+    try:
+        # Obtain the latest index number used by UGR and transform to str if needed.
+        # Different versions of memcache module return bytes.
+        idx = mc.get('Ugrpluginstats_idx')
+        if idx is None:
+            raise UGRMemcachedConnectionError(
+                status_code="400",
+                error="MemcachedConnectionError",
+            )
+
+        if isinstance(idx, bytes):
+            idx = str(idx, 'utf-8')
+
+        # Obtain the latest status uploaded by UGR and transform to str if needed.
+        # Different versions of memcache module return bytes.
+        connection_stats = mc.get('Ugrpluginstats_' + idx)
+        if connection_stats is None:
+            raise UGRMemcachedIndexError(
+                status_code="400",
+                error="MemcachedConnectionError",
+            )
+
+        # Check if we actually got information
+    except UGRMemcachedIndexError as ERR:
+        flogger.error("Memcached server %s did not return data. %s" % (memcached_srv, ERR.debug))
+    else:
+        if isinstance(connection_stats, bytes):
+            connection_stats = str(connection_stats, 'utf-8')
+
+        # Remove the \x00 character.
+        connection_stats = connection_stats.rsplit('\x00', 1)[0]
+
+        # Split the stats per '&&' i.e. per storage endpoint.
+        connection_stats = connection_stats.rsplit('&&')
+
+        # For each endpoint then, we are going to obtain the individual stats from UGR
+        # and use the endpoint's ID to also obtain from memcache the storage stats (if any)
+        # and concatenate them (separated by '%%') together. Once this has been done for
+        # each endpoint, we concatenate all endpoints together onto one string
+        # (separated by '&&').
+        endpoints_c_stats = {}
+        for element in connection_stats:
+            endpoint, stats = element.split("%%", 1)
+            status = stats.split("%%")[2]
+            endpoints_c_stats[endpoint] = status
+
+        for endpoint in endpoints:
+            if endpoint.id in endpoints_c_stats:
+                if endpoints_c_stats[endpoint.id] is '2':
+                    endpoint.stats['check'] = "EndpointOffline"
 
 def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
@@ -1583,7 +1664,6 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
 def create_free_space_request_content():
     """
     Creates an XML for requesting of free space on remote WebDAV server.
-
     :return: the XML string of request content.
     """
     ############# Creating loggers ################
@@ -1768,7 +1848,7 @@ def output_plain(endpoints, output_dir="/tmp"):
             )
     output.close()
 
-def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
+def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
     """
     Setup the loggers to be used throughout the script. We need at least two,
     one to log onto a logfile and a second with the TailLogger class defined
@@ -1786,8 +1866,17 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
     # Create file handler and set level from cli or default to settings.log
     log_handler_file = logging.FileHandler(logfile, mode='a')
     log_handler_file.setFormatter(log_format_file)
-    # Add handlers
+    # Add handler
     flogger.addHandler(log_handler_file)
+
+    # Create STDERR hanler if verbose is requested.
+    if verbose:
+        log_format_stderr = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
+        log_handler_stderr = logging.StreamHandler()
+        log_handler_stderr.setLevel(num_loglevel)
+        log_handler_stderr.setFormatter(log_format_stderr)
+        # Add handler
+        flogger.addHandler(log_handler_stderr)
 
     ## create memcached logger
     # Create TailLogger
@@ -1804,6 +1893,47 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING"):
 
     return flogger, mlogger, memcached_logline
 
+def get_storagestats(endpoint):
+    """
+    Runs get_storagestats() method for the endpoint passed as argument if
+    it has not been flagged as offline. It handles exceptions to failures
+    in obtaining the statas.
+    """
+    ############# Creating loggers ################
+    flogger = logging.getLogger(__name__)
+    mlogger = logging.getLogger(__name__+'memcached_logger')
+    # memcached_logline = TailLogger(1)
+    ###############################################
+    try:
+        if endpoint.stats['check'] is True:
+            flogger.info("[%s] Contacting endpoint." % (endpoint.id))
+            endpoint.get_storagestats()
+        elif endpoint.stats['check'] is "EndpointOffline":
+            flogger.error("[%s][%s]. Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
+            raise UGRStorageStatsOfflineEndpointError(
+                status_code="400",
+                error="EndpointOffline"
+            )
+        else:
+            flogger.error("[%s][%s]. Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
+
+    except UGRStorageStatsOfflineEndpointError as ERR:
+        flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+        mlogger.error("%s" % (ERR.message))
+        endpoint.debug.append(ERR.debug)
+        endpoint.status = memcached_logline.contents()
+    except UGRStorageStatsWarning as WARN:
+        flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
+        mlogger.warning("%s" % (WARN.message))
+        endpoint.debug.append(WARN.debug)
+        endpoint.status = memcached_logline.contents()
+    except UGRStorageStatsError as ERR:
+        flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+        mlogger.error("%s" % (ERR.message))
+        endpoint.debug.append(ERR.debug)
+        endpoint.status = memcached_logline.contents()
+
+
 #############
 # Self-Test #
 #############
@@ -1814,29 +1944,21 @@ if __name__ == '__main__':
     flogger, mlogger, memcached_logline = setup_logger(
         logfile=options.logfile,
         loglevel=options.loglevel,
+        verbose=options.verbose,
         )
 
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(options.configs_directory)
 
-    # Call get_storagestats method for each endpoint to obtain Storage Stats.
+    # Flag endpoints that have been detected offline by Dynafed.
+    get_connectionstats(endpoints)
+
+    # Process each endpoint using multithreading.
+    # Number of threads to use.
+    pool = ThreadPool(len(endpoints))
+    pool.map(get_storagestats, endpoints)
+
     for endpoint in endpoints:
-        flogger.info("[%s] Contacting endpoint." % (endpoint.id))
-        try:
-            endpoint.get_storagestats()
-        except UGRStorageStatsWarning as WARN:
-            flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
-            mlogger.warning("%s" % (WARN.message))
-            endpoint.debug.append(WARN.debug)
-            endpoint.status = memcached_logline.contents()
-        except UGRStorageStatsError as ERR:
-            flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            endpoint.debug.append(ERR.debug)
-            endpoint.status = memcached_logline.contents()
-
-        # finally: # Here add code to tadd the logs/debug attributes.
-
         # Upload Storagestats into memcached.
         if options.output_memcached:
             endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
