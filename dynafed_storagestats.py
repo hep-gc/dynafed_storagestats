@@ -1578,7 +1578,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
             flogger.error("[%s]%s" % (endpoints[endpoint]['id'], ERR.debug))
             mlogger.error("%s" % (ERR.message))
             ep = StorageStats(endpoints[endpoint])
-            ep.debug.append(ERR.debug)
+            ep.debug.append("[ERROR]" + ERR.debug)
             ep.status = memcached_logline.contents()
 
         storage_objects.append(ep)
