@@ -96,4 +96,6 @@ v0.9.3 Revamped the exception handling and loggers in order to remove the
        the necessity to instantiate a second logger. This also facilitates
        flexibility for exception handling so these can be removed from levels
        where it does not belong (before it was used for logging as well and that
-       was a bad design.)
+       was a bad design.) Removed error message from memcache's status field.
+       the error codes should give sufficient information. If more is needed
+       the user should either check the logfile or manually run with verbose.
