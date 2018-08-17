@@ -160,43 +160,12 @@ options, args = parser.parse_args()
 ## Exception Classes ##
 #######################
 
-### Log Handler Classes
-class TailLogHandler(logging.Handler):
-    """
-    Logger Handler used in conjuction with the TailLogger class which allows
-    to grab log messages genereated by the logging module into variables.
-    """
-    def __init__(self, log_queue):
-        logging.Handler.__init__(self)
-        self.log_queue = log_queue
-
-    def emit(self, record):
-        self.log_queue.append(self.format(record))
-
-
-class TailLogger(object):
-    """
-    Creates Logger with the TailLogHandler and sets how many lines to keep
-    with maxlen.
-    """
-    def __init__(self, maxlen):
-        self._log_queue = collections.deque(maxlen=maxlen)
-        self._log_handler = TailLogHandler(self._log_queue)
-
-    def contents(self):
-        return '\n'.join(self._log_queue)
-
-    @property
-    def log_handler(self):
-        return self._log_handler
-
-### Exception Classes
 class UGRBaseException(Exception):
     """
     Base exception class for dynafed_storagestats module.
     """
     def __init__(self, error="ERROR", status_code="000", message=None, debug=None):
-        self.error_code = "[%s][%s]" %(error, status_code)
+        self.error_code = "[%s][%s] " %(error, status_code)
         if message is None:
             # Set some default useful error message
             self.message = self.error_code + "An unkown exception occured processing"
@@ -1800,13 +1769,13 @@ def get_storagestats(endpoint):
             flogger.info("[%s] Contacting endpoint." % (endpoint.id))
             endpoint.get_storagestats()
         elif endpoint.stats['check'] is "EndpointOffline":
-            flogger.error("[%s][%s]. Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
+            flogger.error("[%s][%s] Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
             raise UGRStorageStatsOfflineEndpointError(
                 status_code="400",
                 error="EndpointOffline"
             )
         else:
-            flogger.error("[%s][%s]. Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
+            flogger.error("[%s][%s] Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
 
     except UGRStorageStatsOfflineEndpointError as ERR:
         flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
