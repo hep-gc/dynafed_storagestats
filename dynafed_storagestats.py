@@ -508,11 +508,7 @@ class StorageStats(object):
     for earch storage endpoint. As well as how to obtain stats and output it.
     """
     def __init__(self, _ep):
-        ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
-        ###############################################
+
         self.stats = {
             'bytesused': -1,
             'bytesfree': -1,
@@ -575,8 +571,6 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
@@ -593,18 +587,12 @@ class StorageStats(object):
         flogger.info("[%s]Uploading stats to memcached server: %s" % (self.id, memcached_srv))
         flogger.debug("[%s]Using memcached index: %s" % (self.id, memcached_index))
         flogger.debug("[%s]String uploading to memcached: %s" % (self.id, storagestats))
-        try:
-            if mc.set(memcached_index, storagestats) == 0:
-                raise UGRMemcachedConnectionError(
-                    status_code="400",
-                    error="MemcachedConnectionError",
-                )
 
-        except UGRMemcachedConnectionError as ERR:
-            flogger.error("[%s]%s" % (self.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            self.debug.append(ERR.debug)
-            self.status = memcached_logline.contents()
+        if mc.set(memcached_index, storagestats) == 0:
+            raise UGRMemcachedConnectionError(
+                status_code="400",
+                error="MemcachedConnectionError",
+            )
 
     def get_from_memcached(self, memcached_ip='127.0.0.1', memcached_port='11211'):
         """
@@ -660,8 +648,6 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         flogger.info("[%s]Validating configured settings." % (self.id))
         for ep_setting in self.validators:
@@ -673,25 +659,19 @@ class StorageStats(object):
                 self.plugin_settings[ep_setting]
 
             except KeyError:
-                try:
-                    if self.validators[ep_setting]['required']:
-                        self.plugin_settings.update({ep_setting: ''})
-                        raise UGRConfigFileErrorMissingRequiredSetting(
-                            error="MissingRequiredSetting",
-                            setting=ep_setting,
-                            )
-                    else:
-                        raise UGRConfigFileWarningMissingSetting(
-                            error="MissingSetting",
-                            setting=ep_setting,
-                            setting_default=self.validators[ep_setting]['default'],
-                            )
-                except UGRBaseWarning as WARN:
-                    flogger.warning("[%s]%s" % (self.id, WARN.debug))
-                    mlogger.warning("%s" % (WARN.message))
-                    self.debug.append(WARN.debug)
-                    self.status = memcached_logline.contents()
+                if self.validators[ep_setting]['required']:
+                    self.plugin_settings.update({ep_setting: ''})
+                    raise UGRConfigFileErrorMissingRequiredSetting(
+                        error="MissingRequiredSetting",
+                        setting=ep_setting,
+                        )
+                else:
                     self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
+                    raise UGRConfigFileWarningMissingSetting(
+                        error="MissingSetting",
+                        setting=ep_setting,
+                        setting_default=self.validators[ep_setting]['default'],
+                        )
 
             # If the ep_setting has been defined, check against a list of valid
             # plugin_settings (if defined, otherwise contiune). Also transform to boolean
@@ -740,8 +720,6 @@ class StorageStats(object):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
 
@@ -913,6 +891,11 @@ class AzureStorageStats(StorageStats):
             mlogger.error("%s" % (ERR.message))
             self.debug.append(ERR.debug)
             self.status = ERR.message
+        except UGRConfigFileWarning as WARN:
+            flogger.warning("[%s]%s" % (self.id, WARN.debug))
+            mlogger.warning("%s" % (WARN.message))
+            self.debug.append(WARN.debug)
+            self.status = memcached_logline.contents()
 
         # Invoke the validate_schema() method
         self.validate_schema()
@@ -928,8 +911,6 @@ class AzureStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
 
         if self.plugin_settings['storagestats.api'].lower() == 'generic':
@@ -1025,6 +1006,11 @@ class S3StorageStats(StorageStats):
             mlogger.error("%s" % (ERR.message))
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
+        except UGRConfigFileWarning as WARN:
+            flogger.warning("[%s]%s" % (self.id, WARN.debug))
+            mlogger.warning("%s" % (WARN.message))
+            self.debug.append(WARN.debug)
+            self.status = memcached_logline.contents()
 
         # Invoke the validate_schema() method
         self.validate_schema()
@@ -1043,8 +1029,6 @@ class S3StorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
 
         # Getting the storage Stats CephS3's Admin API
@@ -1266,8 +1250,6 @@ class S3StorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
         if self.uri['scheme'] == 's3':
@@ -1327,6 +1309,11 @@ class DAVStorageStats(StorageStats):
             mlogger.error("%s" % (ERR.message))
             self.debug.append(ERR.debug)
             self.status = memcached_logline.contents()
+        except UGRConfigFileWarning as WARN:
+            flogger.warning("[%s]%s" % (self.id, WARN.debug))
+            mlogger.warning("%s" % (WARN.message))
+            self.debug.append(WARN.debug)
+            self.status = memcached_logline.contents()
 
         # Invoke the validate_schema() method
         self.validate_schema()
@@ -1339,8 +1326,6 @@ class DAVStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
         if self.plugin_settings['storagestats.api'].lower() == 'generic':
@@ -1403,37 +1388,26 @@ class DAVStorageStats(StorageStats):
 
                 elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
                     tree = etree.fromstring(response.content)
-                    try:
-                        node = tree.find('.//{DAV:}quota-available-bytes').text
-                        if node is not None:
-                            pass
-                        else:
-                            raise UGRStorageStatsErrorDAVQuotaMethod(
-                                error="UnsupportedMethod"
-                                )
-                    except UGRStorageStatsError as ERR:
-                        flogger.error("[%s]%s" % (self.id, ERR.debug))
-                        mlogger.error("%s" % (ERR.message))
-                        self.stats['bytesused'] = -1
-                        self.stats['bytesfree'] = -1
-                        self.stats['quota'] = -1
-                        self.debug.append(ERR.debug)
-                        self.status = memcached_logline.contents()
+                    node = tree.find('.//{DAV:}quota-available-bytes').text
+                    # Check that we got the requested information. If not, then
+                    # the method is not supported by the endpoint.
+                    if node is None:
+                        raise UGRStorageStatsErrorDAVQuotaMethod(
+                            error="UnsupportedMethod"
+                            )
+                    # Assign the values returned by the endpoint.
+                    self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
+                    self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
 
+                    # Determine which value to use for the quota.
+                    if self.plugin_settings['storagestats.quota'] == 'api':
+                        # If quota-available-bytes is reported as '0' is because no quota is
+                        # provided, so we use the one from the config file or default.
+                        if self.stats['bytesfree'] != 0:
+                            self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
                     else:
-                        self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
-                        self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-                        if self.plugin_settings['storagestats.quota'] == 'api':
-                            # If quota-available-bytes is reported as '0' is because no quota is
-                            # provided, so we use the one from the config file or default.
-                            if self.stats['bytesfree'] != 0:
-                                self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
-                        else:
-                            self.stats['quota'] = self.plugin_settings['storagestats.quota']
-            #        except TypeError:
-            #            raise MethodNotSupported(name='free', server=hostname)
-            #        except etree.XMLSyntaxError:
-            #            return str()
+                        self.stats['quota'] = self.plugin_settings['storagestats.quota']
+
             else:
                 raise UGRStorageStatsConnectionError(
                     error='ConnectionError',
@@ -1448,8 +1422,6 @@ class DAVStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         schema_translator = {
             'dav': 'http',
@@ -1479,8 +1451,6 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
     ###############################################
     endpoints = {}
     global_settings = {}
@@ -1520,9 +1490,8 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                     line=line.split(":")[0],
                                     )
                         except UGRConfigFileError as ERR:
-                            flogger.error("[%s]%s" % (self.id, ERR.debug))
-                            mlogger.error("%s" % (ERR.message))
-                            print(ERR.debug)
+                            flogger.critical("[%s]%s" % (_id, ERR.debug))
+                            print("[CRITICAL][%s]%s" % (_id, ERR.debug))
                             sys.exit(1)
                             # self.debug.append(ERR.debug)
                             # self.status = memcached_logline.contents()
@@ -1545,11 +1514,7 @@ def factory(plugin):
     Return object class to use based on the plugin specified in the UGR's
     configuration files.
     """
-    ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
-    ###############################################
+
     plugin_dict = {
         'libugrlocplugin_dav.so': DAVStorageStats,
         'libugrlocplugin_http.so': DAVStorageStats,
@@ -1573,8 +1538,6 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
     """
     ############# Creating loggers ################
     flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
     ###############################################
     # Setup connection to a memcache instance
     memcached_srv = options.memcached_ip + ':' + options.memcached_port
@@ -1602,7 +1565,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
             )
 
         # Check if we actually got information
-    except UGRMemcachedIndexError as ERR:
+    except UGRMemcachedError as ERR:
         flogger.error("Memcached server %s did not return data. %s" % (memcached_srv, ERR.debug))
     else:
         if isinstance(connection_stats, bytes):
@@ -1667,9 +1630,7 @@ def create_free_space_request_content():
     :return: the XML string of request content.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
+
     ###############################################
     root = etree.Element("propfind", xmlns="DAV:")
     prop = etree.SubElement(root, "prop")
@@ -1686,9 +1647,7 @@ def add_xml_getcontentlength(content):
     total byte count.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
+
     ###############################################
     xml = etree.fromstring(content)
     bytesused = 0
@@ -1704,9 +1663,7 @@ def convert_size_to_bytes(size):
     Converts given sizse into bytes.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
+
     ###############################################
     multipliers = {
         'kib': 1024,
@@ -1740,9 +1697,7 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
     Create a single StAR XML file for all endpoints passed to this function.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
+
     ###############################################
     SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
     SR = "{%s}" % SR_namespace
@@ -1766,9 +1721,7 @@ def output_json(endpoints, output_dir="/tmp"):
     Create a single json file for all endpoints passed to this function.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
+
     ###############################################
 
     #Create the json structure in python terms
@@ -1817,9 +1770,7 @@ def output_plain(endpoints, output_dir="/tmp"):
     Create a single txt file for all endpoints passed to this function.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
-    mlogger = logging.getLogger(__name__+'memcached_logger')
-    # memcached_logline = TailLogger(1)
+
     ###############################################
 
     # Initialize total tally
@@ -1961,7 +1912,13 @@ if __name__ == '__main__':
     for endpoint in endpoints:
         # Upload Storagestats into memcached.
         if options.output_memcached:
-            endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
+            try:
+                endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
+            except UGRMemcachedConnectionError as ERR:
+                flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+                mlogger.error("%s" % (ERR.message))
+                endpoint.debug.append(ERR.debug)
+                endpoint.status = memcached_logline.contents()
 
         # Print Storagestats to the standard output.
         if options.output_stdout:
