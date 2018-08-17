@@ -223,7 +223,7 @@ class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     Exception error when a line in the configuration file under a specific
     endpoint does not match the given endpoint ID. Usually a typo.
     """
-    def __init__(self, line, error=None, status_code="000", debug=None):
+    def __init__(self, line, error="SettingIDMismatch", status_code="000", debug=None):
         self.message = 'Failed to match ID in line "%s". Check your configuration.' \
                        % (line)
         self.debug = debug
@@ -234,7 +234,7 @@ class UGRConfigFileErrorMissingRequiredSetting(UGRConfigFileError):
     Exception error when an setting required by this module to obtain the Storage
     Stats is missing from the config files for the endpoint being processed.
     """
-    def __init__(self, setting, error=None, status_code="000", debug=None):
+    def __init__(self, setting, error="MissingRequiredSetting", status_code="000", debug=None):
         self.message = '"%s" is required. Check your configuration.' \
                   % (setting)
         self.debug = debug
@@ -245,7 +245,7 @@ class UGRConfigFileErrorInvalidSetting(UGRConfigFileError):
     Exception error when the value given for an setting in the configuration file
     does not match the 'valid' values specified in the 'validators' attribute.
     """
-    def __init__(self, setting, valid_plugin_settings, error=None, status_code="000", debug=None):
+    def __init__(self, setting, valid_plugin_settings, error="InvalidSetting", status_code="000", debug=None):
         self.message = 'Incorrect value given in setting "%s". Valid plugin_settings: %s' \
                   % (setting, valid_plugin_settings)
         self.debug = debug
@@ -269,7 +269,7 @@ class UGRMemcachedConnectionError(UGRMemcachedError):
     Exception error when script cannot connect to a memcached instance as
     requested.
     """
-    def __init__(self, error=None, status_code="400", debug=None):
+    def __init__(self, error="MemcachedConnectionError", status_code="400", debug=None):
         self.message = 'Failed to connect to memcached.'
         self.debug = debug
         super(UGRMemcachedConnectionError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -278,7 +278,7 @@ class UGRMemcachedIndexError(UGRMemcachedError):
     """
     Exception error when the requested index in memcached cannot be found.
     """
-    def __init__(self, error=None, status_code="404", debug=None):
+    def __init__(self, error="MemcachedEmptyIndex", status_code="404", debug=None):
         self.message = 'Unable to get memcached index contents.'
         self.debug = debug
         super(UGRMemcachedIndexError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -301,7 +301,7 @@ class UGRStorageStatsConnectionError(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to the endpoint's URN.
     """
-    def __init__(self, error=None, status_code="000", debug=None):
+    def __init__(self, error="ConnectionError", status_code="000", debug=None):
         self.message = 'Failed to establish a connection.'
         self.debug = debug
         super(UGRStorageStatsConnectionError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -310,7 +310,7 @@ class UGRStorageStatsConnectionErrorInvalidSchema(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to an S3 endpoint's API.
     """
-    def __init__(self, error=None, status_code="000", schema=None, debug=None):
+    def __init__(self, error="InvalidSchema", status_code="000", schema=None, debug=None):
         self.message = 'Invalid schema "%s".' \
                   % (schema)
         self.debug = debug
@@ -320,7 +320,7 @@ class UGRStorageStatsConnectionErrorAzureAPI(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to an S3 endpoint's API.
     """
-    def __init__(self, error=None, status_code="000", api=None, debug=None):
+    def __init__(self, error="ConnectionError", status_code="000", api=None, debug=None):
         self.message = 'Error requesting stats using API "%s".' \
                   % (api)
         self.debug = debug
@@ -330,7 +330,7 @@ class UGRStorageStatsErrorAzureContainerNotFound(UGRStorageStatsError):
     """
     Exception error when no bucket usage stats could be found.
     """
-    def __init__(self, error=None, status_code="000", debug=None, container=''):
+    def __init__(self, error="ContainerNotFound", status_code="000", debug=None, container=''):
         self.message = 'Container tried: %s' \
                   % (container)
         self.debug = debug
@@ -340,7 +340,7 @@ class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to an S3 endpoint's API.
     """
-    def __init__(self, error=None, status_code="000", api=None, debug=None):
+    def __init__(self, error="ConnectionError", status_code="000", api=None, debug=None):
         self.message = 'Error requesting stats using API "%s".' \
                   % (api)
         self.debug = debug
@@ -351,7 +351,7 @@ class UGRStorageStatsOfflineEndpointError(UGRStorageStatsError):
     Exception error when and endpoint is detected to have been flagged as offline
     by Dynafed's connection status check..
     """
-    def __init__(self, error=None, status_code="000", debug=None):
+    def __init__(self, error="EndpointOffline", status_code="000", debug=None):
         self.message = 'Dynafed has flagged this endpoint as offline.'
         self.debug = debug
         super(UGRStorageStatsOfflineEndpointError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -360,7 +360,7 @@ class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     """
     Exception error when no bucket usage stats could be found.
     """
-    def __init__(self, error=None, status_code="000", debug=None):
+    def __init__(self, error="MissingBucketUsage", status_code="000", debug=None):
         self.message = '[%s][%s] Failed to get bucket usage information.'
         self.debug = debug
         super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -369,7 +369,7 @@ class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     """
     Exception error when the DAV endpoint does not support the RFC 4331 method.
     """
-    def __init__(self, error=None, status_code="000", debug=None):
+    def __init__(self, error="UnsupportedMethod", status_code="000", debug=None):
         self.message = 'WebDAV Quota Method.'
         self.debug = debug
         super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -379,7 +379,7 @@ class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     Exception caused when there is an issue reading a client X509 certificate
     as configured in the config files for the endpoint being processed.
     """
-    def __init__(self, error=None, status_code="000", certfile=None, debug=None):
+    def __init__(self, error="ClientCertError", status_code="000", certfile=None, debug=None):
         self.message = 'Invalid client certificate path "%s".' \
                   % (certfile)
         self.debug = debug
@@ -405,7 +405,7 @@ class UGRConfigFileWarning(UGRBaseWarning):
     """
     Base warning exception subclass for anything relating to the config file(s).
     """
-    def __init__(self, error=None, status_code="000", message=None, debug=None):
+    def __init__(self, error="ConfigFileWarning", status_code="000", message=None, debug=None):
         if message is None:
             # Set some default useful error message
             self.message = 'An unkown error occured reading a configuration file.'
@@ -420,7 +420,7 @@ class UGRConfigFileWarningMissingSetting(UGRConfigFileWarning):
     out the default setting given by the 'validators' attribute that will be used
     in this absence.
     """
-    def __init__(self, setting, setting_default, error=None, status_code="000", debug=None):
+    def __init__(self, setting, setting_default, error="MissingSetting", status_code="000", debug=None):
         self.message = 'Unspecified "%s" setting. Using default value "%s"' \
                   % (setting, setting_default)
         self.debug = debug
