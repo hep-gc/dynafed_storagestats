@@ -659,19 +659,29 @@ class StorageStats(object):
                 self.plugin_settings[ep_setting]
 
             except KeyError:
-                if self.validators[ep_setting]['required']:
-                    self.plugin_settings.update({ep_setting: ''})
-                    raise UGRConfigFileErrorMissingRequiredSetting(
-                        error="MissingRequiredSetting",
-                        setting=ep_setting,
-                        )
-                else:
+                try:
+                    if self.validators[ep_setting]['required']:
+                        # Mark endpoint to be skipped with reason.
+                        self.stats['check'] = 'MissingRequiredSetting'
+                        self.plugin_settings.update({ep_setting: ''})
+                        
+                        raise UGRConfigFileErrorMissingRequiredSetting(
+                            error="MissingRequiredSetting",
+                            setting=ep_setting,
+                            )
+                    else:
+                        raise UGRConfigFileWarningMissingSetting(
+                            error="MissingSetting",
+                            setting=ep_setting,
+                            setting_default=self.validators[ep_setting]['default'],
+                            )
+                except UGRConfigFileWarningMissingSetting as WARN:
+                    # Set the default value for this setting.
                     self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
-                    raise UGRConfigFileWarningMissingSetting(
-                        error="MissingSetting",
-                        setting=ep_setting,
-                        setting_default=self.validators[ep_setting]['default'],
-                        )
+                    flogger.warning("[%s]%s" % (self.id, WARN.debug))
+                    self.debug.append(WARN.debug)
+                    self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
+
 
             # If the ep_setting has been defined, check against a list of valid
             # plugin_settings (if defined, otherwise contiune). Also transform to boolean
