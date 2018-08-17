@@ -615,7 +615,7 @@ class StorageStats(object):
         except UGRMemcachedIndexError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             mlogger.error("%s" % (ERR.message))
-            self.debug.append(ERR.debug)
+            self.debug.append("[ERROR]" + ERR.debug)
             self.status = memcached_logline.contents()
             memcached_contents = '%%'.join([
                 self.id,
@@ -673,14 +673,14 @@ class StorageStats(object):
                     self.plugin_settings.update({ep_setting: ''})
 
                     flogger.error("[%s]%s" % (self.id, ERR.debug))
-                    self.debug.append(ERR.debug)
+                    self.debug.append("[ERROR]" + ERR.debug)
 
                 except UGRConfigFileWarningMissingSetting as WARN:
                     # Set the default value for this setting.
                     self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
 
                     flogger.warning("[%s]%s" % (self.id, WARN.debug))
-                    self.debug.append(WARN.debug)
+                    self.debug.append("[WARNING]" + WARN.debug)
 
             # If the ep_setting has been defined, check against a list of valid
             # plugin_settings (if defined, otherwise contiune). Also transform to boolean
@@ -1454,7 +1454,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                             flogger.critical("[%s]%s" % (_id, ERR.debug))
                             print("[CRITICAL][%s]%s" % (_id, ERR.debug))
                             sys.exit(1)
-                            # self.debug.append(ERR.debug)
+                            # self.debug.append("[ERROR]" + ERR.debug)
                             # self.status = memcached_logline.contents()
                     else:
                         # Ignore any other lines
@@ -1832,17 +1832,17 @@ def get_storagestats(endpoint):
     except UGRStorageStatsOfflineEndpointError as ERR:
         flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
         mlogger.error("%s" % (ERR.message))
-        endpoint.debug.append(ERR.debug)
+        endpoint.debug.append("[ERROR]" + ERR.debug)
         endpoint.status = memcached_logline.contents()
     except UGRStorageStatsWarning as WARN:
         flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
         mlogger.warning("%s" % (WARN.message))
-        endpoint.debug.append(WARN.debug)
+        endpoint.debug.append("[WARNING]" + WARN.debug)
         endpoint.status = memcached_logline.contents()
     except UGRStorageStatsError as ERR:
         flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
         mlogger.error("%s" % (ERR.message))
-        endpoint.debug.append(ERR.debug)
+        endpoint.debug.append("[ERROR]" + ERR.debug)
         endpoint.status = memcached_logline.contents()
 
 
@@ -1878,7 +1878,7 @@ if __name__ == '__main__':
             except UGRMemcachedConnectionError as ERR:
                 flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
                 mlogger.error("%s" % (ERR.message))
-                endpoint.debug.append(ERR.debug)
+                endpoint.debug.append("[ERROR]" + ERR.debug)
                 endpoint.status = memcached_logline.contents()
 
         # Print Storagestats to the standard output.
