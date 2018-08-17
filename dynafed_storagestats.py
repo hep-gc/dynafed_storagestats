@@ -661,10 +661,6 @@ class StorageStats(object):
             except KeyError:
                 try:
                     if self.validators[ep_setting]['required']:
-                        # Mark endpoint to be skipped with reason.
-                        self.stats['check'] = 'MissingRequiredSetting'
-                        self.plugin_settings.update({ep_setting: ''})
-                        
                         raise UGRConfigFileErrorMissingRequiredSetting(
                             error="MissingRequiredSetting",
                             setting=ep_setting,
@@ -675,13 +671,20 @@ class StorageStats(object):
                             setting=ep_setting,
                             setting_default=self.validators[ep_setting]['default'],
                             )
+                except UGRConfigFileErrorMissingRequiredSetting as ERR:
+                    # Mark endpoint to be skipped with reason.
+                    self.stats['check'] = 'MissingRequiredSetting'
+                    self.plugin_settings.update({ep_setting: ''})
+
+                    flogger.error("[%s]%s" % (self.id, ERR.debug))
+                    self.debug.append(ERR.debug)
+
                 except UGRConfigFileWarningMissingSetting as WARN:
                     # Set the default value for this setting.
                     self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
+
                     flogger.warning("[%s]%s" % (self.id, WARN.debug))
                     self.debug.append(WARN.debug)
-                    self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
-
 
             # If the ep_setting has been defined, check against a list of valid
             # plugin_settings (if defined, otherwise contiune). Also transform to boolean
@@ -880,8 +883,6 @@ class AzureStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
@@ -894,18 +895,7 @@ class AzureStorageStats(StorageStats):
         })
 
         # Invoke the validate_plugin_settings() method
-        try:
-            self.validate_plugin_settings()
-        except UGRConfigFileError as ERR:
-            flogger.error("[%s]%s" % (self.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            self.debug.append(ERR.debug)
-            self.status = ERR.message
-        except UGRConfigFileWarning as WARN:
-            flogger.warning("[%s]%s" % (self.id, WARN.debug))
-            mlogger.warning("%s" % (WARN.message))
-            self.debug.append(WARN.debug)
-            self.status = memcached_logline.contents()
+        self.validate_plugin_settings()
 
         # Invoke the validate_schema() method
         self.validate_schema()
@@ -975,8 +965,6 @@ class S3StorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         super(S3StorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "S3"
@@ -1009,18 +997,7 @@ class S3StorageStats(StorageStats):
         })
 
         # Invoke the validate_plugin_settings() method
-        try:
-            self.validate_plugin_settings()
-        except UGRConfigFileError as ERR:
-            flogger.error("[%s]%s" % (self.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            self.debug.append(ERR.debug)
-            self.status = memcached_logline.contents()
-        except UGRConfigFileWarning as WARN:
-            flogger.warning("[%s]%s" % (self.id, WARN.debug))
-            mlogger.warning("%s" % (WARN.message))
-            self.debug.append(WARN.debug)
-            self.status = memcached_logline.contents()
+        self.validate_plugin_settings()
 
         # Invoke the validate_schema() method
         self.validate_schema()
@@ -1292,8 +1269,6 @@ class DAVStorageStats(StorageStats):
         """
         ############# Creating loggers ################
         flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger(__name__+'memcached_logger')
-        # memcached_logline = TailLogger(1)
         ###############################################
         super(DAVStorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "DAV"
@@ -1312,18 +1287,7 @@ class DAVStorageStats(StorageStats):
         })
 
         # Invoke the validate_plugin_settings() method
-        try:
-            self.validate_plugin_settings()
-        except UGRConfigFileError as ERR:
-            flogger.error("[%s]%s" % (self.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            self.debug.append(ERR.debug)
-            self.status = memcached_logline.contents()
-        except UGRConfigFileWarning as WARN:
-            flogger.warning("[%s]%s" % (self.id, WARN.debug))
-            mlogger.warning("%s" % (WARN.message))
-            self.debug.append(WARN.debug)
-            self.status = memcached_logline.contents()
+        self.validate_plugin_settings()
 
         # Invoke the validate_schema() method
         self.validate_schema()
