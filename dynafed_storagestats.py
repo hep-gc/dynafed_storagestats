@@ -195,16 +195,18 @@ class UGRBaseException(Exception):
     """
     Base exception class for dynafed_storagestats module.
     """
-    def __init__(self, message=None, debug=None):
+    def __init__(self, error="ERROR", status_code="000", message=None, debug=None):
+        self.error_code = "[%s][%s]" %(error, status_code)
         if message is None:
             # Set some default useful error message
-            self.message = "[ERROR] An unkown exception occured processing"
+            self.message = self.error_code + "An unkown exception occured processing"
         else:
-            self.message = message
+            self.message = self.error_code + message
         if debug is None:
-            self.debug = message
+            self.debug = self.message
         else:
-            self.debug = message + ' ' + debug
+            self.debug = self.message + ' ' + debug
+
         super(UGRBaseException, self).__init__(self.message)
 
 ### Defining Error Exception Classes
@@ -213,38 +215,39 @@ class UGRBaseError(UGRBaseException):
     Base error exception Subclass which will add the [ERROR] tag to all error
     subclasses.
     """
-    def __init__(self, message=None, debug=None):
+    def __init__(self, error="ERROR", status_code="000", message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "[ERROR][000] A unkown error occured."
+            self.message = "A unkown error occured."
         else:
             self.message = message
         self.debug = debug
-        super(UGRBaseError, self).__init__(message=self.message, debug=self.debug)
+
+        super(UGRBaseError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRConfigFileError(UGRBaseError):
     """
     Base error exception subclass for anything relating to the config file(s).
     """
-    def __init__(self, message=None, debug=None):
+    def __init__(self, error="ConfigFileError", status_code="000", message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "[ConfigFileError][000] An unkown error occured reading a configuration file."
+            self.message = "An unkown error occured reading a configuration file."
         else:
             self.message = message
         self.debug = debug
-        super(UGRConfigFileError, self).__init__(message=self.message, debug=self.debug)
+        super(UGRConfigFileError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRUnsupportedPluginError(UGRConfigFileError):
     """
     Exception error when an endpoint of an unsuprted type/protocol plugin
     is detected.
     """
-    def __init__(self, error=None, status_code="000", plugin=None, debug=None):
-        self.message = '[%s][%s] StorageStats method for "%s" not implemented yet.' \
-                       % (error, status_code, plugin)
+    def __init__(self, error="UnsupportedPlugin", status_code="000", plugin=None, debug=None):
+        self.message = 'StorageStats method for "%s" not implemented yet.' \
+                       % (plugin)
         self.debug = debug
-        super(UGRUnsupportedPluginError, self).__init__(message=self.message, debug=self.debug)
+        super(UGRUnsupportedPluginError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     """
@@ -252,10 +255,10 @@ class UGRConfigFileErrorIDMismatch(UGRConfigFileError):
     endpoint does not match the given endpoint ID. Usually a typo.
     """
     def __init__(self, line, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Failed to match ID in line "%s". Check your configuration.' \
-                       % (error, status_code, line)
+        self.message = 'Failed to match ID in line "%s". Check your configuration.' \
+                       % (line)
         self.debug = debug
-        super(UGRConfigFileErrorIDMismatch, self).__init__(message=self.message, debug=self.debug)
+        super(UGRConfigFileErrorIDMismatch, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorMissingRequiredSetting(UGRConfigFileError):
     """
@@ -263,10 +266,10 @@ class UGRConfigFileErrorMissingRequiredSetting(UGRConfigFileError):
     Stats is missing from the config files for the endpoint being processed.
     """
     def __init__(self, setting, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] "%s" is required. Check your configuration.' \
-                  % (error, status_code, setting)
+        self.message = '"%s" is required. Check your configuration.' \
+                  % (setting)
         self.debug = debug
-        super(UGRConfigFileErrorMissingRequiredSetting, self).__init__(message=self.message, debug=self.debug)
+        super(UGRConfigFileErrorMissingRequiredSetting, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRConfigFileErrorInvalidSetting(UGRConfigFileError):
     """
@@ -274,23 +277,23 @@ class UGRConfigFileErrorInvalidSetting(UGRConfigFileError):
     does not match the 'valid' values specified in the 'validators' attribute.
     """
     def __init__(self, setting, valid_plugin_settings, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Incorrect value given in setting "%s". Valid plugin_settings: %s' \
-                  % (error, status_code, setting, valid_plugin_settings)
+        self.message = 'Incorrect value given in setting "%s". Valid plugin_settings: %s' \
+                  % (setting, valid_plugin_settings)
         self.debug = debug
-        super(UGRConfigFileErrorInvalidSetting, self).__init__(message=self.message, debug=self.debug)
+        super(UGRConfigFileErrorInvalidSetting, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRMemcachedError(UGRBaseError):
     """
     Base error exception subclass for issues deailng with memcached
     communication.
     """
-    def __init__(self, message=None, debug=None):
+    def __init__(self, error="MemcachedError", status_code="000", message=None, debug=None):
         if message is None:
-            self.message = '[MemcachedError][000] Unknown memcached error.'
+            self.message = 'Unknown memcached error.'
         else:
             self.message = message
         self.debug = debug
-        super(UGRMemcachedError, self).__init__(message=self.message, debug=self.debug)
+        super(UGRMemcachedError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRMemcachedConnectionError(UGRMemcachedError):
     """
@@ -298,84 +301,81 @@ class UGRMemcachedConnectionError(UGRMemcachedError):
     requested.
     """
     def __init__(self, error=None, status_code="400", debug=None):
-        self.message = '[%s][%s] Failed to connect to memcached.' \
-                       % (error, status_code)
+        self.message = 'Failed to connect to memcached.'
         self.debug = debug
-        super(UGRMemcachedConnectionError, self).__init__(message=self.message, debug=self.debug)
+        super(UGRMemcachedConnectionError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRMemcachedIndexError(UGRMemcachedError):
     """
     Exception error when the requested index in memcached cannot be found.
     """
     def __init__(self, error=None, status_code="404", debug=None):
-        self.message = '[%s][%s] Unable to get memcached index contents.' \
-                       % (error, status_code)
+        self.message = 'Unable to get memcached index contents.'
         self.debug = debug
-        super(UGRMemcachedIndexError, self).__init__(message=self.message, debug=self.debug)
+        super(UGRMemcachedIndexError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsError(UGRBaseError):
     """
     Base error exception subclass for issues deailng when failing to obtain
     the endpoint's storage stats.
     """
-    def __init__(self, message=None, debug=None):
+    def __init__(self, error="StorageStatsError", status_code="000", message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = "[StorageStatsError][000] An unkown error occured obtaning storage stats."
+            self.message = "An unkown error occured obtaning storage stats."
         else:
             self.message = message
         self.debug = debug
-        super(UGRStorageStatsError, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionError(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to the endpoint's URN.
     """
     def __init__(self, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Failed to establish a connection.' \
-                       % (error, status_code)
+        self.message = 'Failed to establish a connection.'
         self.debug = debug
-        super(UGRStorageStatsConnectionError, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsConnectionError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorInvalidSchema(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to an S3 endpoint's API.
     """
     def __init__(self, error=None, status_code="000", schema=None, debug=None):
-        self.message = '[%s][%s] Invalid schema "%s".' \
-                  % (error, status_code, schema)
+        self.message = 'Invalid schema "%s".' \
+                  % (schema)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorInvalidSchema, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsConnectionErrorInvalidSchema, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorAzureAPI(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to an S3 endpoint's API.
     """
     def __init__(self, error=None, status_code="000", api=None, debug=None):
-        self.message = '[%s][%s] Error requesting stats using API "%s".' \
-                  % (error, status_code, api)
+        self.message = 'Error requesting stats using API "%s".' \
+                  % (api)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorAzureAPI, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsConnectionErrorAzureAPI, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorAzureContainerNotFound(UGRStorageStatsError):
     """
     Exception error when no bucket usage stats could be found.
     """
     def __init__(self, error=None, status_code="000", debug=None, container=''):
-        self.message = '[%s][%s] Container tried: %s' \
-                  % (error, status_code, container)
+        self.message = 'Container tried: %s' \
+                  % (container)
         self.debug = debug
-        super(UGRStorageStatsErrorAzureContainerNotFound, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsErrorAzureContainerNotFound, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorS3API(UGRStorageStatsError):
     """
     Exception error when there is an issue connecting to an S3 endpoint's API.
     """
     def __init__(self, error=None, status_code="000", api=None, debug=None):
-        self.message = '[%s][%s] Error requesting stats using API "%s".' \
-                  % (error, status_code, api)
+        self.message = 'Error requesting stats using API "%s".' \
+                  % (api)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorS3API, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsConnectionErrorS3API, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsOfflineEndpointError(UGRStorageStatsError):
     """
@@ -383,30 +383,27 @@ class UGRStorageStatsOfflineEndpointError(UGRStorageStatsError):
     by Dynafed's connection status check..
     """
     def __init__(self, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Dynafed has flagged this endpoint as offline.' \
-                       % (error, status_code)
+        self.message = 'Dynafed has flagged this endpoint as offline.'
         self.debug = debug
-        super(UGRStorageStatsOfflineEndpointError, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsOfflineEndpointError, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorS3MissingBucketUsage(UGRStorageStatsError):
     """
     Exception error when no bucket usage stats could be found.
     """
     def __init__(self, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Failed to get bucket usage information.' \
-                  % (error, status_code)
+        self.message = '[%s][%s] Failed to get bucket usage information.'
         self.debug = debug
-        super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsErrorS3MissingBucketUsage, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsErrorDAVQuotaMethod(UGRStorageStatsError):
     """
     Exception error when the DAV endpoint does not support the RFC 4331 method.
     """
     def __init__(self, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] WebDAV Quota Method.' \
-                  % (error, status_code)
+        self.message = 'WebDAV Quota Method.'
         self.debug = debug
-        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsErrorDAVQuotaMethod, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     """
@@ -414,10 +411,10 @@ class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     as configured in the config files for the endpoint being processed.
     """
     def __init__(self, error=None, status_code="000", certfile=None, debug=None):
-        self.message = '[%s][%s] Invalid client certificate path "%s".' \
-                  % (error, status_code, certfile)
+        self.message = 'Invalid client certificate path "%s".' \
+                  % (certfile)
         self.debug = debug
-        super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsConnectionErrorDAVCertPath, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 ### Defining Warning Exception Classes
 class UGRBaseWarning(UGRBaseException):
@@ -425,26 +422,27 @@ class UGRBaseWarning(UGRBaseException):
     Base error exception Subclass which will add the [WARN] tag to all warning
     subclasses.
     """
-    def __init__(self, message=None, debug=None):
+    def __init__(self, error="WARNING", status_code="000", message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = '[WARNING][000] A unkown error occured.'
+            self.message = 'A unkown warning occured.'
         else:
             self.message = message
         self.debug = debug
-        super(UGRBaseWarning, self).__init__(message=self.message, debug=self.debug)
+
+        super(UGRBaseWarning, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRConfigFileWarning(UGRBaseWarning):
     """
     Base warning exception subclass for anything relating to the config file(s).
     """
-    def __init__(self, message=None, error=None, status_code="000", debug=None):
+    def __init__(self, error=None, status_code="000", message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = '[%s][%s] An unkown error occured reading a configuration file.' \
-                           % (error, status_code)
+            self.message = 'An unkown error occured reading a configuration file.'
         self.debug = debug
-        super(UGRConfigFileWarning, self).__init__(message=self.message, debug=self.debug)
+
+        super(UGRConfigFileWarning, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRConfigFileWarningMissingSetting(UGRConfigFileWarning):
     """
@@ -454,24 +452,24 @@ class UGRConfigFileWarningMissingSetting(UGRConfigFileWarning):
     in this absence.
     """
     def __init__(self, setting, setting_default, error=None, status_code="000", debug=None):
-        self.message = '[%s][%s] Unspecified "%s" setting. Using default value "%s"' \
-                  % (error, status_code, setting, setting_default)
+        self.message = 'Unspecified "%s" setting. Using default value "%s"' \
+                  % (setting, setting_default)
         self.debug = debug
-        super(UGRConfigFileWarningMissingSetting, self).__init__(message=self.message, debug=self.debug)
+        super(UGRConfigFileWarningMissingSetting, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsWarning(UGRBaseWarning):
     """
     Base warning exception subclass for issues deailng when non-critical errors
     are detected when trying to obtain the endpoint's storage stats.
     """
-    def __init__(self, message=None, debug=None):
+    def __init__(self, error="StorageStatsWarning", status_code="000", message=None, debug=None):
         if message is None:
             # Set some default useful error message
-            self.message = '[StorageStatsWarning][000] An unkown error occured reading storage stats'
+            self.message = 'An unkown error occured reading storage stats'
         else:
             self.message = message
         self.debug = debug
-        super(UGRStorageStatsWarning, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsWarning, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
     """
@@ -481,10 +479,9 @@ class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
     StorageStats object class's attribute self.stats['quota']
     """
     def __init__(self, error="NoQuotaGiven", status_code="000", debug=None):
-        self.message = '[%s][%s] No quota obtained from API or configuration file. Using default of 1TB' \
-                       % (error, status_code)
+        self.message = 'No quota obtained from API or configuration file. Using default of 1TB'
         self.debug = debug
-        super(UGRStorageStatsQuotaWarning, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsQuotaWarning, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
     """
@@ -492,10 +489,9 @@ class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
     that now quota has been enabled for the endpoint bucket.
     """
     def __init__(self, error="BucketQuotaDisabled", status_code="000", debug=None):
-        self.message = '[%s][%s] Bucket quota is disabled. Using default of 1TB' \
-                  % (error, status_code)
+        self.message = 'Bucket quota is disabled. Using default of 1TB'
         self.debug = debug
-        super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(message=self.message, debug=self.debug)
+        super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
 #####################
