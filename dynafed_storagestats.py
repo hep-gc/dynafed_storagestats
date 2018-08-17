@@ -881,9 +881,6 @@ class AzureStorageStats(StorageStats):
         Extend or replace any object attributes specific to the type of
         storage endpoint. Below are the most common ones, but add as necessary.
         """
-        ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        ###############################################
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
         super().__init__(*args, **kwargs)
@@ -963,9 +960,6 @@ class S3StorageStats(StorageStats):
         the storage status check can proceed.
         Extend the uri attribute with S3 specific attributes like bucket.
         """
-        ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        ###############################################
         super(S3StorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "S3"
         self.validators.update({
@@ -1267,9 +1261,6 @@ class DAVStorageStats(StorageStats):
         Extend the object's validators unique to the storage type to make sure
         the storage status check can proceed.
         """
-        ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        ###############################################
         super(DAVStorageStats, self).__init__(*args, **kwargs)
         self.storageprotocol = "DAV"
         self.validators.update({
