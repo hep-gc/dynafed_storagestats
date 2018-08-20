@@ -128,10 +128,6 @@ group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout.'
                 )
-# parser.add_option('-v', '--verbose',
-#                   dest='verbose', action='count',
-#                   help='Increase verbosity level for debugging this script (on stderr)'
-#                   )
 group.add_option('-v', '--verbose',
                  dest='verbose', action='store_true', default=False,
                  help='Show on stderr events according to loglevel.'
