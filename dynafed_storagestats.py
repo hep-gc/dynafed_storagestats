@@ -531,7 +531,7 @@ class StorageStats(object):
         self.id, self.stats['quota'], self.stats['bytesused']
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
@@ -553,9 +553,9 @@ class StorageStats(object):
             self.status, #We need to convert list into CSV string.
             ])
 
-        flogger.info("[%s]Uploading stats to memcached server: %s" % (self.id, memcached_srv))
-        flogger.debug("[%s]Using memcached index: %s" % (self.id, memcached_index))
-        flogger.debug("[%s]String uploading to memcached: %s" % (self.id, storagestats))
+        logger.info("[%s]Uploading stats to memcached server: %s" % (self.id, memcached_srv))
+        logger.debug("[%s]Using memcached index: %s" % (self.id, memcached_index))
+        logger.debug("[%s]String uploading to memcached: %s" % (self.id, storagestats))
 
         if mc.set(memcached_index, storagestats) == 0:
             raise UGRMemcachedConnectionError(
@@ -571,7 +571,7 @@ class StorageStats(object):
         with error information for debugging and logging
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
         mc = memcache.Client([memcached_ip + ':' + memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
@@ -584,7 +584,7 @@ class StorageStats(object):
                     )
 
         except UGRMemcachedIndexError as ERR:
-            flogger.error("[%s]%s" % (self.id, ERR.debug))
+            logger.error("[%s]%s" % (self.id, ERR.debug))
             self.debug.append("[ERROR]" + ERR.debug)
             self.status.append("[ERROR]" + ERR.error_code)
             memcached_contents = '%%'.join([
@@ -613,11 +613,11 @@ class StorageStats(object):
         set of default and valid plugin_settings defined under the self.validators dict.
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
-        flogger.info("[%s]Validating configured settings." % (self.id))
+        logger.info("[%s]Validating configured settings." % (self.id))
         for ep_setting in self.validators:
-            flogger.debug("[%s]Validating setting: %s" % (self.id, ep_setting))
+            logger.debug("[%s]Validating setting: %s" % (self.id, ep_setting))
             # First check if the setting has been defined in the config file..
             # If it is missing, check if it is required, and exit if true
             # otherwise set it to the default value and print a warning.
@@ -642,7 +642,7 @@ class StorageStats(object):
                     self.stats['check'] = 'MissingRequiredSetting'
                     self.plugin_settings.update({ep_setting: ''})
 
-                    flogger.error("[%s]%s" % (self.id, ERR.debug))
+                    logger.error("[%s]%s" % (self.id, ERR.debug))
                     self.debug.append("[ERROR]" + ERR.debug)
                     self.status.append("[ERROR]" + ERR.error_code)
 
@@ -650,7 +650,7 @@ class StorageStats(object):
                     # Set the default value for this setting.
                     self.plugin_settings.update({ep_setting: self.validators[ep_setting]['default']})
 
-                    flogger.warning("[%s]%s" % (self.id, WARN.debug))
+                    logger.warning("[%s]%s" % (self.id, WARN.debug))
                     self.debug.append("[WARNING]" + WARN.debug)
                     self.status.append("[WARNING]" + WARN.error_code)
 
@@ -700,9 +700,9 @@ class StorageStats(object):
         Used to validate the URN's schema. SubClasses can have their own.
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
+        logger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
 
     def output_to_stdout(self, options):
         """
@@ -876,7 +876,7 @@ class AzureStorageStats(StorageStats):
         "generic": parses every blob in the account and sums the content-length.
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
 
         if self.plugin_settings['storagestats.api'].lower() == 'generic':
@@ -885,7 +885,7 @@ class AzureStorageStats(StorageStats):
 
             block_blob_service = BlockBlobService(account_name=self.uri['account'], account_key=self.plugin_settings['azure.key'])
             container_name = self.uri['container']
-            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Account: %s Container: %s" % (self.id, self.uri['url'], self.plugin_settings['storagestats.api'].lower(), self.uri['account'], self.uri['container']))
+            logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Account: %s Container: %s" % (self.id, self.uri['url'], self.plugin_settings['storagestats.api'].lower(), self.uri['account'], self.uri['container']))
             try:
                 blobs = block_blob_service.list_blobs(container_name, timeout=10)
             except azure.common.AzureMissingResourceHttpError as ERR:
@@ -978,7 +978,7 @@ class S3StorageStats(StorageStats):
         to obtain the storage status.
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
 
         # Getting the storage Stats CephS3's Admin API
@@ -1000,7 +1000,7 @@ class S3StorageStats(StorageStats):
                 's3',
                 )
 
-            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), payload))
+            logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), payload))
             try:
                 r = requests.request(
                     method="GET",
@@ -1014,7 +1014,7 @@ class S3StorageStats(StorageStats):
                 self.stats['endtime'] = int(time.time())
 
                 #Log contents of response
-                flogger.debug("[%s]Endpoint reply: %s" % (self.id, r.text))
+                logger.debug("[%s]Endpoint reply: %s" % (self.id, r.text))
 
             except requests.exceptions.InvalidSchema as ERR:
                 raise UGRStorageStatsConnectionErrorInvalidSchema(
@@ -1119,7 +1119,7 @@ class S3StorageStats(StorageStats):
             # server 1,000 objects per request. The 'NextMarker' tells where
             # to start the next 1,000. If no 'NextMarker' is received, all
             # objects have been obtained.
-            flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), kwargs))
+            logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), kwargs))
             while True:
                 try:
                     response = connection.list_objects(**kwargs)
@@ -1158,7 +1158,7 @@ class S3StorageStats(StorageStats):
 
                 else:
                     # This outputs a lot of information, migh not be necessary.
-                    flogger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
+                    logger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
                     try:
                         response['Contents']
                     except KeyError:
@@ -1199,18 +1199,18 @@ class S3StorageStats(StorageStats):
         support the former schema.
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
+        logger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
         if self.uri['scheme'] == 's3':
             if self.plugin_settings['ssl_check']:
-                flogger.debug("[%s]Using URN schema: https" % (self.id))
+                logger.debug("[%s]Using URN schema: https" % (self.id))
                 self.uri['scheme'] = 'https'
             else:
-                flogger.debug("[%s]Using URN schema: http" % (self.id))
+                logger.debug("[%s]Using URN schema: http" % (self.id))
                 self.uri['scheme'] = 'http'
         else:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
+            logger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
 
     def output_StAR_xml(self, output_dir="/tmp"):
         """
@@ -1259,7 +1259,7 @@ class DAVStorageStats(StorageStats):
         with Depth: Infinity to scan all files and add the contentlegth.
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
         api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
         if self.plugin_settings['storagestats.api'].lower() == 'generic':
@@ -1270,7 +1270,7 @@ class DAVStorageStats(StorageStats):
             headers = {'Depth': '0',}
             data = create_free_space_request_content()
 
-        flogger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data))
+        logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data))
 
         try:
             response = requests.request(
@@ -1286,7 +1286,7 @@ class DAVStorageStats(StorageStats):
             self.stats['endtime'] = int(time.time())
 
             #Log contents of response
-            flogger.debug("[%s]Endpoint reply: %s" % (self.id, response.text))
+            logger.debug("[%s]Endpoint reply: %s" % (self.id, response.text))
 
         except requests.exceptions.InvalidSchema as ERR:
             raise UGRStorageStatsConnectionErrorInvalidSchema(
@@ -1355,19 +1355,19 @@ class DAVStorageStats(StorageStats):
         support the former schema.
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
         ###############################################
         schema_translator = {
             'dav': 'http',
             'davs': 'https',
         }
 
-        flogger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
+        logger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
         if self.uri['scheme'] in schema_translator:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[self.uri['scheme']]))
+            logger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[self.uri['scheme']]))
             self.uri['scheme'] = schema_translator[self.uri['scheme']]
         else:
-            flogger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
+            logger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
 
 ###############
 ## Functions ##
@@ -1384,13 +1384,13 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     each parent SE key.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
     ###############################################
     endpoints = {}
     global_settings = {}
     os.chdir(config_dir)
     for config_file in sorted(glob.glob("*.conf")):
-        flogger.info("Reading file '%s'" % (os.path.realpath(config_file)))
+        logger.info("Reading file '%s'" % (os.path.realpath(config_file)))
         with open(config_file, "r") as f:
             for line in f:
                 line = line.strip()
@@ -1402,7 +1402,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                         endpoints[_id].update({'id':_id.strip()})
                         endpoints[_id].update({'url':_url.strip()})
                         endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
-                        flogger.info("Found endpoint '%s' using plugin '%s'. Reading configuration." % (endpoints[_id]['id'], endpoints[_id]['plugin']))
+                        logger.info("Found endpoint '%s' using plugin '%s'. Reading configuration." % (endpoints[_id]['id'], endpoints[_id]['plugin']))
 
                     elif "locplugin" in line:
                         key, value = line.partition(":")[::2]
@@ -1412,7 +1412,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                             # Add any global settings to its own key.
                                 _setting = key.split('*'+'.')[-1]
                                 global_settings.update({_setting:value.strip()})
-                                flogger.info("Found global setting '%s': %s." %(key, value))
+                                logger.info("Found global setting '%s': %s." %(key, value))
                             elif _id in key:
                                 _setting = key.split(_id+'.')[-1]
                                 endpoints.setdefault(_id, {})
@@ -1424,7 +1424,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                                     line=line.split(":")[0],
                                     )
                         except UGRConfigFileError as ERR:
-                            flogger.critical("[%s]%s" % (_id, ERR.debug))
+                            logger.critical("[%s]%s" % (_id, ERR.debug))
                             print("[CRITICAL][%s]%s" % (_id, ERR.debug))
                             sys.exit(1)
                             # self.debug.append("[ERROR]" + ERR.debug)
@@ -1439,7 +1439,7 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
         for endpoint in endpoints:
             if setting not in endpoints[endpoint]['plugin_settings']:
                 endpoints[endpoint]['plugin_settings'].update({setting:value})
-                flogger.debug("[%s]Applying global setting '%s': %s" % (endpoints[endpoint]['id'], setting, value))
+                logger.debug("[%s]Applying global setting '%s': %s" % (endpoints[endpoint]['id'], setting, value))
 
     return endpoints
 
@@ -1471,7 +1471,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
     configuration files.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
     ###############################################
     # Setup connection to a memcache instance
     memcached_srv = options.memcached_ip + ':' + options.memcached_port
@@ -1500,7 +1500,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
 
         # Check if we actually got information
     except UGRMemcachedError as ERR:
-        flogger.error("Memcached server %s did not return data. %s" % (memcached_srv, ERR.debug))
+        logger.error("Memcached server %s did not return data. %s" % (memcached_srv, ERR.debug))
     else:
         if isinstance(connection_stats, bytes):
             connection_stats = str(connection_stats, 'utf-8')
@@ -1533,20 +1533,20 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     endpoint configured in UGR's configuration files.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
     ###############################################
     storage_objects = []
-    flogger.info("Looking for storage endpoint configuration files in '%s'" % (config_dir))
+    logger.info("Looking for storage endpoint configuration files in '%s'" % (config_dir))
     endpoints = get_config(config_dir)
     for endpoint in endpoints:
-        flogger.debug("[%s]Requesting object class" % (endpoints[endpoint]['id']))
+        logger.debug("[%s]Requesting object class" % (endpoints[endpoint]['id']))
         try:
             ep = factory(endpoints[endpoint]['plugin'])(endpoints[endpoint])
-            flogger.debug("[%s]Object class returned: %s" % (endpoints[endpoint]['id'], type(ep)))
-            flogger.debug("[%s]Object.plugin: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin']))
-            flogger.debug("[%s]Object.plugin_settings: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin_settings']))
+            logger.debug("[%s]Object class returned: %s" % (endpoints[endpoint]['id'], type(ep)))
+            logger.debug("[%s]Object.plugin: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin']))
+            logger.debug("[%s]Object.plugin_settings: %s" % (endpoints[endpoint]['id'], endpoints[endpoint]['plugin_settings']))
         except UGRUnsupportedPluginError as ERR:
-            flogger.error("[%s]%s" % (endpoints[endpoint]['id'], ERR.debug))
+            logger.error("[%s]%s" % (endpoints[endpoint]['id'], ERR.debug))
             ep = StorageStats(endpoints[endpoint])
             ep.debug.append("[ERROR]" + ERR.debug)
             ep.status.append("[ERROR]" + ERR.error_code)
@@ -1740,16 +1740,16 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
     ## To capture warnings emitted by modules.
     logging.captureWarnings(True)
     ## create file logger
-    flogger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
     num_loglevel = getattr(logging, loglevel.upper())
-    flogger.setLevel(num_loglevel)
+    logger.setLevel(num_loglevel)
     # Set file logger format
     log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
     # Create file handler and set level from cli or default to settings.log
     log_handler_file = logging.FileHandler(logfile, mode='a')
     log_handler_file.setFormatter(log_format_file)
     # Add handler
-    flogger.addHandler(log_handler_file)
+    logger.addHandler(log_handler_file)
 
     # Create STDERR hanler if verbose is requested.
     if verbose:
@@ -1758,9 +1758,9 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
         log_handler_stderr.setLevel(num_loglevel)
         log_handler_stderr.setFormatter(log_format_stderr)
         # Add handler
-        flogger.addHandler(log_handler_stderr)
+        logger.addHandler(log_handler_stderr)
 
-    return flogger
+    return logger
 
 def get_storagestats(endpoint):
     """
@@ -1769,31 +1769,31 @@ def get_storagestats(endpoint):
     in obtaining the statas.
     """
     ############# Creating loggers ################
-    flogger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
     ###############################################
     try:
         if endpoint.stats['check'] is True:
-            flogger.info("[%s] Contacting endpoint." % (endpoint.id))
+            logger.info("[%s] Contacting endpoint." % (endpoint.id))
             endpoint.get_storagestats()
         elif endpoint.stats['check'] is "EndpointOffline":
-            flogger.error("[%s][%s] Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
+            logger.error("[%s][%s] Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
             raise UGRStorageStatsOfflineEndpointError(
                 status_code="400",
                 error="EndpointOffline"
             )
         else:
-            flogger.error("[%s][%s] Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
+            logger.error("[%s][%s] Bypassing stats check." % (endpoint.id, endpoint.stats['check']))
 
     except UGRStorageStatsOfflineEndpointError as ERR:
-        flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+        logger.error("[%s]%s" % (endpoint.id, ERR.debug))
         endpoint.debug.append("[ERROR]" + ERR.debug)
         endpoint.status.append("[ERROR]" + ERR.error_code)
     except UGRStorageStatsWarning as WARN:
-        flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
+        logger.warning("[%s]%s" % (endpoint.id, WARN.debug))
         endpoint.debug.append("[WARNING]" + WARN.debug)
         endpoint.status.append("[WARNING]" + WARN.error_code)
     except UGRStorageStatsError as ERR:
-        flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+        logger.error("[%s]%s" % (endpoint.id, ERR.debug))
         endpoint.debug.append("[ERROR]" + ERR.debug)
         endpoint.status.append("[ERROR]" + ERR.error_code)
 
@@ -1811,7 +1811,7 @@ def get_storagestats(endpoint):
 if __name__ == '__main__':
 
     # Setup loggers
-    flogger = setup_logger(
+    logger = setup_logger(
         logfile=options.logfile,
         loglevel=options.loglevel,
         verbose=options.verbose,
@@ -1834,7 +1834,7 @@ if __name__ == '__main__':
             try:
                 endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
             except UGRMemcachedConnectionError as ERR:
-                flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
+                logger.error("[%s]%s" % (endpoint.id, ERR.debug))
                 endpoint.debug.append("[ERROR]" + ERR.debug)
                 endpoint.status.append("[ERROR]" + ERR.error_code)
 
