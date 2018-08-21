@@ -1157,7 +1157,7 @@ class S3StorageStats(StorageStats):
                         )
 
                 else:
-                    # This produces a lot of information, migh not be necessary.
+                    # This outputs a lot of information, migh not be necessary.
                     flogger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
                     try:
                         response['Contents']
@@ -1165,8 +1165,8 @@ class S3StorageStats(StorageStats):
                         self.stats['bytesused'] = '0'
                         break
                     else:
-                        for content in response['Contents']:
-                            total_bytes += content['Size']
+                        for _file in response['Contents']:
+                            total_bytes += _file['Size']
                             total_files += 1
 
                     try:
