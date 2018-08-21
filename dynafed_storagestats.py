@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.9.3"
+__version__ = "v0.9.4"
 
 import os
 import sys
@@ -128,10 +128,6 @@ group.add_option('--stdout',
                  dest='output_stdout', action='store_true', default=False,
                  help='Set to output stats on stdout.'
                 )
-# parser.add_option('-v', '--verbose',
-#                   dest='verbose', action='count',
-#                   help='Increase verbosity level for debugging this script (on stderr)'
-#                   )
 group.add_option('-v', '--verbose',
                  dest='verbose', action='store_true', default=False,
                  help='Show on stderr events according to loglevel.'
@@ -165,12 +161,12 @@ class UGRBaseException(Exception):
     Base exception class for dynafed_storagestats module.
     """
     def __init__(self, error="ERROR", status_code="000", message=None, debug=None):
-        self.error_code = "[%s][%s] " %(error, status_code)
+        self.error_code = "[%s][%s]" %(error, status_code)
         if message is None:
             # Set some default useful error message
-            self.message = self.error_code + "An unkown exception occured processing"
+            self.message = self.error_code + ' ' + "An unkown exception occured processing"
         else:
-            self.message = self.error_code + message
+            self.message = self.error_code + ' ' + message
         if debug is None:
             self.debug = self.message
         else:
@@ -504,7 +500,7 @@ class StorageStats(object):
             }
 
         self.debug = []
-        self.status = '[OK][OK][200]'
+        self.status = []
 
         self.validators = {
             'storagestats.quota': {
@@ -540,6 +536,13 @@ class StorageStats(object):
         memcached_srv = memcached_ip + ':' + memcached_port
         mc = memcache.Client([memcached_srv])
         memcached_index = "Ugrstoragestats_" + self.id
+
+        # If self.status is empty, then everything is "OK", elset turn list
+        # into string
+        if len(self.status) is 0:
+            self.status = '[OK][OK][200]'
+
+        # Create join stats to create string to upload.
         storagestats = '%%'.join([
             self.id,
             self.storageprotocol,
@@ -547,8 +550,9 @@ class StorageStats(object):
             str(self.stats['quota']),
             str(self.stats['bytesused']),
             str(self.stats['bytesfree']),
-            self.status,
+            self.status, #We need to convert list into CSV string.
             ])
+
         flogger.info("[%s]Uploading stats to memcached server: %s" % (self.id, memcached_srv))
         flogger.debug("[%s]Using memcached index: %s" % (self.id, memcached_index))
         flogger.debug("[%s]String uploading to memcached: %s" % (self.id, storagestats))
@@ -582,7 +586,7 @@ class StorageStats(object):
         except UGRMemcachedIndexError as ERR:
             flogger.error("[%s]%s" % (self.id, ERR.debug))
             self.debug.append("[ERROR]" + ERR.debug)
-            self.status = "[ERROR]" + ERR.error_code
+            self.status.append("[ERROR]" + ERR.error_code)
             memcached_contents = '%%'.join([
                 self.id,
                 self.storageprotocol,
@@ -640,6 +644,7 @@ class StorageStats(object):
 
                     flogger.error("[%s]%s" % (self.id, ERR.debug))
                     self.debug.append("[ERROR]" + ERR.debug)
+                    self.status.append("[ERROR]" + ERR.error_code)
 
                 except UGRConfigFileWarningMissingSetting as WARN:
                     # Set the default value for this setting.
@@ -647,6 +652,7 @@ class StorageStats(object):
 
                     flogger.warning("[%s]%s" % (self.id, WARN.debug))
                     self.debug.append("[WARNING]" + WARN.debug)
+                    self.status.append("[WARNING]" + WARN.error_code)
 
             # If the ep_setting has been defined, check against a list of valid
             # plugin_settings (if defined, otherwise contiune). Also transform to boolean
@@ -720,7 +726,8 @@ class StorageStats(object):
               '\n{0:12}{1}'.format('FileCount:', self.stats['filecount']), \
               '\n{0:12}{1}'.format('Status:', self.status), \
               )
-        print('\n{0:12}{1}'.format('Memcached:', memcached_index), \
+        print('\nMemcached:', \
+              '\n{0:12}{1}'.format('Index:', memcached_index), \
               '\n{0:12}{1}'.format('Contents:', memcached_contents), \
              )
         if options.debug:
@@ -1150,7 +1157,7 @@ class S3StorageStats(StorageStats):
                         )
 
                 else:
-                    # This produces a lot of information, migh not be necessary.
+                    # This outputs a lot of information, migh not be necessary.
                     flogger.debug("[%s]Endpoint reply: %s" % (self.id, response['Contents']))
                     try:
                         response['Contents']
@@ -1158,8 +1165,8 @@ class S3StorageStats(StorageStats):
                         self.stats['bytesused'] = '0'
                         break
                     else:
-                        for content in response['Contents']:
-                            total_bytes += content['Size']
+                        for _file in response['Contents']:
+                            total_bytes += _file['Size']
                             total_files += 1
 
                     try:
@@ -1542,7 +1549,7 @@ def get_endpoints(config_dir="/etc/ugr/conf.d/"):
             flogger.error("[%s]%s" % (endpoints[endpoint]['id'], ERR.debug))
             ep = StorageStats(endpoints[endpoint])
             ep.debug.append("[ERROR]" + ERR.debug)
-            ep.status = "[ERROR]" + ERR.error_code
+            ep.status.append("[ERROR]" + ERR.error_code)
 
         storage_objects.append(ep)
 
@@ -1780,15 +1787,21 @@ def get_storagestats(endpoint):
     except UGRStorageStatsOfflineEndpointError as ERR:
         flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
         endpoint.debug.append("[ERROR]" + ERR.debug)
-        endpoint.status = "[ERROR]" + ERR.error_code
+        endpoint.status.append("[ERROR]" + ERR.error_code)
     except UGRStorageStatsWarning as WARN:
         flogger.warning("[%s]%s" % (endpoint.id, WARN.debug))
         endpoint.debug.append("[WARNING]" + WARN.debug)
-        endpoint.status = "[WARNING]" + WARN.error_code
+        endpoint.status.append("[WARNING]" + WARN.error_code)
     except UGRStorageStatsError as ERR:
         flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
         endpoint.debug.append("[ERROR]" + ERR.debug)
-        endpoint.status = "[ERROR]" + ERR.error_code
+        endpoint.status.append("[ERROR]" + ERR.error_code)
+
+    finally:
+        if len(endpoint.status) is 0:
+            endpoint.status = '[OK][OK][200]'
+        else:
+            endpoint.status = ','.join(endpoint.status)
 
 
 #############
@@ -1823,7 +1836,7 @@ if __name__ == '__main__':
             except UGRMemcachedConnectionError as ERR:
                 flogger.error("[%s]%s" % (endpoint.id, ERR.debug))
                 endpoint.debug.append("[ERROR]" + ERR.debug)
-                endpoint.status = "[ERROR]" + ERR.error_code
+                endpoint.status.append("[ERROR]" + ERR.error_code)
 
         # Print Storagestats to the standard output.
         if options.output_stdout:

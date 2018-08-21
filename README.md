@@ -21,7 +21,7 @@ Python Modules:
 - azure-storage >= 0.36.0 (pip3 install azure-storage)
 - boto3 >= 1.6.1 (CentOS 7.5 does not have python3 repo modules, use pip3 install boto3)
 - lxml >= 4.2.1   (CentOS 7.5 does not have python3 repo modules, use pip3 install lxml)
-- python-memcache >= 1.59
+- python-memcached >= 1.59
 - requests >= 2.12.5
 - requests_aws4auth >= 0.9 (pip3 install requests-aws4auth)
 
