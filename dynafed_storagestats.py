@@ -1337,7 +1337,7 @@ class DAVStorageStats(StorageStats):
                     if self.plugin_settings['storagestats.quota'] == 'api':
                         # If quota-available-bytes is reported as '0' is because no quota is
                         # provided, so we use the one from the config file or default.
-                        if self.stats['bytesfree'] != 0:
+                        if self.stats['bytesfree'] is not 0:
                             self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
                     else:
                         self.stats['quota'] = self.plugin_settings['storagestats.quota']
