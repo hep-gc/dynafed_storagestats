@@ -14,7 +14,7 @@ Prerequisites:
 """
 from __future__ import print_function
 
-__version__ = "v0.9.4"
+__version__ = "v0.9.5"
 
 import os
 import sys
@@ -458,6 +458,17 @@ class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
         self.debug = debug
         super(UGRStorageStatsCephS3QuotaDisabledWarning, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
+class UGRStorageStatsDAVZeroQuotaWarning(UGRStorageStatsWarning):
+    """
+    Exception warning when a DAV based endpoint utilizing RFC4331 returns
+    quota-available-bytes as 0. It well could mean there is no more space
+    in the endpoint, or, more likely, the quota is not properly configured.
+    We raise a warning to let the operator know.
+    """
+    def __init__(self, error="ZeroAvailableBytes", status_code="000", debug=None):
+        self.message = 'RFC4331 reports quota-available-bytes as "0". While the endpoint could be full, this could also indicate an issue with the backend configuration or lack of support returning this information. If necessary input a quota manually in the configuration file.'
+        self.debug = debug
+        super(UGRStorageStatsDAVZeroQuotaWarning, self).__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 #####################
 ## Storage Classes ##
@@ -1335,10 +1346,17 @@ class DAVStorageStats(StorageStats):
 
                     # Determine which value to use for the quota.
                     if self.plugin_settings['storagestats.quota'] == 'api':
-                        # If quota-available-bytes is reported as '0' is because no quota is
-                        # provided, so we use the one from the config file or default.
-                        if self.stats['bytesfree'] is not 0:
-                            self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                        self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                        # If quota-available-bytes is reported as '0' could be
+                        # because no quota is provided, or the endpoint is
+                        # actually full. We warn for the operator to make a
+                        # decision.
+                        if self.stats['bytesfree'] is 0:
+                            raise UGRStorageStatsDAVZeroQuotaWarning(
+                            error='ZeroAvailableBytes',
+                            debug=str(response.content)
+                            )
+
                     else:
                         self.stats['quota'] = self.plugin_settings['storagestats.quota']
 
