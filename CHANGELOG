@@ -101,3 +101,7 @@ v0.9.3 Revamped the exception handling and loggers in order to remove the
        the user should either check the logfile or manually run with verbose.
 v0.9.4 Updated where in the logic the endpoints' status attribute is given an
        "OK". Also now the memcached index holds multiple errors in a CSV format.
+v0.9.5 Added an exception handling when for DAV's RFC4331 obtains zero free
+       bytes. While this might be a legitimate empty endpoint, it could also
+       be a system that is not configured properly or lacks the ability to
+       report this information in which case a manual quota should be input.
