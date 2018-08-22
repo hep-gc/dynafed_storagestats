@@ -1859,7 +1859,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
 
     return logger
 
-def get_storagestats(endpoint):
+def process_storagestats(endpoint):
     """
     Runs get_storagestats() method for the endpoint passed as argument if
     it has not been flagged as offline. It handles the exceptions to failures
@@ -1928,7 +1928,7 @@ if __name__ == '__main__':
     # Process each endpoint using multithreading.
     # Number of threads to use.
     pool = ThreadPool(len(endpoints))
-    pool.map(get_storagestats, endpoints)
+    pool.map(process_storagestats, endpoints)
 
     for endpoint in endpoints:
         # Upload Storagestats into memcached.
@@ -1939,7 +1939,6 @@ if __name__ == '__main__':
             except UGRMemcachedConnectionError as ERR:
                 logger.error("[%s]%s" % (endpoint.id, ERR.debug))
                 endpoint.debug.append("[ERROR]" + ERR.debug)
-                endpoint.status.append("[ERROR]" + ERR.error_code)
 
         # Print Storagestats to the standard output.
         if options.output_stdout:
