@@ -850,7 +850,6 @@ class StorageStats(object):
         return xmlroot
 
 
-
 class AzureStorageStats(StorageStats):
     """
     Define the type of storage endpoint this subclass will interface with
@@ -929,6 +928,243 @@ class AzureStorageStats(StorageStats):
                 self.stats['bytesfree'] = self.stats['quota'] - total_bytes
                 # Not required, but is useful for reporting/accounting:
                 self.stats['filecount'] = total_files
+
+
+class DAVStorageStats(StorageStats):
+    """
+    Subclass that defines methods for obtaining storage stats of S3 endpoints.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Extend the object's validators unique to the storage type to make sure
+        the storage status check can proceed.
+        """
+        super(DAVStorageStats, self).__init__(*args, **kwargs)
+        self.storageprotocol = "DAV"
+        self.validators.update({
+            'cli_certificate': {
+                'required': True,
+            },
+            'cli_private_key': {
+                'required': True,
+            },
+            'storagestats.api': {
+                'default': 'rfc4331',
+                'required': False,
+                'valid': ['generic', 'rfc4331'],
+            },
+        })
+
+        # Invoke the validate_plugin_settings() method
+        self.validate_plugin_settings()
+
+        # Invoke the validate_schema() method
+        self.validate_schema()
+
+    def get_storagestats(self):
+        """
+        Connect to the storage endpoint and will try WebDAV's quota and bytesfree
+        method as defined by RFC 4331 if "api" setting is selected. Or use PROPFIND
+        with Depth: Infinity to scan all files and add the contentlegth.
+        """
+        ############# Creating loggers ################
+        logger = logging.getLogger(__name__)
+        ###############################################
+        api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
+        if self.plugin_settings['storagestats.api'].lower() == 'generic':
+            headers = {'Depth': 'infinity',}
+            data = ''
+
+        elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
+            headers = {'Depth': '0',}
+            data = create_free_space_request_content()
+
+        logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data))
+
+        try:
+            response = requests.request(
+                method="PROPFIND",
+                url=api_url,
+                cert=(self.plugin_settings['cli_certificate'], self.plugin_settings['cli_private_key']),
+                headers=headers,
+                verify=self.plugin_settings['ssl_check'],
+                data=data,
+                timeout=5
+            )
+            # Save time when data was obtained.
+            self.stats['endtime'] = int(time.time())
+
+            #Log contents of response
+            logger.debug("[%s]Endpoint reply: %s" % (self.id, response.text))
+
+        except requests.exceptions.InvalidSchema as ERR:
+            raise UGRStorageStatsConnectionErrorInvalidSchema(
+                error='InvalidSchema',
+                status_code="000",
+                schema=self.uri['scheme'],
+                debug=str(ERR),
+                )
+        except requests.ConnectionError as ERR:
+            raise UGRStorageStatsConnectionError(
+                error=ERR.__class__.__name__,
+                status_code="000",
+                debug=str(ERR),
+                )
+        except IOError as ERR:
+            #We do some regex magic to get the filepath
+            certfile = str(ERR).split(":")[-1]
+            certfile = certfile.replace(' ', '')
+            raise UGRStorageStatsConnectionErrorDAVCertPath(
+                error="ClientCertError",
+                status_code="000",
+                certfile=certfile,
+                debug=str(ERR),
+                )
+
+        else:
+            # Check that we did not get an erorr code:
+            if response.status_code < 400:
+                if self.plugin_settings['storagestats.api'].lower() == 'generic':
+                    self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
+                    self.stats['quota'] = self.plugin_settings['storagestats.quota']
+                    self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+                elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
+                    tree = etree.fromstring(response.content)
+                    node = tree.find('.//{DAV:}quota-available-bytes').text
+                    # Check that we got the requested information. If not, then
+                    # the method is not supported by the endpoint.
+                    if node is None:
+                        raise UGRStorageStatsErrorDAVQuotaMethod(
+                            error="UnsupportedMethod"
+                            )
+                    # Assign the values returned by the endpoint.
+                    self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
+                    self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
+
+                    # Determine which value to use for the quota.
+                    if self.plugin_settings['storagestats.quota'] == 'api':
+                        self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                        # If quota-available-bytes is reported as '0' could be
+                        # because no quota is provided, or the endpoint is
+                        # actually full. We warn for the operator to make a
+                        # decision.
+                        if self.stats['bytesfree'] is 0:
+                            raise UGRStorageStatsDAVZeroQuotaWarning(
+                            error='ZeroAvailableBytes',
+                            debug=str(response.content)
+                            )
+
+                    else:
+                        self.stats['quota'] = self.plugin_settings['storagestats.quota']
+
+            else:
+                raise UGRStorageStatsConnectionError(
+                    error='ConnectionError',
+                    status_code=response.status_code,
+                    debug=response.text,
+                )
+
+    def validate_schema(self):
+        """
+        Used to translate dav/davs into http/https since requests doesn't
+        support the former schema.
+        """
+        ############# Creating loggers ################
+        logger = logging.getLogger(__name__)
+        ###############################################
+        schema_translator = {
+            'dav': 'http',
+            'davs': 'https',
+        }
+
+        logger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
+        if self.uri['scheme'] in schema_translator:
+            logger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[self.uri['scheme']]))
+            self.uri['scheme'] = schema_translator[self.uri['scheme']]
+        else:
+            logger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
+
+
+class GCSStorageStats (StorageStats):
+    """
+    Subclass that defines methods for obtaining storage stats of Google Cloud
+    Storage endpoints.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Extend or replace any object attributes specific to the type of
+        storage endpoint. Below are the most common ones, but add as necessary.
+        """
+        ############# Creating loggers ################
+        logger = logging.getLogger(__name__)
+        ###############################################
+        # First we call the super function to initialize the initial atributes
+        # given by the StorageStats class.
+        super().__init__(*args, **kwargs)
+
+        # Update the name of the storage protocol. e.g: S3, Azure, DAV.
+        self.storageprotocol = "Protocol"
+
+        # Add any validators specific to the storage type so the script can
+        # check that all the necessary settings are in place in the endpoints.conf
+        # files. Define any required, valid and/or default settings here using
+        # to following format. Note that the only required key is "required".
+        self.validators.update({
+            'setting.name': {
+                'default': '', # Default value to use if setting is missing.
+                'required': True/False, # Wheter this setting must be present.
+                'valid': ['', ''], # List of valid values to validate against.
+            },
+        })
+
+        # Invoke the validate_plugin_settings() method
+        self.validate_plugin_settings()
+
+        # Invoke the validate_schema() method
+        self.validate_schema()
+
+        # Add any other attributes needed for this subclass.
+
+        def get_storagestats(self):
+            """
+            Here goes all the necessary logic to query the storage endpoint
+            to obtain the storage stats. Check existing SubClasses for examples.
+            Ideally we need to assing values to the following attributes, either
+            obtained from the endpoint, from the endpoints.conf file or defaults
+            """
+            ############# Creating loggers ################
+            logger = logging.getLogger(__name__)
+            ###############################################
+            self.stats['bytesfree'] = 0
+            self.stats['bytesused'] = 0
+            self.stats['quota'] = 0
+            # Not required, but is useful for reporting/accounting:
+            self.stats['filecount'] = 0
+
+        def validate_schema(self, scheme):
+            """
+            This might not be necessary, but if the protocol uses a unique
+            protocol schema in the URN that requires some logic to figure out.
+            Example below if for the DAVStorageStats.
+            """
+            ############# Creating loggers ################
+            logger = logging.getLogger(__name__)
+            ###############################################
+
+            schema_translator = {
+                'dav': 'http',
+                'davs': 'https',
+            }
+
+            logger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
+            if scheme in schema_translator:
+                logger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[scheme]))
+                return schema_translator[scheme]
+            else:
+                logger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
+                return scheme
+
 
 class S3StorageStats(StorageStats):
     """
@@ -1231,161 +1467,6 @@ class S3StorageStats(StorageStats):
 
         super(S3StorageStats, self).output_StAR_xml()
 
-
-class DAVStorageStats(StorageStats):
-    """
-    Subclass that defines methods for obtaining storage stats of S3 endpoints.
-    """
-    def __init__(self, *args, **kwargs):
-        """
-        Extend the object's validators unique to the storage type to make sure
-        the storage status check can proceed.
-        """
-        super(DAVStorageStats, self).__init__(*args, **kwargs)
-        self.storageprotocol = "DAV"
-        self.validators.update({
-            'cli_certificate': {
-                'required': True,
-            },
-            'cli_private_key': {
-                'required': True,
-            },
-            'storagestats.api': {
-                'default': 'rfc4331',
-                'required': False,
-                'valid': ['generic', 'rfc4331'],
-            },
-        })
-
-        # Invoke the validate_plugin_settings() method
-        self.validate_plugin_settings()
-
-        # Invoke the validate_schema() method
-        self.validate_schema()
-
-    def get_storagestats(self):
-        """
-        Connect to the storage endpoint and will try WebDAV's quota and bytesfree
-        method as defined by RFC 4331 if "api" setting is selected. Or use PROPFIND
-        with Depth: Infinity to scan all files and add the contentlegth.
-        """
-        ############# Creating loggers ################
-        logger = logging.getLogger(__name__)
-        ###############################################
-        api_url = '{scheme}://{netloc}{path}'.format(scheme=self.uri['scheme'], netloc=self.uri['netloc'], path=self.uri['path'])
-        if self.plugin_settings['storagestats.api'].lower() == 'generic':
-            headers = {'Depth': 'infinity',}
-            data = ''
-
-        elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
-            headers = {'Depth': '0',}
-            data = create_free_space_request_content()
-
-        logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s" % (self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data))
-
-        try:
-            response = requests.request(
-                method="PROPFIND",
-                url=api_url,
-                cert=(self.plugin_settings['cli_certificate'], self.plugin_settings['cli_private_key']),
-                headers=headers,
-                verify=self.plugin_settings['ssl_check'],
-                data=data,
-                timeout=5
-            )
-            # Save time when data was obtained.
-            self.stats['endtime'] = int(time.time())
-
-            #Log contents of response
-            logger.debug("[%s]Endpoint reply: %s" % (self.id, response.text))
-
-        except requests.exceptions.InvalidSchema as ERR:
-            raise UGRStorageStatsConnectionErrorInvalidSchema(
-                error='InvalidSchema',
-                status_code="000",
-                schema=self.uri['scheme'],
-                debug=str(ERR),
-                )
-        except requests.ConnectionError as ERR:
-            raise UGRStorageStatsConnectionError(
-                error=ERR.__class__.__name__,
-                status_code="000",
-                debug=str(ERR),
-                )
-        except IOError as ERR:
-            #We do some regex magic to get the filepath
-            certfile = str(ERR).split(":")[-1]
-            certfile = certfile.replace(' ', '')
-            raise UGRStorageStatsConnectionErrorDAVCertPath(
-                error="ClientCertError",
-                status_code="000",
-                certfile=certfile,
-                debug=str(ERR),
-                )
-
-        else:
-            # Check that we did not get an erorr code:
-            if response.status_code < 400:
-                if self.plugin_settings['storagestats.api'].lower() == 'generic':
-                    self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
-                    self.stats['quota'] = self.plugin_settings['storagestats.quota']
-                    self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-
-                elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
-                    tree = etree.fromstring(response.content)
-                    node = tree.find('.//{DAV:}quota-available-bytes').text
-                    # Check that we got the requested information. If not, then
-                    # the method is not supported by the endpoint.
-                    if node is None:
-                        raise UGRStorageStatsErrorDAVQuotaMethod(
-                            error="UnsupportedMethod"
-                            )
-                    # Assign the values returned by the endpoint.
-                    self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
-                    self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-
-                    # Determine which value to use for the quota.
-                    if self.plugin_settings['storagestats.quota'] == 'api':
-                        self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
-                        # If quota-available-bytes is reported as '0' could be
-                        # because no quota is provided, or the endpoint is
-                        # actually full. We warn for the operator to make a
-                        # decision.
-                        if self.stats['bytesfree'] is 0:
-                            raise UGRStorageStatsDAVZeroQuotaWarning(
-                            error='ZeroAvailableBytes',
-                            debug=str(response.content)
-                            )
-
-                    else:
-                        self.stats['quota'] = self.plugin_settings['storagestats.quota']
-
-            else:
-                raise UGRStorageStatsConnectionError(
-                    error='ConnectionError',
-                    status_code=response.status_code,
-                    debug=response.text,
-                )
-
-    def validate_schema(self):
-        """
-        Used to translate dav/davs into http/https since requests doesn't
-        support the former schema.
-        """
-        ############# Creating loggers ################
-        logger = logging.getLogger(__name__)
-        ###############################################
-        schema_translator = {
-            'dav': 'http',
-            'davs': 'https',
-        }
-
-        logger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
-        if self.uri['scheme'] in schema_translator:
-            logger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[self.uri['scheme']]))
-            self.uri['scheme'] = schema_translator[self.uri['scheme']]
-        else:
-            logger.debug("[%s]Using URN schema: %s" % (self.id, self.uri['scheme']))
 
 ###############
 ## Functions ##
