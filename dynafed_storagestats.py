@@ -652,9 +652,7 @@ class StorageStats(object):
     def get_from_memcached(self, memcached_ip='127.0.0.1', memcached_port='11211'):
         """
         Connects to a memcached instance and tries to obtain the storage stats
-        from the index belonging to the endpoint making the call. If no index
-        is found, the stats are created in the same style as upload_to_memcached
-        with error information for debugging and logging
+        from the index belonging to the endpoint making the call.
         """
         ############# Creating loggers ################
         logger = logging.getLogger(__name__)
@@ -670,18 +668,10 @@ class StorageStats(object):
                     )
 
         except UGRMemcachedIndexError as ERR:
-            logger.error("[%s]%s" % (self.id, ERR.debug))
+            # logger.error("[%s]%s" % (self.id, ERR.debug))
             self.debug.append("[ERROR]" + ERR.debug)
-            self.status.append("[ERROR]" + ERR.error_code)
-            memcached_contents = '%%'.join([
-                self.id,
-                self.storageprotocol,
-                str(self.stats['starttime']),
-                str(self.stats['quota']),
-                str(self.stats['bytesused']),
-                str(self.stats['bytesfree']),
-                self.status,
-                ])
+            # self.status.append("[ERROR]" + ERR.error_code)
+
         finally:
             return memcached_contents
 
@@ -1859,10 +1849,11 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
 
     return logger
 
-def process_storagestats(endpoint):
+def process_storagestats(endpoint, options):
     """
     Runs get_storagestats() method for the endpoint passed as argument if
-    it has not been flagged as offline. It handles the exceptions to failures
+    it has not been flagged as offline and if requested it will try to
+    upload the stats to memcached. It handles the exceptions to failures
     in obtaining the stats.
     """
     ############# Creating loggers ################
@@ -1905,6 +1896,15 @@ def process_storagestats(endpoint):
         else:
             endpoint.status = ','.join(endpoint.status)
 
+        # Try to upload stats to memcached.
+        if options.output_memcached:
+            try:
+                endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
+
+            except UGRMemcachedConnectionError as ERR:
+                logger.error("[%s]%s" % (endpoint.id, ERR.debug))
+                endpoint.debug.append("[ERROR]" + ERR.debug)
+
 
 #############
 # Self-Test #
@@ -1925,23 +1925,18 @@ if __name__ == '__main__':
     # Flag endpoints that have been detected offline by Dynafed.
     get_connectionstats(endpoints)
 
-    # Process each endpoint using multithreading.
+    # This tuple is necessary for the starmap function to send multiple
+    # arguments to the process_storagestats function.
+    endpoints_tuple = [(endpoint, options) for endpoint in endpoints]
+
+    # Process each endpoint using multithreading and upload stats to memcached.
     # Number of threads to use.
     pool = ThreadPool(len(endpoints))
-    pool.map(process_storagestats, endpoints)
+    pool.starmap(process_storagestats, endpoints_tuple)
 
-    for endpoint in endpoints:
-        # Upload Storagestats into memcached.
-        if options.output_memcached:
-            try:
-                endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
-
-            except UGRMemcachedConnectionError as ERR:
-                logger.error("[%s]%s" % (endpoint.id, ERR.debug))
-                endpoint.debug.append("[ERROR]" + ERR.debug)
-
-        # Print Storagestats to the standard output.
-        if options.output_stdout:
+    # Print Storagestats to the standard output.
+    if options.output_stdout:
+        for endpoint in endpoints:
             endpoint.output_to_stdout(options)
 
     # Create StAR Storagestats XML files for each endpoint.
