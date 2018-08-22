@@ -16,9 +16,7 @@ class NewTypeStorageStats (StorageStats):
         storage endpoint. Below are the most common ones, but add as necessary.
         """
         ############# Creating loggers ################
-        flogger = logging.getLogger(__name__)
-        mlogger = logging.getLogger('memcached_logger')
-        #memcached_logline = TailLogger(1)
+        logger = logging.getLogger(__name__)
         ###############################################
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
@@ -40,14 +38,7 @@ class NewTypeStorageStats (StorageStats):
         })
 
         # Invoke the validate_plugin_settings() method
-        try:
-            self.validate_plugin_settings()
-        except UGRConfigFileError as ERR:
-            flogger.error("[%s]%s" % (self.id, ERR.debug))
-            mlogger.error("%s" % (ERR.message))
-            print(ERR.debug)
-            self.debug.append(ERR.debug)
-            self.status = memcached_logline.contents()
+        self.validate_plugin_settings()
 
         # Invoke the validate_schema() method
         self.validate_schema()
@@ -62,8 +53,7 @@ class NewTypeStorageStats (StorageStats):
             obtained from the endpoint, from the endpoints.conf file or defaults
             """
             ############# Creating loggers ################
-            flogger = logging.getLogger(__name__)
-            mlogger = logging.getLogger('memcached_logger')
+            logger = logging.getLogger(__name__)
             ###############################################
             self.stats['bytesfree'] = 0
             self.stats['bytesused'] = 0
@@ -78,8 +68,7 @@ class NewTypeStorageStats (StorageStats):
             Example below if for the DAVStorageStats.
             """
             ############# Creating loggers ################
-            flogger = logging.getLogger(__name__)
-            mlogger = logging.getLogger('memcached_logger')
+            logger = logging.getLogger(__name__)
             ###############################################
 
             schema_translator = {
@@ -87,10 +76,10 @@ class NewTypeStorageStats (StorageStats):
                 'davs': 'https',
             }
 
-            flogger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
+            logger.debug("[%s]Validating URN schema: %s" % (self.id, scheme))
             if scheme in schema_translator:
-                flogger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[scheme]))
+                logger.debug("[%s]Using URN schema: %s" % (self.id, schema_translator[scheme]))
                 return schema_translator[scheme]
             else:
-                flogger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
+                logger.debug("[%s]Using URN schema: %s" % (self.id, scheme))
                 return scheme
