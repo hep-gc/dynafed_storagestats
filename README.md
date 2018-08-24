@@ -9,12 +9,12 @@ Tested with Python >= 3.4.8
 Might work with >= 2.7.5 but is not actively tested.
 
 So far it supports has been tested with:
-Azure Storage Blob
-AWS S3
-Ceph S3
-Minio S3
-DPM via WebDAV
-dCache via WebDAV
+- Azure Storage Blob
+- AWS S3
+- Ceph S3
+- Minio S3
+- DPM via WebDAV
+- dCache via WebDAV
 
 ## Prerequisites (older versions might work, but these are the oldest one that have been tested):
 Python Modules:
