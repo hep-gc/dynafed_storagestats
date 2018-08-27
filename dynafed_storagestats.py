@@ -37,7 +37,7 @@ else:
     from urllib.parse import urlsplit
 
 try:
-    from azure.storage.blob import BlockBlobService, PublicAccess
+    from azure.storage.blob.baseblobservice import BaseBlobService
 except ImportError:
     print('ImportError: Please install "azure-storage" modules')
     sys.exit(1)
@@ -933,6 +933,11 @@ class AzureStorageStats(StorageStats):
             'azure.key': {
                 'required': True,
             },
+            'storagestats.api': {
+                'default': 'generic',
+                'required': False,
+                'valid': ['generic', 'metrics'],
+            },
         })
 
         # Invoke the validate_plugin_settings() method
@@ -958,11 +963,11 @@ class AzureStorageStats(StorageStats):
             total_bytes = 0
             total_files = 0
 
-            block_blob_service = BlockBlobService(account_name=self.uri['account'], account_key=self.plugin_settings['azure.key'])
+            base_blob_service = BaseBlobService(account_name=self.uri['account'], account_key=self.plugin_settings['azure.key'])
             container_name = self.uri['container']
             logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Account: %s Container: %s" % (self.id, self.uri['url'], self.plugin_settings['storagestats.api'].lower(), self.uri['account'], self.uri['container']))
             try:
-                blobs = block_blob_service.list_blobs(container_name, timeout=10)
+                blobs = base_blob_service.list_blobs(container_name, timeout=10)
             except azure.common.AzureMissingResourceHttpError as ERR:
                 raise UGRStorageStatsErrorAzureContainerNotFound(
                     error='ContainerNotFound',
