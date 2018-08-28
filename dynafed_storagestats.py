@@ -1591,7 +1591,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
 
         # Check if we actually got information
     except UGRMemcachedError as ERR:
-        logger.error("Memcached server %s did not return data. All endpoints will be assumed 'Online'. %s", memcached_srv, ERR.debug)
+        logger.error("%s Memcached server %s did not return data. All endpoints will be assumed 'Online'.", ERR.debug, memcached_srv)
     else:
         if isinstance(connection_stats, bytes):
             connection_stats = str(connection_stats, 'utf-8')
