@@ -1618,9 +1618,9 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
             if endpoint.id in endpoints_c_stats:
                 if endpoints_c_stats[endpoint.id] == '2':
                     endpoint.stats['check'] = "EndpointOffline"
-                    logger.info("%s is reported as 'Offline'", endpoint)
+                    logger.info("%s is reported as 'Offline'", endpoint.id)
                 else:
-                    logger.info("%s is reported as 'Online'", endpoint)
+                    logger.info("%s is reported as 'Online'", endpoint.id)
             else:
                 logger.info("%s was not found in connection stats. Will be assumed 'Oniline'", endpoint)
 
