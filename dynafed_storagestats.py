@@ -23,7 +23,7 @@ import uuid
 import logging
 import collections
 from io import BytesIO
-from optparse import OptionParser, OptionGroup
+import argparse
 import copy
 import glob
 import json
@@ -83,72 +83,69 @@ except ImportError:
 ## Help/Usage ##
 ################
 
-usage = "usage: %prog [options]"
-parser = OptionParser(usage)
+parser = argparse.ArgumentParser()
 
-parser.add_option('-d', '--dir',
+parser.add_argument('-d', '--dir',
                   dest='configs_directory', action='store', default='/etc/ugr/conf.d',
                   help="Path to UGR's endpoint .conf files."
                  )
 
-group = OptionGroup(parser, "Memcached options")
-group.add_option('--memhost',
-                 dest='memcached_ip', action='store', default='127.0.0.1',
-                 help='IP or hostname of memcached instance. Default: 127.0.0.1'
-                )
-group.add_option('--memport',
-                 dest='memcached_port', action='store', default='11211',
-                 help='Port where memcached instances listens on. Default: 11211'
-                )
-parser.add_option_group(group)
-
-group = OptionGroup(parser, "Output options")
-group.add_option('--debug',
-                 dest='debug', action='store_true', default=False,
-                 help='Declare to enable debug output on stdout.'
-                )
-group.add_option('-m', '--memcached',
-                 dest='output_memcached', action='store_true', default=False,
-                 help='Declare to enable uploading information to memcached.'
-                )
-group.add_option('--json',
-                 dest='output_json', action='store_true', default=False,
-                 help='Set to output json file with storage stats.'
-                )
-group.add_option('-o', '--output_dir',
-                 dest='output_dir', action='store', default='/tmp',
-                 help='Directory to output storage stat files. Defautl: /tmp'
-                )
-group.add_option('--plain',
-                 dest='output_plain', action='store_true', default=False,
-                 help='Set to output stats to plain txt file.'
-                )
-group.add_option('--stdout',
-                 dest='output_stdout', action='store_true', default=False,
-                 help='Set to output stats on stdout.'
-                )
-group.add_option('-v', '--verbose',
-                 dest='verbose', action='store_true', default=False,
-                 help='Show on stderr events according to loglevel.'
-                )
-group.add_option('--xml',
-                 dest='output_xml', action='store_true', default=False,
-                 help='Set to output xml file with StAR format.'
-                )
-parser.add_option_group(group)
-
-group = OptionGroup(parser, "Logging options")
-group.add_option('--logfile',
+group_logging = parser.add_argument_group("Logging options")
+group_logging.add_argument('--logfile',
                  dest='logfile', action='store', default='/tmp/dynafed_storagestats.log',
                  help='Change where to ouput logs. Default: /tmp/dynafed_storagestats.log'
                 )
-group.add_option('--loglevel',
+group_logging.add_argument('--loglevel',
                  dest='loglevel', action='store', default='WARNING',
-                 help='Set file log level. Default: WARNING. Valid: DEBUG, INFO, WARNING, ERROR'
+                 choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+                 help='Set file log level. Default: WARNING.'
                 )
-parser.add_option_group(group)
 
-options, args = parser.parse_args()
+group_memcached = parser.add_argument_group("Memcached Options")
+group_memcached.add_argument('--memhost',
+                 dest='memcached_ip', action='store', default='127.0.0.1',
+                 help='IP or hostname of memcached instance. Default: 127.0.0.1'
+                )
+group_memcached.add_argument('--memport',
+                 dest='memcached_port', action='store', default='11211',
+                 help='Port where memcached instances listens on. Default: 11211'
+                )
+
+group_ouput = parser.add_argument_group("Output options")
+group_ouput.add_argument('--debug',
+                 dest='debug', action='store_true', default=False,
+                 help='Declare to enable debug output on stdout.'
+                )
+group_ouput.add_argument('-m', '--memcached',
+                 dest='output_memcached', action='store_true', default=False,
+                 help='Declare to enable uploading information to memcached.'
+                )
+group_ouput.add_argument('--json',
+                 dest='output_json', action='store_true', default=False,
+                 help='Set to output json file with storage stats.'
+                )
+group_ouput.add_argument('-o', '--output_dir',
+                 dest='output_dir', action='store', default='/tmp',
+                 help='Directory to output storage stat files. Defautl: /tmp'
+                )
+group_ouput.add_argument('--plain',
+                 dest='output_plain', action='store_true', default=False,
+                 help='Set to output stats to plain txt file.'
+                )
+group_ouput.add_argument('--stdout',
+                 dest='output_stdout', action='store_true', default=False,
+                 help='Set to output stats on stdout.'
+                )
+group_ouput.add_argument('-v', '--verbose',
+                 dest='verbose', action='store_true', default=False,
+                 help='Show on stderr events according to loglevel.'
+                )
+group_ouput.add_argument('--xml',
+                 dest='output_xml', action='store_true', default=False,
+                 help='Set to output xml file with StAR format.'
+                )
+
+args = parser.parse_args()
 
 
 #######################
@@ -780,15 +777,15 @@ class StorageStats(object):
         ###############################################
         logger.debug("[%s]Validating URN schema: %s" % (self.id, self.uri['scheme']))
 
-    def output_to_stdout(self, options):
+    def output_to_stdout(self, args):
         """
         Prints all the storage stats information for each endpont, including
         the last warning/error, and if proper flags set, memcached indices and
         contents and full warning/error debug information from the exceptions.
         """
-        mc = memcache.Client([options.memcached_ip + ':' + options.memcached_port])
+        mc = memcache.Client([args.memcached_ip + ':' + args.memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
-        memcached_contents = self.get_from_memcached(options.memcached_ip, options.memcached_port)
+        memcached_contents = self.get_from_memcached(args.memcached_ip, args.memcached_port)
         if memcached_contents is None:
             memcached_contents = 'No Content Found. Possible error connecting to memcached service.'
 
@@ -806,7 +803,7 @@ class StorageStats(object):
               '\n{0:12}{1}'.format('Index:', memcached_index), \
               '\n{0:12}{1}'.format('Contents:', memcached_contents), \
              )
-        if options.debug:
+        if args.debug:
             print('\nDebug:')
             for error in self.debug:
                 print('{0:12}{1}'.format(' ', error))
@@ -1563,7 +1560,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
     logger = logging.getLogger(__name__)
     ###############################################
     # Setup connection to a memcache instance
-    memcached_srv = options.memcached_ip + ':' + options.memcached_port
+    memcached_srv = args.memcached_ip + ':' + args.memcached_port
     mc = memcache.Client([memcached_srv])
     try:
         # Obtain the latest index number used by UGR and transform to str if needed.
@@ -1854,7 +1851,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
 
     return logger
 
-def process_storagestats(endpoint, options):
+def process_storagestats(endpoint, args):
     """
     Runs get_storagestats() method for the endpoint passed as argument if
     it has not been flagged as offline and if requested it will try to
@@ -1902,9 +1899,9 @@ def process_storagestats(endpoint, options):
             endpoint.status = ','.join(endpoint.status)
 
         # Try to upload stats to memcached.
-        if options.output_memcached:
+        if args.output_memcached:
             try:
-                endpoint.upload_to_memcached(options.memcached_ip, options.memcached_port)
+                endpoint.upload_to_memcached(args.memcached_ip, args.memcached_port)
 
             except UGRMemcachedConnectionError as ERR:
                 logger.error("[%s]%s" % (endpoint.id, ERR.debug))
@@ -1919,20 +1916,20 @@ if __name__ == '__main__':
 
     # Setup loggers
     logger = setup_logger(
-        logfile=options.logfile,
-        loglevel=options.loglevel,
-        verbose=options.verbose,
+        logfile=args.logfile,
+        loglevel=args.loglevel,
+        verbose=args.verbose,
         )
 
     # Create list of StorageStats objects, one for each configured endpoint.
-    endpoints = get_endpoints(options.configs_directory)
+    endpoints = get_endpoints(args.configs_directory)
 
     # Flag endpoints that have been detected offline by Dynafed.
     get_connectionstats(endpoints)
 
     # This tuple is necessary for the starmap function to send multiple
     # arguments to the process_storagestats function.
-    endpoints_tuple = [(endpoint, options) for endpoint in endpoints]
+    endpoints_tuple = [(endpoint, args) for endpoint in endpoints]
 
     # Process each endpoint using multithreading and upload stats to memcached.
     # Number of threads to use.
@@ -1940,18 +1937,18 @@ if __name__ == '__main__':
     pool.starmap(process_storagestats, endpoints_tuple)
 
     # Print Storagestats to the standard output.
-    if options.output_stdout:
+    if args.output_stdout:
         for endpoint in endpoints:
-            endpoint.output_to_stdout(options)
+            endpoint.output_to_stdout(args)
 
     # Create StAR Storagestats XML files for each endpoint.
-    if options.output_xml:
-        output_StAR_xml(endpoints, options.output_dir)
+    if args.output_xml:
+        output_StAR_xml(endpoints, args.output_dir)
 
     # Create json file with storagestats
-    if options.output_json:
-        output_json(endpoints, options.output_dir)
+    if args.output_json:
+        output_json(endpoints, args.output_dir)
 
     # Create txt file with storagestats
-    if options.output_plain:
-        output_plain(endpoints, options.output_dir)
+    if args.output_plain:
+        output_plain(endpoints, args.output_dir)
