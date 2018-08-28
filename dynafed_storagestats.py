@@ -168,13 +168,13 @@ class UGRBaseException(Exception):
 
         if message is None:
             # Set some default useful error message
-            self.message = self.error_code + ' ' + "An unkown exception occured processing"
+            self.message = self.error_code + "An unkown exception occured processing"
         else:
-            self.message = self.error_code + ' ' + message
+            self.message = self.error_code + message
         if debug is None:
             self.debug = self.message
         else:
-            self.debug = self.message + ' ' + debug
+            self.debug = self.message + debug
 
         super().__init__(self.message)
 
@@ -1618,11 +1618,11 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
             if endpoint.id in endpoints_c_stats:
                 if endpoints_c_stats[endpoint.id] == '2':
                     endpoint.stats['check'] = "EndpointOffline"
-                    logger.info("[%s] Endpoint reported 'Offline'", endpoint.id)
+                    logger.info("[%s]Endpoint reported 'Offline'", endpoint.id)
                 else:
-                    logger.info("[%s] Endpoint reported 'Online'", endpoint.id)
+                    logger.info("[%s]Endpoint reported 'Online'", endpoint.id)
             else:
-                logger.info("[%s] Endpoint was not found in connection stats. Will be assumed 'Oniline'", endpoint)
+                logger.info("[%s]Endpoint was not found in connection stats. Will be assumed 'Oniline'", endpoint)
 
 def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
@@ -1874,17 +1874,17 @@ def process_storagestats(endpoint, args):
     ###############################################
     try:
         if endpoint.stats['check'] is True:
-            logger.info("[%s] Contacting endpoint.", endpoint.id)
+            logger.info("[%s]Contacting endpoint.", endpoint.id)
             endpoint.get_storagestats()
 
         elif endpoint.stats['check'] == "EndpointOffline":
-            logger.error("[%s][%s] Bypassing stats check.", endpoint.id, endpoint.stats['check'])
+            logger.error("[%s][%s]Bypassing stats check.", endpoint.id, endpoint.stats['check'])
             raise UGRStorageStatsOfflineEndpointError(
                 status_code="400",
                 error="EndpointOffline"
             )
         else:
-            logger.error("[%s][%s] Bypassing stats check.", endpoint.id, endpoint.stats['check'])
+            logger.error("[%s][%s]Bypassing stats check.", endpoint.id, endpoint.stats['check'])
 
     except UGRStorageStatsOfflineEndpointError as ERR:
         logger.error("[%s]%s", endpoint.id, ERR.debug)
