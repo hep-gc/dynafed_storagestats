@@ -107,8 +107,9 @@ v0.9.5 Added an exception handling when for DAV's RFC4331 obtains zero free
        report this information in which case a manual quota should be input.
 v0.9.6 Moved where stats are uploaded to memcached so it is not necessary to
        wait until all endpoints have been polled.
-v0.9.7 Dropped support for python2 as it does not have the multiprocessing
-       method "starmap" necessary to pass arguments to the function being
-       called. Removed deprecated "optsparse" in favour for "argsparse".
-       Changed "super" calls to use the python3 format. Corrected formats and
-       var names (where makes sense) according to PEP8.
+v0.10.0 Dropped support for python2 as it does not have the multiprocessing
+        method "starmap" necessary to pass arguments to the function being
+        called. Removed deprecated "optsparse" in favour for "argsparse".
+        Changed "super" calls to use the python3 format. Corrected formats and
+        var names (where makes sense) according to PEP8. Normalized logger
+        format.

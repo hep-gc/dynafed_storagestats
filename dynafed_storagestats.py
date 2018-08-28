@@ -13,7 +13,7 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.9.7"
+__version__ = "v0.10.0"
 
 import os
 import sys
@@ -81,7 +81,7 @@ PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-d', '--dir',
                     dest='configs_directory', action='store',
                     default='/etc/ugr/conf.d',
-                    help="Path to UGR's endpoint .conf files."
+                    help="Path to UGR's endpoint .conf files. Default: /etc/ugr/conf.d"
                    )
 
 GROUP_LOGGING = PARSER.add_argument_group("Logging options")
@@ -122,7 +122,7 @@ GROUP_OUTPUT.add_argument('-m', '--memcached',
 GROUP_OUTPUT.add_argument('--json',
                           dest='output_json', action='store_true',
                           default=False,
-                          help='Set to output json file with storage stats.'
+                          help='Set to output json file with storage stats. !!In development!!'
                          )
 GROUP_OUTPUT.add_argument('-o', '--output_dir',
                           dest='output_dir', action='store',
@@ -147,7 +147,7 @@ GROUP_OUTPUT.add_argument('-v', '--verbose',
 GROUP_OUTPUT.add_argument('--xml',
                           dest='output_xml', action='store_true',
                           default=False,
-                          help='Set to output xml file with StAR format.'
+                          help='Set to output xml file with StAR format. !!In development!!'
                          )
 
 ARGS = PARSER.parse_args()
