@@ -2,11 +2,9 @@
 
 Module to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints and upload the
-information to memcahe.
-
-Tested with Python >= 3.4.8
-
-Might work with >= 2.7.5 but is not actively tested.
+information to memcache. It leverage's UGR's connection check that it uploads
+to memcache to skip any endpoints it has detected as being "Offline". (If
+this information is not found, it is ignored and all endpoints are contacted)
 
 So far it supports has been tested with:
 - Azure Storage Blob
@@ -17,6 +15,9 @@ So far it supports has been tested with:
 - dCache via WebDAV
 
 ## Prerequisites (older versions might work, but these are the oldest one that have been tested):
+
+Python >= 3.4.8
+
 Python Modules:
 - azure-storage >= 0.36.0 (pip3 install azure-storage)
 - boto3 >= 1.6.1 (CentOS 7.5 does not have python3 repo modules, use pip3 install boto3)
@@ -28,65 +29,77 @@ Python Modules:
 ## Usage
 
 This module is intended to be run periodically as a cron job, so place it in
-an appropriate location for this.
+an appropriate location and make sure the user that runs it is able to read
+UGR's configuration files.
 
 First run with the following flags:
 
 ```
-./dynafed_storagestats.py -d /etc/ugr/conf.d --stdout -m --debug
+./dynafed_storagestats.py -d /etc/ugr/conf.d --stdout -m -v
 ```
 
-This will give is the best way to test if there are any settings missing in the
-configuration or errors contacting or obtaining the information from each endpoint.
-It will also show the information uploaded to memcached and if there were issues.
+This will printout any warnings and errors as they are encountered as well as
+the information obtained from each of the endpoints. If you need more information
+about the errors consider adding the "--debug" flag which will print more
+information at the end of each endpoint's stats. If you still need more,
+change the --loglevel to INFO or DEBUG, just be warned DEBUG might print a lot
+of information.
 
-When everything is in place and working as desired, the following command is
-what would normally used with cron, which will create a log file at
-/tmp/dynafed_storagestats.log with WARNING level:
+It is recommended to create a directory for the logfile, such as
+"/var/log/dynafed_storagestats/dynafed_storagestats.log",as the default is
+"/tmp/dynafed_storagestats.log".
 
+When everything looks to be setup as desired, setup cron to run the following
+(add any other options that make sense to your site).
 ```
-./dynafed_storagestats.py -d /etc/ugr/conf.d -m
+dynafed_storagestats.py -d /etc/ugr/conf.d -m --loglevel=WARNING --logfile='/var/log/dynafed_storagestats/dynafed_storagestats.log'
 ```
 
 To get help:
 ```
 dynafed_storagestats -h
 
-Usage: dynafed_storagestats.py [settings]
+usage: dynafed_storagestats.py [-h] [-d CONFIGS_DIRECTORY] [--logfile LOGFILE]
+                               [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                               [--memhost MEMCACHED_IP]
+                               [--memport MEMCACHED_PORT] [--debug] [-m]
+                               [--json] [-o OUTPUT_DIR] [--plain] [--stdout]
+                               [-v] [--xml]
 
-Options:
+optional arguments:
   -h, --help            show this help message and exit
-  -d CONFIGS_DIRECTORY, --dir=CONFIGS_DIRECTORY
-                        Path to UGR's endpoint .conf files.
+  -d CONFIGS_DIRECTORY, --dir CONFIGS_DIRECTORY
+                        Path to UGR's endpoint .conf files. Default:
+                        /etc/ugr/conf.d
 
-  Memcached options:
-    --memhost=MEMCACHED_IP
+Logging options:
+  --logfile LOGFILE     Change where to ouput logs. Default:
+                        /tmp/dynafed_storagestats.log
+  --loglevel {DEBUG,INFO,WARNING,ERROR}
+                        Set file log level. Default: WARNING.
+
+Memcached Options:
+  --memhost MEMCACHED_IP
                         IP or hostname of memcached instance. Default:
                         127.0.0.1
-    --memport=MEMCACHED_PORT
+  --memport MEMCACHED_PORT
                         Port where memcached instances listens on. Default:
                         11211
 
-  Output options:
-    --debug             Declare to enable debug output on stdout.
-    -m, --memcached     Declare to enable uploading information to memcached.
-    --json              Set to output json file with storage stats.
-    -o OUTPUT_DIR, --output_dir=OUTPUT_DIR
+Output options:
+  --debug               Declare to enable debug output on stdout.
+  -m, --memcached       Declare to enable uploading information to memcached.
+  --json                Set to output json file with storage stats. !!In
+                        development!!
+  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
                         Directory to output storage stat files. Defautl: /tmp
-    --plain             Set to output stats to plain txt file.
-    --stdout            Set to output stats on stdout.
-    -v, --verbose       Show on stderr events according to loglevel down to
-                        INFO.
-    --xml               Set to output xml file with StAR format.
-
-  Logging options:
-    --logfile=LOGFILE   Change where to ouput logs. Default:
-                        /tmp/dynafed_storagestats.log
-    --loglevel=LOGLEVEL
-                        Set file log level. Default: WARNING. Valid: DEBUG,
-                        INFO, WARNING, ERROR
+  --plain               Set to output stats to plain txt file.
+  --stdout              Set to output stats on stdout.
+  -v, --verbose         Show on stderr events according to loglevel.
+  --xml                 Set to output xml file with StAR format. !!In
+                        development!!
 ```
-**Important Note: DEBUG level might an enormous amount of data as it will log the contents obtained from requests. In the case of the generic methods this will print all the stats for each file being parsed. It is recommended to use this level with a file with only the endpoint one wants to troulbeshoot.**
+**Important Note: DEBUG level might an enormous amount of data as it will log the contents obtained from requests. In the case of the generic methods this will print all the stats for each file being parsed. It is recommended to use this level with only the endpoint one wants to troulbeshoot.**
 
 ## Endpoints Configuration
 
@@ -169,13 +182,21 @@ default, but use s3 in case is needed.
 
 ## How it works
 
+[Simple Flowchart](doc/diagrams/dynafed_storagestats_flowchart.pdf)
+
 When run the main function will read every configuration file in the directory
 given by the user (which defaults to /etc/ugr/conf.d), and will identify all the
 different endpoints with their respective settings and authorization credentials.
 
 A python object belonging to a subclass of StorageStats, depending on the protocol
-to be used, is created for each endpoint containing all the information and
+to be used, is created for each endpoint containing all the settings and
 methods necessary to request and process storage stats and quota information.
 
-The gathered information can then be output either to a memcache instance or
-the STDOUT.
+Memcache is contacted to look for UGR's endpoint connection stats. Any endpoints
+flagged as "Offline" here will be skipped and flagged this will be infomred in
+the output. For those that are "Online", or if they could not be found to have
+information will be contacted to obtain the storage stats. The information is
+then stored a dictionary attribute "stats" in each object.
+
+The stats can then be output either to a memcache instance or the STDOUT,
+depending on the options chosen when invoking this script.
