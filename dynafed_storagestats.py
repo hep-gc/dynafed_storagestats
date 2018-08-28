@@ -1591,7 +1591,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
 
         # Check if we actually got information
     except UGRMemcachedError as ERR:
-        logger.error("Memcached server %s did not return data. %s", memcached_srv, ERR.debug)
+        logger.error("Memcached server %s did not return data. All endpoints will be assumed 'Online'. %s", memcached_srv, ERR.debug)
     else:
         if isinstance(connection_stats, bytes):
             connection_stats = str(connection_stats, 'utf-8')
@@ -1618,11 +1618,11 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
             if endpoint.id in endpoints_c_stats:
                 if endpoints_c_stats[endpoint.id] == '2':
                     endpoint.stats['check'] = "EndpointOffline"
-                    logger.info("%s is reported as 'Offline'", endpoint.id)
+                    logger.info("[%s] Endpoint reported 'Offline'", endpoint.id)
                 else:
-                    logger.info("%s is reported as 'Online'", endpoint.id)
+                    logger.info("[%s] Endpoint reported 'Online'", endpoint.id)
             else:
-                logger.info("%s was not found in connection stats. Will be assumed 'Oniline'", endpoint)
+                logger.info("[%s] Endpoint was not found in connection stats. Will be assumed 'Oniline'", endpoint)
 
 def get_endpoints(config_dir="/etc/ugr/conf.d/"):
     """
