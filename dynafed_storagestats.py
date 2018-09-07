@@ -1579,8 +1579,19 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     ###############################################
     endpoints = {}
     global_settings = {}
+    config_files = []
+    # We add UGR's main configuration file if it exists, logs Warning if not.
+    if os.path.isfile("/etc/ugr/ugr.conf"):
+        config_files.append("/etc/ugr/ugr.conf")
+    else:
+        logger.warn("UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. This is normal if script is run on a host that does not run Dynafed.")
+
+    # Now we move to the config dir and add any other .conf files to the list.
     os.chdir(config_dir)
-    for config_file in sorted(glob.glob("*.conf")):
+    config_files = config_files + sorted(glob.glob("*.conf"))
+
+    # Finally we parse them.
+    for config_file in config_files:
         logger.info("Reading file '%s'", os.path.realpath(config_file))
         with open(config_file, "r") as f:
             for line in f:
