@@ -13,7 +13,7 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.10.0"
+__version__ = "v0.10.1"
 
 import os
 import sys
@@ -595,6 +595,11 @@ class StorageStats(object):
 
         # Setting validators used across all SubClasses.
         self.validators = {
+            'conn_timeout': {
+                'default': 10,
+                'required': False,
+                'type': 'int',
+            },
             'storagestats.quota': {
                 'default': 'api',
                 'required': False,
@@ -972,7 +977,7 @@ class AzureStorageStats(StorageStats):
             container_name = self.uri['container']
             logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Account: %s Container: %s", self.id, self.uri['url'], self.plugin_settings['storagestats.api'].lower(), self.uri['account'], self.uri['container'])
             try:
-                blobs = base_blob_service.list_blobs(container_name, timeout=10)
+                blobs = base_blob_service.list_blobs(container_name, timeout=int(self.plugin_settings['conn_timeout']))
             except azure.common.AzureMissingResourceHttpError as ERR:
                 raise UGRStorageStatsErrorAzureContainerNotFound(
                     error='ContainerNotFound',
@@ -1065,7 +1070,7 @@ class DAVStorageStats(StorageStats):
                 headers=headers,
                 verify=self.plugin_settings['ssl_check'],
                 data=data,
-                timeout=5
+                timeout=int(self.plugin_settings['conn_timeout'])
             )
             # Save time when data was obtained.
             self.stats['endtime'] = int(time.time())
@@ -1261,7 +1266,7 @@ class S3StorageStats(StorageStats):
                     params=payload,
                     auth=auth,
                     verify=self.plugin_settings['ssl_check'],
-                    timeout=5
+                    timeout=int(self.plugin_settings['conn_timeout'])
                     )
                 # Save time when data was obtained.
                 self.stats['endtime'] = int(time.time())
@@ -1358,7 +1363,7 @@ class S3StorageStats(StorageStats):
                                       verify=self.plugin_settings['ssl_check'],
                                       config=Config(
                                           signature_version=self.plugin_settings['s3.signature_ver'],
-                                          connect_timeout=5,
+                                          connect_timeout=int(self.plugin_settings['conn_timeout']),
                                           retries=dict(max_attempts=0)
                                       ),
                                      )
@@ -1579,8 +1584,19 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     ###############################################
     endpoints = {}
     global_settings = {}
+    config_files = []
+    # We add UGR's main configuration file if it exists, logs Warning if not.
+    if os.path.isfile("/etc/ugr/ugr.conf"):
+        config_files.append("/etc/ugr/ugr.conf")
+    else:
+        logger.warn("UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. This is normal if script is run on a host that does not run Dynafed.")
+
+    # Now we move to the config dir and add any other .conf files to the list.
     os.chdir(config_dir)
-    for config_file in sorted(glob.glob("*.conf")):
+    config_files = config_files + sorted(glob.glob("*.conf"))
+
+    # Finally we parse them.
+    for config_file in config_files:
         logger.info("Reading file '%s'", os.path.realpath(config_file))
         with open(config_file, "r") as f:
             for line in f:

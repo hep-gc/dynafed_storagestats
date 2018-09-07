@@ -113,3 +113,7 @@ v0.10.0 Dropped support for python2 as it does not have the multiprocessing
         Changed "super" calls to use the python3 format. Corrected formats and
         var names (where makes sense) according to PEP8. Normalized logger
         format.
+v0.10.1 Added check to add "/etc/ugr/ugr.conf" file to the list of .conf files
+        to parse for settings. Added conn_timeout to validators in StorageStats
+        with a default of 10 seconds and this is used as the timeout for
+        connections.
