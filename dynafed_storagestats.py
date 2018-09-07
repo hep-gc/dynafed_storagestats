@@ -598,6 +598,7 @@ class StorageStats(object):
             'conn_timeout': {
                 'default': 10,
                 'required': False,
+                'type': 'int',
             },
             'storagestats.quota': {
                 'default': 'api',
@@ -976,7 +977,7 @@ class AzureStorageStats(StorageStats):
             container_name = self.uri['container']
             logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Account: %s Container: %s", self.id, self.uri['url'], self.plugin_settings['storagestats.api'].lower(), self.uri['account'], self.uri['container'])
             try:
-                blobs = base_blob_service.list_blobs(container_name, timeout=self.plugin_settings['conn_timeout'])
+                blobs = base_blob_service.list_blobs(container_name, timeout=int(self.plugin_settings['conn_timeout']))
             except azure.common.AzureMissingResourceHttpError as ERR:
                 raise UGRStorageStatsErrorAzureContainerNotFound(
                     error='ContainerNotFound',
@@ -1069,7 +1070,7 @@ class DAVStorageStats(StorageStats):
                 headers=headers,
                 verify=self.plugin_settings['ssl_check'],
                 data=data,
-                timeout=self.plugin_settings['conn_timeout']
+                timeout=int(self.plugin_settings['conn_timeout'])
             )
             # Save time when data was obtained.
             self.stats['endtime'] = int(time.time())
@@ -1265,7 +1266,7 @@ class S3StorageStats(StorageStats):
                     params=payload,
                     auth=auth,
                     verify=self.plugin_settings['ssl_check'],
-                    timeout=self.plugin_settings['conn_timeout']
+                    timeout=int(self.plugin_settings['conn_timeout'])
                     )
                 # Save time when data was obtained.
                 self.stats['endtime'] = int(time.time())
@@ -1362,7 +1363,7 @@ class S3StorageStats(StorageStats):
                                       verify=self.plugin_settings['ssl_check'],
                                       config=Config(
                                           signature_version=self.plugin_settings['s3.signature_ver'],
-                                          connect_timeout=self.plugin_settings['conn_timeout'],
+                                          connect_timeout=int(self.plugin_settings['conn_timeout']),
                                           retries=dict(max_attempts=0)
                                       ),
                                      )
