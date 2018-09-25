@@ -1395,6 +1395,31 @@ class S3StorageStats(StorageStats):
                         schema=self.uri['scheme'],
                         debug=str(ERR),
                         )
+                except botoRequestsExceptions.SSLError as ERR:
+                    # If ca_path is custom, try the default in case
+                    # a global setting is incorrectly giving the wrong
+                    # ca's to check agains.
+                    connection = boto3.client('s3',
+                                              region_name=self.plugin_settings['s3.region'],
+                                              endpoint_url=api_url,
+                                              aws_access_key_id=self.plugin_settings['s3.pub_key'],
+                                              aws_secret_access_key=self.plugin_settings['s3.priv_key'],
+                                              use_ssl=True,
+                                              verify=True,
+                                              config=Config(
+                                                  signature_version=self.plugin_settings['s3.signature_ver'],
+                                                  connect_timeout=int(self.plugin_settings['conn_timeout']),
+                                                  retries=dict(max_attempts=0)
+                                              ),
+                                             )
+                    try:
+                        response = connection.list_objects(**kwargs)
+                    except botoRequestsExceptions.SSLError as ERR:
+                        raise UGRStorageStatsConnectionError(
+                            error="ERR.__class__.__name__",
+                            status_code="000",
+                            debug=str(ERR),
+                            )
                 except botoRequestsExceptions.RequestException as ERR:
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,
