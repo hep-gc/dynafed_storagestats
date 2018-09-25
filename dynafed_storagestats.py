@@ -1290,6 +1290,11 @@ class S3StorageStats(StorageStats):
                 )
 
             logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s", self.id, api_url, self.plugin_settings['storagestats.api'].lower(), payload)
+
+            # We need to initalize "response" to check if it was succesful in the
+            # finally statement.
+            response = False
+
             try:
                 response = requests.request(
                     method="GET",
@@ -1322,7 +1327,7 @@ class S3StorageStats(StorageStats):
                         url=api_url,
                         params=payload,
                         auth=auth,
-                        verify=self.plugin_settings['ssl_check'],
+                        verify=True,
                         timeout=int(self.plugin_settings['conn_timeout'])
                         )
                     # Save time when data was obtained.
@@ -1342,58 +1347,59 @@ class S3StorageStats(StorageStats):
                     status_code="000",
                     debug=str(ERR),
                     )
-            else:
-                # If ceph-admin is accidentally requested for AWS, no JSON content
-                # is passed, so we check for that.
-                # Review this!
-                try:
-                    stats = response.json()
-                except ValueError:
-                    raise UGRStorageStatsConnectionErrorS3API(
-                        error="NoContent",
-                        status_code=response.status_code,
-                        api=self.plugin_settings['storagestats.api'],
-                        debug=response.text,
-                        )
+            finally:
+                if response:
+                    # If ceph-admin is accidentally requested for AWS, no JSON content
+                    # is passed, so we check for that.
+                    # Review this!
+                    try:
+                        stats = response.json()
+                    except ValueError:
+                        raise UGRStorageStatsConnectionErrorS3API(
+                            error="NoContent",
+                            status_code=response.status_code,
+                            api=self.plugin_settings['storagestats.api'],
+                            debug=response.text,
+                            )
 
-                # Make sure we get a Bucket Usage information.
-                # Fails on empty (in minio) or newly created buckets.
-                try:
-                    stats['usage']
+                    # Make sure we get a Bucket Usage information.
+                    # Fails on empty (in minio) or newly created buckets.
+                    try:
+                        stats['usage']
 
-                except KeyError as ERR:
-                    raise UGRStorageStatsErrorS3MissingBucketUsage(
-                        status_code=response.status_code,
-                        error=stats['Code'],
-                        debug=str(stats)
-                        )
-                else:
-                    if len(stats['usage']) != 0:
-                        # If the bucket is emtpy, then just keep going
-                        self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
-                        self.stats['filecount'] = stats['usage']['rgw.main']['num_objects']
-
-                    if self.plugin_settings['storagestats.quota'] != 'api':
-                        self.stats['quota'] = self.plugin_settings['storagestats.quota']
-                        self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-
+                    except KeyError as ERR:
+                        raise UGRStorageStatsErrorS3MissingBucketUsage(
+                            status_code=response.status_code,
+                            error=stats['Code'],
+                            debug=str(stats)
+                            )
                     else:
-                        if stats['bucket_quota']['enabled'] is True:
-                            self.stats['quota'] = stats['bucket_quota']['max_size']
-                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                        if len(stats['usage']) != 0:
+                            # If the bucket is emtpy, then just keep going
+                            self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
+                            self.stats['filecount'] = stats['usage']['rgw.main']['num_objects']
 
-                        elif stats['bucket_quota']['enabled'] is False:
-                            self.stats['quota'] = convert_size_to_bytes("1TB")
+                        if self.plugin_settings['storagestats.quota'] != 'api':
+                            self.stats['quota'] = self.plugin_settings['storagestats.quota']
                             self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-                            raise UGRStorageStatsCephS3QuotaDisabledWarning()
 
                         else:
-                            self.stats['quota'] = convert_size_to_bytes("1TB")
-                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-                            raise UGRStorageStatsQuotaWarning(
-                                error="NoQuotaGiven",
-                                status_code="000",
-                                )
+                            if stats['bucket_quota']['enabled'] is True:
+                                self.stats['quota'] = stats['bucket_quota']['max_size']
+                                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+                            elif stats['bucket_quota']['enabled'] is False:
+                                self.stats['quota'] = convert_size_to_bytes("1TB")
+                                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                                raise UGRStorageStatsCephS3QuotaDisabledWarning()
+
+                            else:
+                                self.stats['quota'] = convert_size_to_bytes("1TB")
+                                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                                raise UGRStorageStatsQuotaWarning(
+                                    error="NoQuotaGiven",
+                                    status_code="000",
+                                    )
 
         # Getting the storage Stats AWS S3 API
         #elif self.plugin_settings['storagestats.api'].lower() == 'aws-cloudwatch':
@@ -1471,7 +1477,7 @@ class S3StorageStats(StorageStats):
                         response = connection.list_objects(**kwargs)
                     except botoRequestsExceptions.SSLError as ERR:
                         raise UGRStorageStatsConnectionError(
-                            error="ERR.__class__.__name__",
+                            error=ERR.__class__.__name__,
                             status_code="000",
                             debug=str(ERR),
                             )
