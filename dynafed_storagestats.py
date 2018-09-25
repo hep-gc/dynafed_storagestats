@@ -1281,6 +1281,25 @@ class S3StorageStats(StorageStats):
                     schema=self.uri['scheme'],
                     debug=str(ERR),
                     )
+            except requests.exceptions.SSLError as ERR:
+                # If ca_path is custom, try the default in case
+                # a global setting is incorrectly giving the wrong
+                # ca's to check agains.
+                try:
+                    response = requests.request(
+                        method="GET",
+                        url=api_url,
+                        params=payload,
+                        auth=auth,
+                        verify=self.plugin_settings['ssl_check'],
+                        timeout=int(self.plugin_settings['conn_timeout'])
+                        )
+                except requests.exceptions.SSLError as ERR:
+                    raise UGRStorageStatsConnectionError(
+                        error=ERR.__class__.__name__,
+                        status_code="000",
+                        debug=str(ERR),
+                        )
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
                     error=ERR.__class__.__name__,
