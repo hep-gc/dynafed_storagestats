@@ -13,7 +13,7 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.10.1"
+__version__ = "v0.10.2"
 
 import os
 import sys
@@ -1062,6 +1062,10 @@ class DAVStorageStats(StorageStats):
 
         logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Headers: %s Data: %s", self.id, api_url, self.plugin_settings['storagestats.api'].lower(), headers, data)
 
+        # We need to initalize "response" to check if it was succesful in the
+        # finally statement.
+        response = False
+
         try:
             response = requests.request(
                 method="PROPFIND",
@@ -1085,6 +1089,32 @@ class DAVStorageStats(StorageStats):
                 schema=self.uri['scheme'],
                 debug=str(ERR),
                 )
+        except requests.exceptions.SSLError as ERR:
+            # If ca_path is custom, try the default in case
+            # a global setting is incorrectly giving the wrong
+            # ca's to check agains.
+            try:
+                response = requests.request(
+                    method="PROPFIND",
+                    url=api_url,
+                    cert=(self.plugin_settings['cli_certificate'], self.plugin_settings['cli_private_key']),
+                    headers=headers,
+                    verify=True,
+                    data=data,
+                    timeout=int(self.plugin_settings['conn_timeout'])
+                )
+                # Save time when data was obtained.
+                self.stats['endtime'] = int(time.time())
+
+                #Log contents of response
+                logger.debug("[%s]Endpoint reply: %s", self.id, response.text)
+
+            except requests.exceptions.SSLError as ERR:
+                raise UGRStorageStatsConnectionError(
+                    error=ERR.__class__.__name__,
+                    status_code="000",
+                    debug=str(ERR),
+                    )
         except requests.ConnectionError as ERR:
             raise UGRStorageStatsConnectionError(
                 error=ERR.__class__.__name__,
@@ -1102,49 +1132,50 @@ class DAVStorageStats(StorageStats):
                 debug=str(ERR),
                 )
 
-        else:
-            # Check that we did not get an erorr code:
-            if response.status_code < 400:
-                if self.plugin_settings['storagestats.api'].lower() == 'generic':
-                    self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
-                    self.stats['quota'] = self.plugin_settings['storagestats.quota']
-                    self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-
-                elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
-                    tree = etree.fromstring(response.content)
-                    node = tree.find('.//{DAV:}quota-available-bytes').text
-                    # Check that we got the requested information. If not, then
-                    # the method is not supported by the endpoint.
-                    if node is None:
-                        raise UGRStorageStatsErrorDAVQuotaMethod(
-                            error="UnsupportedMethod"
-                            )
-                    # Assign the values returned by the endpoint.
-                    self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
-                    self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
-
-                    # Determine which value to use for the quota.
-                    if self.plugin_settings['storagestats.quota'] == 'api':
-                        self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
-                        # If quota-available-bytes is reported as '0' could be
-                        # because no quota is provided, or the endpoint is
-                        # actually full. We warn for the operator to make a
-                        # decision.
-                        if self.stats['bytesfree'] is 0:
-                            raise UGRStorageStatsDAVZeroQuotaWarning(
-                                error='ZeroAvailableBytes',
-                                debug=str(response.content)
-                            )
-
-                    else:
+        finally:
+            if response:
+                # Check that we did not get an erorr code:
+                if response.status_code < 400:
+                    if self.plugin_settings['storagestats.api'].lower() == 'generic':
+                        self.stats['bytesused'], self.stats['filecount'] = add_xml_getcontentlength(response.content)
                         self.stats['quota'] = self.plugin_settings['storagestats.quota']
+                        self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
 
-            else:
-                raise UGRStorageStatsConnectionError(
-                    error='ConnectionError',
-                    status_code=response.status_code,
-                    debug=response.text,
-                )
+                    elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
+                        tree = etree.fromstring(response.content)
+                        node = tree.find('.//{DAV:}quota-available-bytes').text
+                        # Check that we got the requested information. If not, then
+                        # the method is not supported by the endpoint.
+                        if node is None:
+                            raise UGRStorageStatsErrorDAVQuotaMethod(
+                                error="UnsupportedMethod"
+                                )
+                        # Assign the values returned by the endpoint.
+                        self.stats['bytesused'] = int(tree.find('.//{DAV:}quota-used-bytes').text)
+                        self.stats['bytesfree'] = int(tree.find('.//{DAV:}quota-available-bytes').text)
+
+                        # Determine which value to use for the quota.
+                        if self.plugin_settings['storagestats.quota'] == 'api':
+                            self.stats['quota'] = self.stats['bytesused'] + self.stats['bytesfree']
+                            # If quota-available-bytes is reported as '0' could be
+                            # because no quota is provided, or the endpoint is
+                            # actually full. We warn for the operator to make a
+                            # decision.
+                            if self.stats['bytesfree'] is 0:
+                                raise UGRStorageStatsDAVZeroQuotaWarning(
+                                    error='ZeroAvailableBytes',
+                                    debug=str(response.content)
+                                )
+
+                        else:
+                            self.stats['quota'] = self.plugin_settings['storagestats.quota']
+
+                else:
+                    raise UGRStorageStatsConnectionError(
+                        error='ConnectionError',
+                        status_code=response.status_code,
+                        debug=response.text,
+                    )
 
 
     def validate_schema(self):
@@ -1259,6 +1290,11 @@ class S3StorageStats(StorageStats):
                 )
 
             logger.debug("[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s", self.id, api_url, self.plugin_settings['storagestats.api'].lower(), payload)
+
+            # We need to initalize "response" to check if it was succesful in the
+            # finally statement.
+            response = False
+
             try:
                 response = requests.request(
                     method="GET",
@@ -1281,64 +1317,89 @@ class S3StorageStats(StorageStats):
                     schema=self.uri['scheme'],
                     debug=str(ERR),
                     )
+            except requests.exceptions.SSLError as ERR:
+                # If ca_path is custom, try the default in case
+                # a global setting is incorrectly giving the wrong
+                # ca's to check agains.
+                try:
+                    response = requests.request(
+                        method="GET",
+                        url=api_url,
+                        params=payload,
+                        auth=auth,
+                        verify=True,
+                        timeout=int(self.plugin_settings['conn_timeout'])
+                        )
+                    # Save time when data was obtained.
+                    self.stats['endtime'] = int(time.time())
+
+                    #Log contents of response
+                    logger.debug("[%s]Endpoint reply: %s", self.id, response.text)
+                except requests.exceptions.SSLError as ERR:
+                    raise UGRStorageStatsConnectionError(
+                        error=ERR.__class__.__name__,
+                        status_code="000",
+                        debug=str(ERR),
+                        )
             except requests.ConnectionError as ERR:
                 raise UGRStorageStatsConnectionError(
                     error=ERR.__class__.__name__,
                     status_code="000",
                     debug=str(ERR),
                     )
-            else:
-                # If ceph-admin is accidentally requested for AWS, no JSON content
-                # is passed, so we check for that.
-                # Review this!
-                try:
-                    stats = response.json()
-                except ValueError:
-                    raise UGRStorageStatsConnectionErrorS3API(
-                        error="NoContent",
-                        status_code=response.status_code,
-                        api=self.plugin_settings['storagestats.api'],
-                        debug=response.text,
-                        )
+            finally:
+                if response:
+                    # If ceph-admin is accidentally requested for AWS, no JSON content
+                    # is passed, so we check for that.
+                    # Review this!
+                    try:
+                        stats = response.json()
+                    except ValueError:
+                        raise UGRStorageStatsConnectionErrorS3API(
+                            error="NoContent",
+                            status_code=response.status_code,
+                            api=self.plugin_settings['storagestats.api'],
+                            debug=response.text,
+                            )
 
-                # Make sure we get a Bucket Usage information.
-                # Fails on empty (in minio) or newly created buckets.
-                try:
-                    stats['usage']
+                    # Make sure we get a Bucket Usage information.
+                    # Fails on empty (in minio) or newly created buckets.
+                    try:
+                        stats['usage']
 
-                except KeyError as ERR:
-                    raise UGRStorageStatsErrorS3MissingBucketUsage(
-                        status_code=response.status_code,
-                        error=stats['Code'],
-                        debug=str(stats)
-                        )
-                else:
-                    if len(stats['usage']) != 0:
-                        # If the bucket is emtpy, then just keep going
-                        self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
-                        self.stats['filecount'] = stats['usage']['rgw.main']['num_objects']
-
-                    if self.plugin_settings['storagestats.quota'] != 'api':
-                        self.stats['quota'] = self.plugin_settings['storagestats.quota']
-                        self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-
+                    except KeyError as ERR:
+                        raise UGRStorageStatsErrorS3MissingBucketUsage(
+                            status_code=response.status_code,
+                            error=stats['Code'],
+                            debug=str(stats)
+                            )
                     else:
-                        if stats['bucket_quota']['enabled'] is True:
-                            self.stats['quota'] = stats['bucket_quota']['max_size']
-                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                        if len(stats['usage']) != 0:
+                            # If the bucket is emtpy, then just keep going
+                            self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
+                            self.stats['filecount'] = stats['usage']['rgw.main']['num_objects']
 
-                        elif stats['bucket_quota']['enabled'] is False:
-                            self.stats['quota'] = convert_size_to_bytes("1TB")
+                        if self.plugin_settings['storagestats.quota'] != 'api':
+                            self.stats['quota'] = self.plugin_settings['storagestats.quota']
                             self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-                            raise UGRStorageStatsCephS3QuotaDisabledWarning()
 
                         else:
-                            self.stats['quota'] = convert_size_to_bytes("1TB")
-                            self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-                            raise UGRStorageStatsQuotaWarning(
-                                error="NoQuotaGiven",
-                                status_code="000",
-                                )
+                            if stats['bucket_quota']['enabled'] is True:
+                                self.stats['quota'] = stats['bucket_quota']['max_size']
+                                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+
+                            elif stats['bucket_quota']['enabled'] is False:
+                                self.stats['quota'] = convert_size_to_bytes("1TB")
+                                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                                raise UGRStorageStatsCephS3QuotaDisabledWarning()
+
+                            else:
+                                self.stats['quota'] = convert_size_to_bytes("1TB")
+                                self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
+                                raise UGRStorageStatsQuotaWarning(
+                                    error="NoQuotaGiven",
+                                    status_code="000",
+                                    )
 
         # Getting the storage Stats AWS S3 API
         #elif self.plugin_settings['storagestats.api'].lower() == 'aws-cloudwatch':
@@ -1395,6 +1456,31 @@ class S3StorageStats(StorageStats):
                         schema=self.uri['scheme'],
                         debug=str(ERR),
                         )
+                except botoRequestsExceptions.SSLError as ERR:
+                    # If ca_path is custom, try the default in case
+                    # a global setting is incorrectly giving the wrong
+                    # ca's to check agains.
+                    connection = boto3.client('s3',
+                                              region_name=self.plugin_settings['s3.region'],
+                                              endpoint_url=api_url,
+                                              aws_access_key_id=self.plugin_settings['s3.pub_key'],
+                                              aws_secret_access_key=self.plugin_settings['s3.priv_key'],
+                                              use_ssl=True,
+                                              verify=True,
+                                              config=Config(
+                                                  signature_version=self.plugin_settings['s3.signature_ver'],
+                                                  connect_timeout=int(self.plugin_settings['conn_timeout']),
+                                                  retries=dict(max_attempts=0)
+                                              ),
+                                             )
+                    try:
+                        response = connection.list_objects(**kwargs)
+                    except botoRequestsExceptions.SSLError as ERR:
+                        raise UGRStorageStatsConnectionError(
+                            error=ERR.__class__.__name__,
+                            status_code="000",
+                            debug=str(ERR),
+                            )
                 except botoRequestsExceptions.RequestException as ERR:
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,

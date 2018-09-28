@@ -117,3 +117,6 @@ v0.10.1 Added check to add "/etc/ugr/ugr.conf" file to the list of .conf files
         to parse for settings. Added conn_timeout to validators in StorageStats
         with a default of 10 seconds and this is used as the timeout for
         connections.
+v0.10.2 Added second connection try for WebDAV and S3 endpoints (Azure does not
+        need it) which tries the standard CA's in case the given ca_path fails.
+        If it fails again, then an error is raised.
