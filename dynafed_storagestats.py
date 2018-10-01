@@ -2061,12 +2061,12 @@ if __name__ == '__main__':
 
     # This tuple is necessary for the starmap function to send multiple
     # arguments to the process_storagestats function.
-    endpoints_tuple = [(endpoint, ARGS) for endpoint in endpoints]
+    endpoints_args_tuple = [(endpoint, ARGS) for endpoint in endpoints]
 
     # Process each endpoint using multithreading and upload stats to memcached.
     # Number of threads to use.
     pool = ThreadPool(len(endpoints))
-    pool.starmap(process_storagestats, endpoints_tuple)
+    pool.starmap(process_storagestats, endpoints_args_tuple)
 
     # Print Storagestats to the standard output.
     if ARGS.output_stdout:
