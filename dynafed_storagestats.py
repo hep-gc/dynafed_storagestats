@@ -83,6 +83,10 @@ PARSER.add_argument('-d', '--dir',
                     default='/etc/ugr/conf.d',
                     help="Path to UGR's endpoint .conf files. Default: /etc/ugr/conf.d"
                    )
+PARSER.add_argument('-e', '--endpoint',
+                    dest='endpoint', action='store',
+                    default=False,
+                    help="Choose endpoint to check. If not present, all endpoints will be checked.")
 
 GROUP_LOGGING = PARSER.add_argument_group("Logging options")
 GROUP_LOGGING.add_argument('--logfile',
