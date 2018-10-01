@@ -1736,6 +1736,17 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
 
     return endpoints
 
+def create_url_dict(endpoints):
+    """
+    Return a dictionary of lists whose keys are the endpoint's URL. Use to find
+    endpoints which have the same URL.
+    """
+    url_dict = {}
+    for endpoint in endpoints:
+        url_dict.setdefault(endpoint.uri['url'], [])
+        url_dict[endpoint.uri['url']].append(endpoint)
+    return url_dict
+
 
 def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='11211'):
     """
