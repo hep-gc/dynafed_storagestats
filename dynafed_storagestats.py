@@ -2074,12 +2074,12 @@ if __name__ == '__main__':
 
     # Create list of endpoints to check, based on user input or unique URL's.
     endpoints_to_check = []
+    url_dict = {}
     if ARGS.endpoint:
         for endpoint in endpoints:
             if endpoint.id == ARGS.endpoint:
                 endpoints_to_check.append(endpoint)
     else:
-        url_dict = {}
         url_dict = create_url_dict(endpoints)
         for url in url_dict:
             endpoints_to_check.append(url_dict[url][0])
@@ -2092,6 +2092,17 @@ if __name__ == '__main__':
     # Number of threads to use.
     pool = ThreadPool(len(endpoints_to_check))
     pool.starmap(process_storagestats, endpoints_args_tuple)
+
+    # If there are multiple endpoints with the same url, copy the results
+    if url_dict:
+        for url in url_dict:
+            if len(url_dict[url]) >= 1:
+                for endpoint in list(range(1,len(url_dict[url]))):
+                    url_dict[url][endpoint].stats['bytesused'] = url_dict[url][0].stats['bytesused']
+                    url_dict[url][endpoint].stats['quota'] = url_dict[url][0].stats['quota']
+                    url_dict[url][endpoint].stats['bytesfree'] = url_dict[url][0].stats['bytesfree']
+                    url_dict[url][endpoint].stats['filecount'] = url_dict[url][0].stats['filecount']
+
 
     # Print Storagestats to the standard output.
     if ARGS.output_stdout:
