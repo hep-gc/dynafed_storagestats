@@ -2019,6 +2019,20 @@ def process_storagestats(endpoint, args):
                 endpoint.debug.append("[ERROR]" + ERR.debug)
 
 
+def process_url_dict_results(url_dict):
+    """
+    Checks for keys that have multiple endpoints and copies the
+    results from the first enpoint in the group to the rest.
+    """
+    for url in url_dict:
+        if len(url_dict[url]) >= 1:
+            for endpoint in list(range(1,len(url_dict[url]))):
+                url_dict[url][endpoint].stats['bytesused'] = url_dict[url][0].stats['bytesused']
+                url_dict[url][endpoint].stats['quota'] = url_dict[url][0].stats['quota']
+                url_dict[url][endpoint].stats['bytesfree'] = url_dict[url][0].stats['bytesfree']
+                url_dict[url][endpoint].stats['filecount'] = url_dict[url][0].stats['filecount']
+                url_dict[url][endpoint].status = url_dict[url][0].status
+
 def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
     """
     Setup the logger format to be used throughout the script.
@@ -2093,20 +2107,13 @@ if __name__ == '__main__':
     pool.starmap(process_storagestats, endpoints_args_tuple)
 
     # If there are multiple endpoints with the same url, copy the results
-    for url in url_dict:
-        if len(url_dict[url]) >= 1:
-            for endpoint in list(range(1,len(url_dict[url]))):
-                url_dict[url][endpoint].stats['bytesused'] = url_dict[url][0].stats['bytesused']
-                url_dict[url][endpoint].stats['quota'] = url_dict[url][0].stats['quota']
-                url_dict[url][endpoint].stats['bytesfree'] = url_dict[url][0].stats['bytesfree']
-                url_dict[url][endpoint].stats['filecount'] = url_dict[url][0].stats['filecount']
-                # url_dict[url][endpoint].status = url_dict[url][endpoint].status
-
+    process_url_dict_results(url_dict)
 
     # Print Storagestats to the standard output.
     if ARGS.output_stdout:
         for endpoint in endpoints:
-            endpoint.output_to_stdout(ARGS)
+            if endpoint.id == ARGS.endpoint or ARGS.endpoint is True:
+                endpoint.output_to_stdout(ARGS)
 
     # Create StAR Storagestats XML files for each endpoint.
     if ARGS.output_xml:
