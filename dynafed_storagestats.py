@@ -1635,18 +1635,18 @@ def create_free_space_request_content():
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
 
-def create_url_dict(endpoints, endpoints_mask=True):
+def create_urls_dict(endpoints, endpoints_mask=True):
     """
     Return a dictionary of lists whose keys are the endpoint's URL. Use to find
     endpoints which have the same URL. Use the endpoint_mask to select sepcific
     endpints by ID.
     """
-    url_dict = {}
+    urls_dict = {}
     for endpoint in endpoints:
         if endpoint.id == endpoints_mask or endpoints_mask is True:
-            url_dict.setdefault(endpoint.uri['url'], [])
-            url_dict[endpoint.uri['url']].append(endpoint)
-    return url_dict
+            urls_dict.setdefault(endpoint.uri['url'], [])
+            urls_dict[endpoint.uri['url']].append(endpoint)
+    return urls_dict
 
 def factory(plugin):
     """
@@ -2090,30 +2090,24 @@ if __name__ == '__main__':
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(ARGS.configs_directory)
 
-        # Create list of endpoints to check, based on user input or unique URL's.
-    url_dict = create_url_dict(endpoints, ARGS.endpoint)
-
-    # Create list of endpoints to check by select ing the first endpoint of
-    # every unique URL's list.
-    endpoints_to_check = []
-    for url in url_dict:
-        endpoints_to_check.append(url_dict[url][0])
+    # Create list of endpoints to check, based on user input or unique URL's.
+    urls_dict = create_urls_dict(endpoints, ARGS.endpoint)
 
     # Flag endpoints that have been detected offline by Dynafed.
-    get_connectionstats(endpoints_to_check)
+    get_connectionstats(endpoints)
 
     # This tuple is necessary for the starmap function to send multiple
-    # arguments to the process_storagestats function.
-    endpoints_args_tuple = [(url_dict[url], ARGS) for url in url_dict]
+    # arguments to the process_storagestats function. It also creates a list
+    # of endpoints per unique URL.
+    endpoints_list_and_args_tuple = [(urls_dict[url], ARGS) for url in urls_dict]
 
     # Process each endpoint using multithreading and upload stats to memcached.
     # Number of threads to use.
-    pool = ThreadPool(len(endpoints_to_check))
-    pool.starmap(process_storagestats, endpoints_args_tuple)
+    pool = ThreadPool(len(endpoints_list_and_args_tuple))
+    pool.starmap(process_storagestats, endpoints_list_and_args_tuple)
 
-    # If there are multiple endpoints with the same url, copy the results
-    # ARGS is needed to decide whether to upload information to memcached.
-    #process_url_dict_results(url_dict, ARGS)
+
+#### Output #####
 
     # Print Storagestats to the standard output.
     if ARGS.output_stdout:
