@@ -2019,7 +2019,7 @@ def process_storagestats(endpoint, args):
                 endpoint.debug.append("[ERROR]" + ERR.debug)
 
 
-def process_url_dict_results(url_dict):
+def process_url_dict_results(url_dict, args):
     """
     Checks for keys that have multiple endpoints and copies the
     results from the first enpoint in the group to the rest.
@@ -2032,6 +2032,14 @@ def process_url_dict_results(url_dict):
                 url_dict[url][endpoint].stats['bytesfree'] = url_dict[url][0].stats['bytesfree']
                 url_dict[url][endpoint].stats['filecount'] = url_dict[url][0].stats['filecount']
                 url_dict[url][endpoint].status = url_dict[url][0].status
+                # Try to upload stats to memcached.
+                if args.output_memcached:
+                    try:
+                        url_dict[url][endpoint].upload_to_memcached(args.memcached_ip, args.memcached_port)
+
+                    except UGRMemcachedConnectionError as ERR:
+                        logger.error("[%s]%s", url_dict[url][endpoint].id, ERR.debug)
+                        url_dict[url][endpoint].debug.append("[ERROR]" + ERR.debug)
 
 def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
     """
@@ -2107,7 +2115,8 @@ if __name__ == '__main__':
     pool.starmap(process_storagestats, endpoints_args_tuple)
 
     # If there are multiple endpoints with the same url, copy the results
-    process_url_dict_results(url_dict)
+    # ARGS is needed to decide whether to upload information to memcached.
+    process_url_dict_results(url_dict, ARGS)
 
     # Print Storagestats to the standard output.
     if ARGS.output_stdout:
