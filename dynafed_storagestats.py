@@ -1637,9 +1637,9 @@ def create_free_space_request_content():
 
 def create_urls_dict(endpoints, endpoints_mask=True):
     """
-    Return a dictionary of lists whose keys are the endpoint's URL. Use to find
+    Return a dictionary of lists whose keys are the endpoint's URL. Used to find
     endpoints which have the same URL. Use the endpoint_mask to select sepcific
-    endpints by ID.
+    endpoints by ID.
     """
     urls_dict = {}
     for endpoint in endpoints:
@@ -1964,10 +1964,12 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
 
 def process_storagestats(endpoint_list, args):
     """
-    Runs get_storagestats() method for the endpoint passed as argument if
-    it has not been flagged as offline and if requested it will try to
-    upload the stats to memcached. It handles the exceptions to failures
-    in obtaining the stats.
+    Runs get_storagestats() method for the first endpoint of each endpoint_list
+    passed as argument if it has not been flagged as offline. It then calls
+    process_endpoint_list_results in case there are more endpoints and the
+    reuslts need to be copied. Then if requested it will try to upload the stats
+    to memcached for all endpoints. It handles the exceptions to failures in
+    obtaining the stats.
     """
     ############# Creating loggers ################
     logger = logging.getLogger(__name__)
