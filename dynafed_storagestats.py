@@ -13,7 +13,7 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.10.3"
+__version__ = "v0.11.0"
 
 import os
 import sys
@@ -83,6 +83,10 @@ PARSER.add_argument('-d', '--dir',
                     default='/etc/ugr/conf.d',
                     help="Path to UGR's endpoint .conf files. Default: /etc/ugr/conf.d"
                    )
+PARSER.add_argument('-e', '--endpoint',
+                    dest='endpoint', action='store',
+                    default=True,
+                    help="Choose endpoint to check. If not present, all endpoints will be checked.")
 
 GROUP_LOGGING = PARSER.add_argument_group("Logging options")
 GROUP_LOGGING.add_argument('--logfile',
@@ -1631,6 +1635,18 @@ def create_free_space_request_content():
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
 
+def create_urls_dict(endpoints, endpoints_mask=True):
+    """
+    Return a dictionary of lists whose keys are the endpoint's URL. Used to find
+    endpoints which have the same URL. Use the endpoint_mask to select sepcific
+    endpoints by ID.
+    """
+    urls_dict = {}
+    for endpoint in endpoints:
+        if endpoint.id == endpoints_mask or endpoints_mask is True:
+            urls_dict.setdefault(endpoint.uri['url'], [])
+            urls_dict[endpoint.uri['url']].append(endpoint)
+    return urls_dict
 
 def factory(plugin):
     """
@@ -1735,7 +1751,6 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
                 logger.debug("[%s]Applying global setting '%s': %s", endpoints[endpoint]['id'], setting, value)
 
     return endpoints
-
 
 def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='11211'):
     """
@@ -1947,61 +1962,82 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
         output.close()
 
 
-def process_storagestats(endpoint, args):
+def process_storagestats(endpoint_list, args):
     """
-    Runs get_storagestats() method for the endpoint passed as argument if
-    it has not been flagged as offline and if requested it will try to
-    upload the stats to memcached. It handles the exceptions to failures
-    in obtaining the stats.
+    Runs get_storagestats() method for the first endpoint of each endpoint_list
+    passed as argument if it has not been flagged as offline. It then calls
+    process_endpoint_list_results in case there are more endpoints and the
+    reuslts need to be copied. Then if requested it will try to upload the stats
+    to memcached for all endpoints. It handles the exceptions to failures in
+    obtaining the stats.
     """
     ############# Creating loggers ################
     logger = logging.getLogger(__name__)
     ###############################################
-    try:
-        if endpoint.stats['check'] is True:
-            logger.info("[%s]Contacting endpoint.", endpoint.id)
-            endpoint.get_storagestats()
 
-        elif endpoint.stats['check'] == "EndpointOffline":
-            logger.error("[%s][%s]Bypassing stats check.", endpoint.id, endpoint.stats['check'])
+    try:
+        if endpoint_list[0].stats['check'] is True:
+            logger.info("[%s]Contacting endpoint.", endpoint_list[0].id)
+            endpoint_list[0].get_storagestats()
+
+        elif endpoint_list[0].stats['check'] == "EndpointOffline":
+            logger.error("[%s][%s]Bypassing stats check.", endpoint_list[0].id, endpoint_list[0].stats['check'])
             raise UGRStorageStatsOfflineEndpointError(
                 status_code="400",
                 error="EndpointOffline"
             )
         else:
-            logger.error("[%s][%s]Bypassing stats check.", endpoint.id, endpoint.stats['check'])
+            logger.error("[%s][%s]Bypassing stats check.", endpoint_list[0].id, endpoint_list[0].stats['check'])
 
     except UGRStorageStatsOfflineEndpointError as ERR:
-        logger.error("[%s]%s", endpoint.id, ERR.debug)
-        endpoint.debug.append("[ERROR]" + ERR.debug)
-        endpoint.status.append("[ERROR]" + ERR.error_code)
+        logger.error("[%s]%s", endpoint_list[0].id, ERR.debug)
+        endpoint_list[0].debug.append("[ERROR]" + ERR.debug)
+        endpoint_list[0].status.append("[ERROR]" + ERR.error_code)
 
     except UGRStorageStatsWarning as WARN:
-        logger.warning("[%s]%s", endpoint.id, WARN.debug)
-        endpoint.debug.append("[WARNING]" + WARN.debug)
-        endpoint.status.append("[WARNING]" + WARN.error_code)
+        logger.warning("[%s]%s", endpoint_list[0].id, WARN.debug)
+        endpoint_list[0].debug.append("[WARNING]" + WARN.debug)
+        endpoint_list[0].status.append("[WARNING]" + WARN.error_code)
 
     except UGRStorageStatsError as ERR:
-        logger.error("[%s]%s", endpoint.id, ERR.debug)
-        endpoint.debug.append("[ERROR]" + ERR.debug)
-        endpoint.status.append("[ERROR]" + ERR.error_code)
+        logger.error("[%s]%s", endpoint_list[0].id, ERR.debug)
+        endpoint_list[0].debug.append("[ERROR]" + ERR.debug)
+        endpoint_list[0].status.append("[ERROR]" + ERR.error_code)
 
-    # Mark the status as OK if there are no status messages or format the list
-    # as a CSV string.
     finally:
-        if len(endpoint.status) is 0:
-            endpoint.status = '[OK][OK][200]'
-        else:
-            endpoint.status = ','.join(endpoint.status)
+        # Copy results if there are multiple endpoints under one URL.
+        process_endpoint_list_results(endpoint_list)
 
-        # Try to upload stats to memcached.
-        if args.output_memcached:
-            try:
-                endpoint.upload_to_memcached(args.memcached_ip, args.memcached_port)
+        for endpoint in endpoint_list:
+            # Mark the status as OK if there are no status messages or format the list
+            # as a CSV string.
+            if len(endpoint.status) is 0:
+                endpoint.status = '[OK][OK][200]'
+            else:
+                endpoint.status = ','.join(endpoint.status)
 
-            except UGRMemcachedConnectionError as ERR:
-                logger.error("[%s]%s", endpoint.id, ERR.debug)
-                endpoint.debug.append("[ERROR]" + ERR.debug)
+            # Try to upload stats to memcached.
+            if args.output_memcached:
+                try:
+                    endpoint.upload_to_memcached(args.memcached_ip, args.memcached_port)
+
+                except UGRMemcachedConnectionError as ERR:
+                    logger.error("[%s]%s", endpoint.id, ERR.debug)
+                    endpoint.debug.append("[ERROR]" + ERR.debug)
+
+
+def process_endpoint_list_results(endpoint_list):
+    """
+    Checks for keys that have multiple endpoints and copies the
+    results from the first endpoint in the group to the rest.
+    """
+    if len(endpoint_list) >= 1:
+        for endpoint in list(range(1,len(endpoint_list))):
+            endpoint_list[endpoint].stats['bytesused'] = endpoint_list[0].stats['bytesused']
+            endpoint_list[endpoint].stats['quota'] = endpoint_list[0].stats['quota']
+            endpoint_list[endpoint].stats['bytesfree'] = endpoint_list[0].stats['bytesfree']
+            endpoint_list[endpoint].stats['filecount'] = endpoint_list[0].stats['filecount']
+            endpoint_list[endpoint].status = endpoint_list[0].status
 
 
 def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
@@ -2056,22 +2092,30 @@ if __name__ == '__main__':
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(ARGS.configs_directory)
 
+    # Create list of endpoints to check, based on user input or unique URL's.
+    urls_dict = create_urls_dict(endpoints, ARGS.endpoint)
+
     # Flag endpoints that have been detected offline by Dynafed.
     get_connectionstats(endpoints)
 
     # This tuple is necessary for the starmap function to send multiple
-    # arguments to the process_storagestats function.
-    endpoints_args_tuple = [(endpoint, ARGS) for endpoint in endpoints]
+    # arguments to the process_storagestats function. It also creates a list
+    # of endpoints per unique URL.
+    endpoints_list_and_args_tuple = [(urls_dict[url], ARGS) for url in urls_dict]
 
     # Process each endpoint using multithreading and upload stats to memcached.
     # Number of threads to use.
-    pool = ThreadPool(len(endpoints))
-    pool.starmap(process_storagestats, endpoints_args_tuple)
+    pool = ThreadPool(len(endpoints_list_and_args_tuple))
+    pool.starmap(process_storagestats, endpoints_list_and_args_tuple)
+
+
+#### Output #####
 
     # Print Storagestats to the standard output.
     if ARGS.output_stdout:
         for endpoint in endpoints:
-            endpoint.output_to_stdout(ARGS)
+            if endpoint.id == ARGS.endpoint or ARGS.endpoint is True:
+                endpoint.output_to_stdout(ARGS)
 
     # Create StAR Storagestats XML files for each endpoint.
     if ARGS.output_xml:
