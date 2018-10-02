@@ -85,7 +85,7 @@ PARSER.add_argument('-d', '--dir',
                    )
 PARSER.add_argument('-e', '--endpoint',
                     dest='endpoint', action='store',
-                    default=False,
+                    default=True,
                     help="Choose endpoint to check. If not present, all endpoints will be checked.")
 
 GROUP_LOGGING = PARSER.add_argument_group("Logging options")
@@ -1635,15 +1635,17 @@ def create_free_space_request_content():
     tree.write(buff, xml_declaration=True, encoding='UTF-8')
     return buff.getvalue()
 
-def create_url_dict(endpoints):
+def create_url_dict(endpoints, endpoints_mask=True):
     """
     Return a dictionary of lists whose keys are the endpoint's URL. Use to find
-    endpoints which have the same URL.
+    endpoints which have the same URL. Use the endpoint_mask to select sepcific
+    endpints by ID.
     """
     url_dict = {}
     for endpoint in endpoints:
-        url_dict.setdefault(endpoint.uri['url'], [])
-        url_dict[endpoint.uri['url']].append(endpoint)
+        if endpoint.id == endpoints_mask or endpoints_mask is True:
+            url_dict.setdefault(endpoint.uri['url'], [])
+            url_dict[endpoint.uri['url']].append(endpoint)
     return url_dict
 
 def factory(plugin):
@@ -2073,18 +2075,11 @@ if __name__ == '__main__':
     get_connectionstats(endpoints)
 
     # Create list of endpoints to check, based on user input or unique URL's.
-    endpoints_to_check = []
-    url_dict = {}
-    if ARGS.endpoint:
-        endpoints_selected = []
-        for endpoint in endpoints:
-            if endpoint.id == ARGS.endpoint:
-                endpoints_selected.append(endpoint)
-        url_dict = create_url_dict(endpoints_selected)
-    else:
-        url_dict = create_url_dict(endpoints)
+    url_dict = create_url_dict(endpoints, ARGS.endpoint)
 
-    # Select the first endpoint of every unique URL.
+    # Create list of endpoints to check by select ing the first endpoint of
+    # every unique URL's list.
+    endpoints_to_check = []
     for url in url_dict:
         endpoints_to_check.append(url_dict[url][0])
 
