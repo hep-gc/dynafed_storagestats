@@ -2093,10 +2093,7 @@ if __name__ == '__main__':
     # Create list of StorageStats objects, one for each configured endpoint.
     endpoints = get_endpoints(ARGS.configs_directory)
 
-    # Flag endpoints that have been detected offline by Dynafed.
-    get_connectionstats(endpoints)
-
-    # Create list of endpoints to check, based on user input or unique URL's.
+        # Create list of endpoints to check, based on user input or unique URL's.
     url_dict = create_url_dict(endpoints, ARGS.endpoint)
 
     # Create list of endpoints to check by select ing the first endpoint of
@@ -2104,6 +2101,9 @@ if __name__ == '__main__':
     endpoints_to_check = []
     for url in url_dict:
         endpoints_to_check.append(url_dict[url][0])
+
+    # Flag endpoints that have been detected offline by Dynafed.
+    get_connectionstats(endpoints_to_check)
 
     # This tuple is necessary for the starmap function to send multiple
     # arguments to the process_storagestats function.
