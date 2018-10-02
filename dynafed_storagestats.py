@@ -2076,13 +2076,17 @@ if __name__ == '__main__':
     endpoints_to_check = []
     url_dict = {}
     if ARGS.endpoint:
+        endpoints_selected = []
         for endpoint in endpoints:
             if endpoint.id == ARGS.endpoint:
-                endpoints_to_check.append(endpoint)
+                endpoints_selected.append(endpoint)
+        url_dict = create_url_dict(endpoints_selected)
     else:
         url_dict = create_url_dict(endpoints)
-        for url in url_dict:
-            endpoints_to_check.append(url_dict[url][0])
+
+    # Select the first endpoint of every unique URL.
+    for url in url_dict:
+        endpoints_to_check.append(url_dict[url][0])
 
     # This tuple is necessary for the starmap function to send multiple
     # arguments to the process_storagestats function.
@@ -2094,14 +2098,14 @@ if __name__ == '__main__':
     pool.starmap(process_storagestats, endpoints_args_tuple)
 
     # If there are multiple endpoints with the same url, copy the results
-    if url_dict:
-        for url in url_dict:
-            if len(url_dict[url]) >= 1:
-                for endpoint in list(range(1,len(url_dict[url]))):
-                    url_dict[url][endpoint].stats['bytesused'] = url_dict[url][0].stats['bytesused']
-                    url_dict[url][endpoint].stats['quota'] = url_dict[url][0].stats['quota']
-                    url_dict[url][endpoint].stats['bytesfree'] = url_dict[url][0].stats['bytesfree']
-                    url_dict[url][endpoint].stats['filecount'] = url_dict[url][0].stats['filecount']
+    for url in url_dict:
+        if len(url_dict[url]) >= 1:
+            for endpoint in list(range(1,len(url_dict[url]))):
+                url_dict[url][endpoint].stats['bytesused'] = url_dict[url][0].stats['bytesused']
+                url_dict[url][endpoint].stats['quota'] = url_dict[url][0].stats['quota']
+                url_dict[url][endpoint].stats['bytesfree'] = url_dict[url][0].stats['bytesfree']
+                url_dict[url][endpoint].stats['filecount'] = url_dict[url][0].stats['filecount']
+                # url_dict[url][endpoint].status = url_dict[url][endpoint].status
 
 
     # Print Storagestats to the standard output.
