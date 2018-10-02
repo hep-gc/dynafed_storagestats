@@ -13,7 +13,7 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.10.3"
+__version__ = "v0.11.0"
 
 import os
 import sys
