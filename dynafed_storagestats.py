@@ -86,7 +86,8 @@ PARSER.add_argument('-d', '--dir',
 PARSER.add_argument('-e', '--endpoint',
                     dest='endpoint', action='store',
                     default=True,
-                    help="Choose endpoint to check. If not present, all endpoints will be checked.")
+                    help="Choose endpoint to check. If not present, all endpoints will be checked."
+                   )
 
 GROUP_LOGGING = PARSER.add_argument_group("Logging options")
 GROUP_LOGGING.add_argument('--logfile',
