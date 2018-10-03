@@ -87,7 +87,7 @@ PARSER.add_argument('-e', '--endpoint',
                     dest='endpoint', action='store',
                     default=True,
                     help="Choose endpoint to check. If not present, all endpoints will be checked."
-                   )
+                  )
 
 GROUP_LOGGING = PARSER.add_argument_group("Logging options")
 GROUP_LOGGING.add_argument('--logfile',
@@ -2034,6 +2034,7 @@ def process_endpoint_list_results(endpoint_list):
     """
     if len(endpoint_list) >= 1:
         for endpoint in list(range(1,len(endpoint_list))):
+            logger.info('[%s] Same endpoint as "%s". Copying stats.', endpoint_list[endpoint].id, endpoint_list[0].id)
             endpoint_list[endpoint].stats['bytesused'] = endpoint_list[0].stats['bytesused']
             endpoint_list[endpoint].stats['quota'] = endpoint_list[0].stats['quota']
             endpoint_list[endpoint].stats['bytesfree'] = endpoint_list[0].stats['bytesfree']
