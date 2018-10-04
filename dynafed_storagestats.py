@@ -293,7 +293,7 @@ class UGRMemcachedIndexError(UGRMemcachedError):
     """
     Exception error when the requested index in memcached cannot be found.
     """
-    def __init__(self, error="MemcachedEmptyIndex", status_code="404", debug=None):
+    def __init__(self, error="MemcachedIndexError", status_code="404", debug=None):
 
         self.message = 'Unable to get memcached index contents.'
         self.debug = debug
@@ -749,10 +749,7 @@ class StorageStats(object):
         try:
             memcached_contents = mc.get(memcached_index)
             if memcached_contents is None:
-                raise UGRMemcachedIndexError(
-                    status_code="000",
-                    error='MemcachedEmptyIndex'
-                    )
+                raise UGRMemcachedIndexError()
 
         except UGRMemcachedIndexError as ERR:
             self.debug.append("[ERROR]" + ERR.debug)
@@ -1790,7 +1787,6 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
         idx = mc.get('Ugrpluginstats_idx')
         if idx is None:
             raise UGRMemcachedConnectionError(
-                status_code="400",
                 error="MemcachedConnectionError",
             )
 
@@ -1802,10 +1798,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
         logger.debug("Using memcached connection stats index: Ugrpluginstats_%s", idx)
         connection_stats = mc.get('Ugrpluginstats_' + idx)
         if connection_stats is None:
-            raise UGRMemcachedIndexError(
-                status_code="400",
-                error="MemcachedConnectionError",
-            )
+            raise UGRMemcachedIndexError()
 
         # Check if we actually got information
     except UGRMemcachedError as ERR:
