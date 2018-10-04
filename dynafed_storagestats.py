@@ -2049,6 +2049,7 @@ def process_endpoint_list_results(endpoint_list):
                 endpoint_list[endpoint].stats['bytesfree'] = endpoint_list[endpoint].stats['quota'] - endpoint_list[endpoint].stats['bytesused']
 
             endpoint_list[endpoint].status = endpoint_list[0].status
+            endpoint_list[endpoint].debug = endpoint_list[0].debug
 
 
 def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
