@@ -348,7 +348,7 @@ class UGRStorageStatsConnectionErrorDAVCertPath(UGRStorageStatsError):
     Exception caused when there is an issue reading a client X509 certificate
     as configured in the config files for the endpoint being processed.
     """
-    def __init__(self, error="ClientCertError", status_code="000", certfile=None, debug=None):
+    def __init__(self, error="ClientCertError", status_code="090", certfile=None, debug=None):
 
         self.message = 'Invalid client certificate path "%s".' \
                        % (certfile)
@@ -513,14 +513,14 @@ class UGRStorageStatsWarning(UGRBaseWarning):
 
 class UGRStorageStatsQuotaWarning(UGRStorageStatsWarning):
     """
-    Exception warning when no quota has been found either from information
-    provided by the endpoint's API nor found in the config file(s). Prints out
-    the default being used as specified in the StorageStats object class's
-    attribute self.stats['quota']
+    Exception warning when no quota has been provided by the endpoint's API
+    when requested. Prints out the default being used as specified in the
+    StorageStats object class's attribute self.stats['quota']
     """
-    def __init__(self, error="NoQuotaGiven", status_code="000", debug=None):
+    def __init__(self, error="NoQuotaGiven", status_code="098", debug=None, default_quota="1TB"):
 
-        self.message = 'No quota obtained from API or configuration file. Using default of 1TB'
+        self.message = 'No quota obtained from API or configuration file. Using default of %s' \
+                       % (default_quota)
         self.debug = debug
 
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -531,9 +531,10 @@ class UGRStorageStatsCephS3QuotaDisabledWarning(UGRStorageStatsWarning):
     Exception warning when contacting a Ceph S3 Admin API and it is detected
     that no quota has been enabled for the bucket.
     """
-    def __init__(self, error="BucketQuotaDisabled", status_code="000", debug=None):
+    def __init__(self, error="BucketQuotaDisabled", status_code="099", debug=None, default_quota="1TB"):
 
-        self.message = 'Bucket quota is disabled. Using default of 1TB'
+        self.message = 'Bucket quota is disabled. Using default of %s' \
+                       % (default_quota)
         self.debug = debug
 
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -546,7 +547,7 @@ class UGRStorageStatsDAVZeroQuotaWarning(UGRStorageStatsWarning):
     in the endpoint, or, more likely, the quota is not properly configured.
     We raise a warning to let the operator know.
     """
-    def __init__(self, error="ZeroAvailableBytes", status_code="000", debug=None):
+    def __init__(self, error="ZeroAvailableBytes", status_code="098", debug=None):
 
         self.message = 'RFC4331 reports quota-available-bytes as "0". While the endpoint could be full, this could also indicate an issue with the backend configuration or lack of support returning this information. If necessary input a quota manually in the configuration file.'
         self.debug = debug
@@ -827,10 +828,7 @@ class StorageStats(object):
         logger.debug("[%s]String uploading to memcached: %s", self.id, storagestats)
 
         if mc.set(memcached_index, storagestats) == 0:
-            raise UGRMemcachedConnectionError(
-                status_code="400",
-                error="MemcachedConnectionError",
-            )
+            raise UGRMemcachedConnectionError()
 
 
     def validate_plugin_settings(self):
@@ -1125,13 +1123,13 @@ class DAVStorageStats(StorageStats):
             except requests.exceptions.SSLError as ERR:
                 raise UGRStorageStatsConnectionError(
                     error=ERR.__class__.__name__,
-                    status_code="000",
+                    status_code="091",
                     debug=str(ERR),
                     )
         except requests.ConnectionError as ERR:
             raise UGRStorageStatsConnectionError(
                 error=ERR.__class__.__name__,
-                status_code="000",
+                status_code="400",
                 debug=str(ERR),
                 )
         except IOError as ERR:
@@ -1139,8 +1137,6 @@ class DAVStorageStats(StorageStats):
             certfile = str(ERR).split(":")[-1]
             certfile = certfile.replace(' ', '')
             raise UGRStorageStatsConnectionErrorDAVCertPath(
-                error="ClientCertError",
-                status_code="000",
                 certfile=certfile,
                 debug=str(ERR),
                 )
@@ -1176,7 +1172,6 @@ class DAVStorageStats(StorageStats):
                             # decision.
                             if self.stats['bytesfree'] is 0:
                                 raise UGRStorageStatsDAVZeroQuotaWarning(
-                                    error='ZeroAvailableBytes',
                                     debug=str(response.content)
                                 )
 
@@ -1356,7 +1351,7 @@ class S3StorageStats(StorageStats):
                 except requests.exceptions.SSLError as ERR:
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,
-                        status_code="000",
+                        status_code="091",
                         debug=str(ERR),
                         )
             except requests.ConnectionError as ERR:
@@ -1409,14 +1404,17 @@ class S3StorageStats(StorageStats):
                             elif stats['bucket_quota']['enabled'] is False:
                                 self.stats['quota'] = convert_size_to_bytes("1TB")
                                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
-                                raise UGRStorageStatsCephS3QuotaDisabledWarning()
+                                raise UGRStorageStatsCephS3QuotaDisabledWarning(
+                                    default_quota=self.stats['quota'],
+                                    )
 
                             else:
                                 self.stats['quota'] = convert_size_to_bytes("1TB")
                                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
                                 raise UGRStorageStatsQuotaWarning(
                                     error="NoQuotaGiven",
-                                    status_code="000",
+                                    status_code="098",
+                                    default_quota=self.stats['quota'],
                                     )
 
         # Getting the storage Stats AWS S3 API
@@ -1495,25 +1493,25 @@ class S3StorageStats(StorageStats):
                     except botoRequestsExceptions.SSLError as ERR:
                         raise UGRStorageStatsConnectionError(
                             error=ERR.__class__.__name__,
-                            status_code="000",
+                            status_code="091",
                             debug=str(ERR),
                             )
                 except botoRequestsExceptions.RequestException as ERR:
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,
-                        status_code="000",
+                        status_code="400",
                         debug=str(ERR),
                         )
                 except botoExceptions.ParamValidationError as ERR:
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,
-                        status_code="000",
+                        status_code="095",
                         debug=str(ERR),
                         )
                 except botoExceptions.BotoCoreError as ERR:
                     raise UGRStorageStatsConnectionError(
                         error=ERR.__class__.__name__,
-                        status_code="000",
+                        status_code="400",
                         debug=str(ERR),
                         )
 
@@ -1546,7 +1544,8 @@ class S3StorageStats(StorageStats):
                 self.stats['bytesfree'] = self.stats['quota'] - self.stats['bytesused']
                 raise UGRStorageStatsQuotaWarning(
                     error="NoQuotaGiven",
-                    status_code="000",
+                    status_code="098",
+                    default_quota=self.stats['quota'],
                 )
 
             else:
@@ -1786,9 +1785,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
         # Different versions of memcache module return bytes.
         idx = mc.get('Ugrpluginstats_idx')
         if idx is None:
-            raise UGRMemcachedConnectionError(
-                error="MemcachedConnectionError",
-            )
+            raise UGRMemcachedConnectionError()
 
         if isinstance(idx, bytes):
             idx = str(idx, 'utf-8')
@@ -2037,6 +2034,7 @@ def process_storagestats(endpoint_list, args):
                 except UGRMemcachedConnectionError as ERR:
                     logger.error("[%s]%s", endpoint.id, ERR.debug)
                     endpoint.debug.append("[ERROR]" + ERR.debug)
+                    endpoint.status = endpoint.status + "," + "[ERROR]" + ERR.error_code
 
 
 def process_endpoint_list_results(endpoint_list):
