@@ -990,21 +990,21 @@ class AzureStorageStats(StorageStats):
             except azure.common.AzureMissingResourceHttpError as ERR:
                 raise UGRStorageStatsErrorAzureContainerNotFound(
                     error='ContainerNotFound',
-                    status_code=404,
+                    status_code="404",
                     debug=str(ERR),
                     container=container_name,
                     )
             except azure.common.AzureHttpError as ERR:
                 raise UGRStorageStatsConnectionErrorAzureAPI(
                     error='ConnectionError',
-                    status_code=400,
+                    status_code="400",
                     debug=str(ERR),
                     api=self.plugin_settings['storagestats.api'],
                     )
             except azure.common.AzureException as ERR:
                 raise UGRStorageStatsConnectionError(
                     error='ConnectionError',
-                    status_code=400,
+                    status_code="400",
                     debug=str(ERR),
                     )
             else:
