@@ -603,21 +603,25 @@ class StorageStats(object):
             'conn_timeout': {
                 'default': 10,
                 'required': False,
+                'status_code': '001',
                 'type': 'int',
-            },
-            'storagestats.quota': {
-                'default': 'api',
-                'required': False,
             },
             'storagestats.api': {
                 'default': 'generic',
                 'required': False,
+                'status_code': '030',
                 'valid': ['generic'],
+            },
+            'storagestats.quota': {
+                'default': 'api',
+                'required': False,
+                'status_code': '031',
             },
             'ssl_check': {
                 'boolean': True,
                 'default': True,
                 'required': False,
+                'status_code': '004',
                 'valid': ['true', 'false', 'yes', 'no']
             },
         }
@@ -855,12 +859,14 @@ class StorageStats(object):
                         raise UGRConfigFileErrorMissingRequiredSetting(
                             error="MissingRequiredSetting",
                             setting=ep_setting,
+                            status_code=self.validators[ep_setting]['status_code'],
                             )
                     else:
                         raise UGRConfigFileWarningMissingSetting(
                             error="MissingSetting",
                             setting=ep_setting,
                             setting_default=self.validators[ep_setting]['default'],
+                            status_code=self.validators[ep_setting]['status_code'],
                             )
                 except UGRConfigFileErrorMissingRequiredSetting as ERR:
                     # Mark endpoint to be skipped with reason.
@@ -890,6 +896,7 @@ class StorageStats(object):
                         raise UGRConfigFileErrorInvalidSetting(
                             error="InvalidSetting",
                             setting=ep_setting,
+                            status_code=self.validators[ep_setting]['status_code'],
                             valid_plugin_settings=self.validators[ep_setting]['valid']
                             )
                     else:
@@ -946,10 +953,12 @@ class AzureStorageStats(StorageStats):
         self.validators.update({
             'azure.key': {
                 'required': True,
+                'status_code': '010',
             },
             'storagestats.api': {
                 'default': 'generic',
                 'required': False,
+                'status_code': '030',
                 'valid': ['generic', 'metrics'],
             },
         })
@@ -1029,13 +1038,16 @@ class DAVStorageStats(StorageStats):
         self.validators.update({
             'cli_certificate': {
                 'required': True,
+                'status_code': '001',
             },
             'cli_private_key': {
                 'required': True,
+                'status_code': '002',
             },
             'storagestats.api': {
                 'default': 'rfc4331',
                 'required': False,
+                'status_code': '030',
                 'valid': ['generic', 'rfc4331'],
             },
         })
@@ -1220,26 +1232,32 @@ class S3StorageStats(StorageStats):
             's3.alternate': {
                 'default': 'false',
                 'required': False,
+                'status_code': '020',
                 'valid': ['true', 'false', 'yes', 'no']
             },
             'storagestats.api': {
                 'default': 'generic',
                 'required': False,
+                'status_code': '030',
                 'valid': ['ceph-admin', 'generic'],
             },
             's3.priv_key': {
                 'required': True,
+                'status_code': '021',
             },
             's3.pub_key': {
                 'required': True,
+                'status_code': '022',
             },
             's3.region': {
                 'default': 'us-east-1',
                 'required': False,
+                'status_code': '023',
             },
             's3.signature_ver': {
                 'default': 's3v4',
                 'required': False,
+                'status_code': '024',
                 'valid': ['s3', 's3v4'],
             },
         })
