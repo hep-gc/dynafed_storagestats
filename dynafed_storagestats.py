@@ -2029,16 +2029,25 @@ def process_storagestats(endpoint_list, args):
 
 def process_endpoint_list_results(endpoint_list):
     """
-    Checks for keys that have multiple endpoints and copies the
-    results from the first endpoint in the group to the rest.
+    Checks for keys that have multiple endpoints and copies the results from
+    the first endpoint in the group to the rest. Non api quotas will be
+    respected.
     """
     if len(endpoint_list) >= 1:
         for endpoint in list(range(1,len(endpoint_list))):
             logger.info('[%s] Same endpoint as "%s". Copying stats.', endpoint_list[endpoint].id, endpoint_list[0].id)
-            endpoint_list[endpoint].stats['bytesused'] = endpoint_list[0].stats['bytesused']
-            endpoint_list[endpoint].stats['quota'] = endpoint_list[0].stats['quota']
-            endpoint_list[endpoint].stats['bytesfree'] = endpoint_list[0].stats['bytesfree']
             endpoint_list[endpoint].stats['filecount'] = endpoint_list[0].stats['filecount']
+            endpoint_list[endpoint].stats['bytesused'] = endpoint_list[0].stats['bytesused']
+
+            # Check if the plugin settings requests the quota from API. If so,
+            # copy it, else use the default or manually setup quota.
+            if endpoint_list[endpoint].plugin_settings['storagestats.quota'] == 'api':
+                endpoint_list[endpoint].stats['quota'] = endpoint_list[0].stats['quota']
+                endpoint_list[endpoint].stats['bytesfree'] = endpoint_list[0].stats['bytesfree']
+            else:
+                endpoint_list[endpoint].stats['quota'] = endpoint_list[endpoint].plugin_settings['storagestats.quota']
+                endpoint_list[endpoint].stats['bytesfree'] = endpoint_list[endpoint].stats['quota'] - endpoint_list[endpoint].stats['bytesused']
+
             endpoint_list[endpoint].status = endpoint_list[0].status
 
 
