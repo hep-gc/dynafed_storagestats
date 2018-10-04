@@ -1642,11 +1642,15 @@ def create_urls_dict(endpoints, endpoints_mask=True):
     endpoints which have the same URL. Use the endpoint_mask to select sepcific
     endpoints by ID.
     """
+    ############# Creating loggers ################
+    logger = logging.getLogger(__name__)
+    ###############################################
     urls_dict = {}
     for endpoint in endpoints:
         if endpoint.id == endpoints_mask or endpoints_mask is True:
             urls_dict.setdefault(endpoint.uri['url'], [])
             urls_dict[endpoint.uri['url']].append(endpoint)
+    logger.debug("Dictonary of URL's and their endpoints: %s", urls_dict)
     return urls_dict
 
 def factory(plugin):
@@ -2033,6 +2037,9 @@ def process_endpoint_list_results(endpoint_list):
     the first endpoint in the group to the rest. Non api quotas will be
     respected.
     """
+    ############# Creating loggers ################
+    logger = logging.getLogger(__name__)
+    ###############################################
     if len(endpoint_list) >= 1:
         for endpoint in list(range(1,len(endpoint_list))):
             logger.info('[%s] Same endpoint as "%s". Copying stats.', endpoint_list[endpoint].id, endpoint_list[0].id)
