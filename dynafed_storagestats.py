@@ -361,7 +361,7 @@ class UGRStorageStatsConnectionErrorInvalidSchema(UGRStorageStatsError):
     """
     Exception error when the URN's schema does not match any valid options.
     """
-    def __init__(self, error="InvalidSchema", status_code="000", schema=None, debug=None):
+    def __init__(self, error="InvalidSchema", status_code="008", schema=None, debug=None):
 
         self.message = 'Invalid schema "%s".' \
                        % (schema)
@@ -1102,7 +1102,6 @@ class DAVStorageStats(StorageStats):
         except requests.exceptions.InvalidSchema as ERR:
             raise UGRStorageStatsConnectionErrorInvalidSchema(
                 error='InvalidSchema',
-                status_code="000",
                 schema=self.uri['scheme'],
                 debug=str(ERR),
                 )
@@ -1336,7 +1335,6 @@ class S3StorageStats(StorageStats):
             except requests.exceptions.InvalidSchema as ERR:
                 raise UGRStorageStatsConnectionErrorInvalidSchema(
                     error='InvalidSchema',
-                    status_code="000",
                     schema=self.uri['scheme'],
                     debug=str(ERR),
                     )
@@ -1475,7 +1473,6 @@ class S3StorageStats(StorageStats):
                 except botoRequestsExceptions.InvalidSchema as ERR:
                     raise UGRStorageStatsConnectionErrorInvalidSchema(
                         error='InvalidSchema',
-                        status_code="000",
                         schema=self.uri['scheme'],
                         debug=str(ERR),
                         )
