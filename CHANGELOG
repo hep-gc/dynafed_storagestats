@@ -123,5 +123,8 @@ v0.10.2 Added second connection try for WebDAV and S3 endpoints (Azure does not
 v0.10.3 Renamed endpoints_tuple to endpoints_args_tuple.
 v0.11.0 Added new functions to deal when multiple configured endpoints share the
         same URL, making them actually a unique physical endpoint, to avoid
-        multiple queries. Also added the avility to use the "-e flag" to specify
+        multiple queries. Also added the ability to use the "-e flag" to specify
         a single endpoint from the CLI to check.
+v0.11.1 Added check if non-api quota setting is setup, to keep the manual number
+        if api quota setting, then it is copied from the parent endpoint. Added
+        INFO and DEBUG log information for these operations.
