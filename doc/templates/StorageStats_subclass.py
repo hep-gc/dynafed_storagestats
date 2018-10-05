@@ -31,8 +31,10 @@ class NewTypeStorageStats (StorageStats):
         # to following format. Note that the only required key is "required".
         self.validators.update({
             'setting.name': {
+                'boolean': True, # Needed to typecast from string to boolean.
                 'default': '', # Default value to use if setting is missing.
                 'required': True/False, # Wheter this setting must be present.
+                'status_code': '000', # Check table and give a number that id's the setting according to the plugin type.
                 'valid': ['', ''], # List of valid values to validate against.
             },
         })
