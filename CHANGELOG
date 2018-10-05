@@ -128,3 +128,5 @@ v0.11.0 Added new functions to deal when multiple configured endpoints share the
 v0.11.1 Added check if non-api quota setting is setup, to keep the manual number
         if api quota setting, then it is copied from the parent endpoint. Added
         INFO and DEBUG log information for these operations.
+v0.12.0 Added error status_codes to all warning/exceptions. Added code error in
+        README.
