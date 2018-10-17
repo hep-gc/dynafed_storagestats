@@ -13,13 +13,13 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.12.0"
+__version__ = "v0.12.1"
 
 import os
 import sys
 import time
 import uuid
-import logging
+import logging, logging.handlers
 from io import BytesIO
 import argparse
 import copy
@@ -2083,7 +2083,10 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
     log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
 
     # Set file where to log and the mode to use and set the format to use.
-    log_handler_file = logging.FileHandler(logfile, mode='a')
+    log_handler_file = logging.handlers.TimedRotatingFileHandler(logfile,
+                                                                 when="midnight",
+                                                                 backupCount=15,
+                                                                )
     log_handler_file.setFormatter(log_format_file)
 
     # Add the file handler created above.
