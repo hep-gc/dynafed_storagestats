@@ -26,6 +26,17 @@ Python Modules:
 - requests >= 2.12.5
 - requests_aws4auth >= 0.9 (pip3 install requests-aws4auth)
 
+### CentOS / SL 6
+
+Python 3.4 is available from EPEL repository.
+
+In order to install the above modules in python 3, pip3 needs to be setup. Since
+it is not in the repos, run the following command:
+
+```
+sudo  python3 /usr/lib/python3.4/site-packages/easy_install.py pip
+```
+
 ## Usage
 
 This module is intended to be run periodically as a cron job, so place it in
@@ -208,29 +219,29 @@ Keyword/Setting | Status Code
 Unknown Gneral Warning/Error | 000
 Unknown/Invalid setting error | 001
 Setting ID Mismatch | 002
-**General Settings/DAV Plugin** | 
+**General Settings/DAV Plugin** |
 cli_certificate | 003
 cli_private_key | 004
 conn_timeout | 005
 ssl_check | 006
 Invalid URL Schema | 008
 Unsupported Plugin | 009
-**Azure Plugin** | 
+**Azure Plugin** |
 azure.key | 010
-**S3 Plugin** | 
+**S3 Plugin** |
 s3.alternate | 020
 s3.priv_key | 021
 s3.pub_key | 022
 s3.region | 023
 s3.signature_ver | 024
-**Storage Stats Scripts Settings** | 
+**Storage Stats Scripts Settings** |
 storagestats.api | 070
 storagestats.quota | 071
-**Memcached Warning/Errors** | 
+**Memcached Warning/Errors** |
 Unknown | 080
 Memcached Connection | 081
 Memcached Index | 082
-**StorageStats Connection Warning/Errors** | 
+**StorageStats Connection Warning/Errors** |
 Unknown | 090
 Client Certificate Path | 091
 Server SSL Validation | 092
