@@ -2043,7 +2043,6 @@ def process_storagestats(endpoint_list, args):
                     endpoint.debug.append("[ERROR]" + ERR.debug)
                     endpoint.status = endpoint.status + "," + "[ERROR]" + ERR.error_code
 
-
 def process_endpoint_list_results(endpoint_list):
     """
     Checks for keys that have multiple endpoints and copies the results from
