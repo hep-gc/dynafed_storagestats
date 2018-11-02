@@ -13,7 +13,7 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.12.1"
+__version__ = "v0.12.2"
 
 import os
 import sys
@@ -78,10 +78,10 @@ except ImportError:
 
 PARSER = argparse.ArgumentParser()
 
-PARSER.add_argument('-d', '--dir',
-                    dest='configs_directory', action='store',
-                    default='/etc/ugr/conf.d',
-                    help="Path to UGR's endpoint .conf files. Default: /etc/ugr/conf.d"
+PARSER.add_argument('-c', '--config', '-d', '--dir',
+                    dest='configs_directory', action='append',
+                    default=['/etc/ugr/conf.d'],
+                    help="Path to UGR's endpoint .conf files or direcotry. Can be used multiple times. Default: '/etc/ugr/conf.d'."
                    )
 PARSER.add_argument('-e', '--endpoint',
                     dest='endpoint', action='store',
@@ -1686,7 +1686,7 @@ def factory(plugin):
             )
 
 
-def get_config(config_dir="/etc/ugr/conf.d/"):
+def get_config(config_dir=["/etc/ugr/conf.d/"]):
     """
     Function that returns a dictionary in which every key represents a
     storage endpoint defined in the ugr configuration files. These files will
@@ -1708,9 +1708,17 @@ def get_config(config_dir="/etc/ugr/conf.d/"):
     else:
         logger.warn("UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. This is normal if script is run on a host that does not run Dynafed.")
 
-    # Now we move to the config dir and add any other .conf files to the list.
-    os.chdir(config_dir)
-    config_files = config_files + sorted(glob.glob("*.conf"))
+    # Now we add any files and/or files inside directories given in a list to
+    # the config dir and add any other .conf files to the list.
+    for element in config_dir:
+        if os.path.isdir(element):
+            config_files = config_files + sorted(glob.glob(element + "/" + "*.conf"))
+        elif os.path.isfile(element):
+            config_files.append(element)
+        else:
+            logger.error('Element "%s" provided is an invalid directory or filename and will be ignored.'\
+                         % (element)
+                        )
 
     # Finally we parse them.
     for config_file in config_files:
@@ -1832,7 +1840,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
                 logger.info("[%s]Endpoint was not found in connection stats. Will be assumed 'Oniline'", endpoint)
 
 
-def get_endpoints(config_dir="/etc/ugr/conf.d/"):
+def get_endpoints(config_dir=["/etc/ugr/conf.d/"]):
     """
     Returns list of storage endpoint objects whose class represents each storage
     endpoint configured in UGR's configuration files.
@@ -2034,7 +2042,6 @@ def process_storagestats(endpoint_list, args):
                     logger.error("[%s]%s", endpoint.id, ERR.debug)
                     endpoint.debug.append("[ERROR]" + ERR.debug)
                     endpoint.status = endpoint.status + "," + "[ERROR]" + ERR.error_code
-
 
 def process_endpoint_list_results(endpoint_list):
     """

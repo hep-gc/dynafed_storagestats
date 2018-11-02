@@ -70,7 +70,9 @@ To get help:
 ```
 dynafed_storagestats -h
 
-usage: dynafed_storagestats.py [-h] [-d CONFIGS_DIRECTORY] [--logfile LOGFILE]
+usage: dynafed_storagestats.py [-h] [-c CONFIGS_DIRECTORY]
+                               [-d CONFIGS_DIRECTORY] [-e ENDPOINT]
+                               [--logfile LOGFILE]
                                [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                [--memhost MEMCACHED_IP]
                                [--memport MEMCACHED_PORT] [--debug] [-m]
@@ -79,9 +81,20 @@ usage: dynafed_storagestats.py [-h] [-d CONFIGS_DIRECTORY] [--logfile LOGFILE]
 
 optional arguments:
   -h, --help            show this help message and exit
+  -c CONFIGS_DIRECTORY, --config CONFIGS_DIRECTORY
+                        Path to UGR's endpoint .conf files. Can be used
+                        multiple times and in conjunction with -d. If neither
+                        -c or -d flags present, '/etc/ugr/conf.d' directory is
+                        used by default.
   -d CONFIGS_DIRECTORY, --dir CONFIGS_DIRECTORY
-                        Path to UGR's endpoint .conf files. Default:
-                        /etc/ugr/conf.d
+                        Path to UGR's endpoint .conf files containing
+                        direcotry. Can be used multiple times and in
+                        conjunction with -d. If neither -c or -d flags
+                        present, '/etc/ugr/conf.d' directory is used by
+                        default.
+  -e ENDPOINT, --endpoint ENDPOINT
+                        Choose endpoint to check. If not present, all
+                        endpoints will be checked.
 
 Logging options:
   --logfile LOGFILE     Change where to ouput logs. Default:
