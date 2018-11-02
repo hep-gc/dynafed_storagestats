@@ -129,8 +129,8 @@ GROUP_OUTPUT.add_argument('--json',
                           default=False,
                           help='Set to output json file with storage stats. !!In development!!'
                          )
-GROUP_OUTPUT.add_argument('-o', '--output_dir',
-                          dest='output_dir', action='store',
+GROUP_OUTPUT.add_argument('-o', '--output',
+                          dest='output_path', action='store',
                           default='/tmp',
                           help='Directory to output storage stat files. Defautl: /tmp'
                          )
@@ -1869,7 +1869,7 @@ def get_endpoints(config_dir=["/etc/ugr/conf.d/"]):
     return storage_objects
 
 
-def output_json(endpoints, output_dir="/tmp"):
+def output_json(endpoints, output_path="/tmp"):
     """
     Create a single json file for all endpoints passed to this function.
     """
@@ -1913,13 +1913,17 @@ def output_json(endpoints, output_dir="/tmp"):
         }
     skeleton = {"storageservice": storageservice}
 
-    filename = output_dir + '/' + 'dynafed_storagestats' + '.json'
+    if os.path.isdir(output_path):
+        filename = output_path + '/' + 'dynafed_storagestats' + '.json'
+    else:
+        filename = output_path
+
     with open(filename, 'w') as output:
         output.write(json.dumps(skeleton, indent=4))
         output.close()
 
 
-def output_plain(endpoints, output_dir="/tmp"):
+def output_plain(endpoints, output_path="/tmp"):
     """
     Create a single txt file for all endpoints passed to this function.
     """
@@ -1932,7 +1936,7 @@ def output_plain(endpoints, output_dir="/tmp"):
     dynafed_totalsize = 0
 
     # Open file handle to write to
-    filename = output_dir + '/' + 'dynafed_storagestats' + '.txt'
+    filename = output_path + '/' + 'dynafed_storagestats' + '.txt'
     with open(filename, 'w') as output:
         output.write("ID URL MountPoint Protocol Timestamp Quota BytesUsed BytesFree FileCount\n")
 
@@ -1954,7 +1958,7 @@ def output_plain(endpoints, output_dir="/tmp"):
     output.close()
 
 
-def output_StAR_xml(endpoints, output_dir="/tmp"):
+def output_StAR_xml(endpoints, output_path="/tmp"):
     """
     Create a single StAR XML file for all endpoints passed to this function.
     """
@@ -1973,7 +1977,7 @@ def output_StAR_xml(endpoints, output_dir="/tmp"):
         xmlroot.append(sub_element)
 
     xml_output = etree.tostring(xmlroot, pretty_print=True, encoding='unicode')
-    filename = output_dir + '/' + 'dynafed_storagestats' + '.xml'
+    filename = output_path + '/' + 'dynafed_storagestats' + '.xml'
     with open(filename, 'w') as output:
         output.write(xml_output)
         output.close()
@@ -2154,12 +2158,12 @@ if __name__ == '__main__':
 
     # Create StAR Storagestats XML files for each endpoint.
     if ARGS.output_xml:
-        output_StAR_xml(endpoints, ARGS.output_dir)
+        output_StAR_xml(endpoints, ARGS.output_path)
 
     # Create json file with storagestats
     if ARGS.output_json:
-        output_json(endpoints, ARGS.output_dir)
+        output_json(endpoints, ARGS.output_path)
 
     # Create txt file with storagestats
     if ARGS.output_plain:
-        output_plain(endpoints, ARGS.output_dir)
+        output_plain(endpoints, ARGS.output_path)
