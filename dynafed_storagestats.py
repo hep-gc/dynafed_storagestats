@@ -13,7 +13,7 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.12.2"
+__version__ = "v0.12.3"
 
 import os
 import sys
@@ -132,7 +132,7 @@ GROUP_OUTPUT.add_argument('--json',
 GROUP_OUTPUT.add_argument('-o', '--output',
                           dest='output_path', action='store',
                           default='/tmp',
-                          help='Directory to output storage stat files. Defautl: /tmp'
+                          help='Directory or file to output storage stat files. Defautl: /tmp/dynafed_storagestats.json'
                          )
 GROUP_OUTPUT.add_argument('--plain',
                           dest='output_plain', action='store_true',
