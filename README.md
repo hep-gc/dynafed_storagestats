@@ -70,28 +70,19 @@ To get help:
 ```
 dynafed_storagestats -h
 
-usage: dynafed_storagestats.py [-h] [-c CONFIGS_DIRECTORY]
-                               [-d CONFIGS_DIRECTORY] [-e ENDPOINT]
+usage: dynafed_storagestats.py [-h] [-c CONFIGS_DIRECTORY] [-e ENDPOINT]
                                [--logfile LOGFILE]
                                [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                [--memhost MEMCACHED_IP]
                                [--memport MEMCACHED_PORT] [--debug] [-m]
-                               [--json] [-o OUTPUT_DIR] [--plain] [--stdout]
+                               [--json] [-o OUTPUT_PATH] [--plain] [--stdout]
                                [-v] [--xml]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -c CONFIGS_DIRECTORY, --config CONFIGS_DIRECTORY
-                        Path to UGR's endpoint .conf files. Can be used
-                        multiple times and in conjunction with -d. If neither
-                        -c or -d flags present, '/etc/ugr/conf.d' directory is
-                        used by default.
-  -d CONFIGS_DIRECTORY, --dir CONFIGS_DIRECTORY
-                        Path to UGR's endpoint .conf files containing
-                        direcotry. Can be used multiple times and in
-                        conjunction with -d. If neither -c or -d flags
-                        present, '/etc/ugr/conf.d' directory is used by
-                        default.
+  -c CONFIGS_DIRECTORY, --config CONFIGS_DIRECTORY, -d CONFIGS_DIRECTORY, --dir CONFIGS_DIRECTORY
+                        Path to UGR's endpoint .conf files or direcotry. Can
+                        be used multiple times. Default: '/etc/ugr/conf.d'.
   -e ENDPOINT, --endpoint ENDPOINT
                         Choose endpoint to check. If not present, all
                         endpoints will be checked.
@@ -115,8 +106,9 @@ Output options:
   -m, --memcached       Declare to enable uploading information to memcached.
   --json                Set to output json file with storage stats. !!In
                         development!!
-  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
-                        Directory to output storage stat files. Defautl: /tmp
+  -o OUTPUT_PATH, --output OUTPUT_PATH
+                        Directory or file to output storage stat files.
+                        Defautl: /tmp/dynafed_storagestats.json
   --plain               Set to output stats to plain txt file.
   --stdout              Set to output stats on stdout.
   -v, --verbose         Show on stderr events according to loglevel.
