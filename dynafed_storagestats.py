@@ -87,7 +87,7 @@ PARSER.add_argument('-e', '--endpoint',
                     dest='endpoint', action='store',
                     default=True,
                     help="Choose endpoint to check. If not present, all endpoints will be checked."
-                  )
+                   )
 
 GROUP_LOGGING = PARSER.add_argument_group("Logging options")
 GROUP_LOGGING.add_argument('--logfile',
@@ -559,7 +559,7 @@ class UGRStorageStatsDAVZeroQuotaWarning(UGRStorageStatsWarning):
 ## Storage Classes ##
 #####################
 
-class StorageStats(object):
+class StorageStats():
     """
     Class that will define how data from UGR's configruation file will be stored
     for earch storage endpoint. As well as how to obtain stats and output it.
@@ -1686,7 +1686,7 @@ def factory(plugin):
             )
 
 
-def get_config(config_dir=["/etc/ugr/conf.d/"]):
+def get_config(config_dir=None):
     """
     Function that returns a dictionary in which every key represents a
     storage endpoint defined in the ugr configuration files. These files will
@@ -1699,6 +1699,8 @@ def get_config(config_dir=["/etc/ugr/conf.d/"]):
     ############# Creating loggers ################
     logger = logging.getLogger(__name__)
     ###############################################
+    if config_dir is None:
+        config_dir = ["/etc/ugr/conf.d/"]
     endpoints = {}
     global_settings = {}
     config_files = []
@@ -1840,7 +1842,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
                 logger.info("[%s]Endpoint was not found in connection stats. Will be assumed 'Oniline'", endpoint)
 
 
-def get_endpoints(config_dir=["/etc/ugr/conf.d/"]):
+def get_endpoints(config_dir=None):
     """
     Returns list of storage endpoint objects whose class represents each storage
     endpoint configured in UGR's configuration files.
@@ -1848,6 +1850,8 @@ def get_endpoints(config_dir=["/etc/ugr/conf.d/"]):
     ############# Creating loggers ################
     logger = logging.getLogger(__name__)
     ###############################################
+    if config_dir is None:
+        config_dir = ["/etc/ugr/conf.d/"]
     storage_objects = []
     logger.info("Looking for storage endpoint configuration files in '%s'", config_dir)
     endpoints = get_config(config_dir)
@@ -2057,7 +2061,7 @@ def process_endpoint_list_results(endpoint_list):
     logger = logging.getLogger(__name__)
     ###############################################
     if len(endpoint_list) >= 1:
-        for endpoint in list(range(1,len(endpoint_list))):
+        for endpoint in list(range(1, len(endpoint_list))):
             logger.info('[%s] Same endpoint as "%s". Copying stats.', endpoint_list[endpoint].id, endpoint_list[0].id)
             endpoint_list[endpoint].stats['filecount'] = endpoint_list[0].stats['filecount']
             endpoint_list[endpoint].stats['bytesused'] = endpoint_list[0].stats['bytesused']
