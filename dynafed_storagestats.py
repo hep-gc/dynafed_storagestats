@@ -1332,7 +1332,7 @@ class S3StorageStats(StorageStats):
             except requests.exceptions.SSLError as ERR:
                 # If ca_path is custom, try the default in case
                 # a global setting is incorrectly giving the wrong
-                # ca's to check agains.
+                # ca's to check against.
                 try:
                     response = requests.request(
                         method="GET",
@@ -1385,10 +1385,15 @@ class S3StorageStats(StorageStats):
                             debug=str(stats)
                             )
                     else:
-                        if len(stats['usage']) != 0:
-                            # If the bucket is emtpy, then just keep going
+                        # Even if "stats['usage']" exists, it might be an empty
+                        # dict with a new bucket.
+                        # We deal with that by setting stats 0.
+                        if stats['usage']:
                             self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
                             self.stats['filecount'] = stats['usage']['rgw.main']['num_objects']
+                        else:
+                            self.stats['bytesused'] = 0
+                            self.stats['filecount'] = 0
 
                         if self.plugin_settings['storagestats.quota'] != 'api':
                             self.stats['quota'] = self.plugin_settings['storagestats.quota']
