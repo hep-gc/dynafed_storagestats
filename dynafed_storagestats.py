@@ -1707,7 +1707,7 @@ def get_config(config_dir=None):
     if os.path.isfile("/etc/ugr/ugr.conf"):
         config_files.append("/etc/ugr/ugr.conf")
     else:
-        logger.warn("UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. This is normal if script is run on a host that does not run Dynafed.")
+        logger.warning("UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. This is normal if script is run on a host that does not run Dynafed.")
 
     # Now we add any files and/or files inside directories given in a list to
     # the config dir and add any other .conf files to the list.
