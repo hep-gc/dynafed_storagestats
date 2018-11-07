@@ -13,7 +13,7 @@ Prerequisites:
         - requests_aws4auth >= 0.9
 """
 
-__version__ = "v0.12.3"
+__version__ = "v0.12.4"
 
 import os
 import sys
@@ -87,7 +87,7 @@ PARSER.add_argument('-e', '--endpoint',
                     dest='endpoint', action='store',
                     default=True,
                     help="Choose endpoint to check. If not present, all endpoints will be checked."
-                  )
+                   )
 
 GROUP_LOGGING = PARSER.add_argument_group("Logging options")
 GROUP_LOGGING.add_argument('--logfile',
@@ -559,7 +559,7 @@ class UGRStorageStatsDAVZeroQuotaWarning(UGRStorageStatsWarning):
 ## Storage Classes ##
 #####################
 
-class StorageStats(object):
+class StorageStats():
     """
     Class that will define how data from UGR's configruation file will be stored
     for earch storage endpoint. As well as how to obtain stats and output it.
@@ -774,7 +774,6 @@ class StorageStats(object):
         the last warning/error, and if proper flags set, memcached indices and
         contents and full warning/error debug information from the exceptions.
         """
-        mc = memcache.Client([args.memcached_ip + ':' + args.memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
         memcached_contents = self.get_from_memcached(args.memcached_ip, args.memcached_port)
         if memcached_contents is None:
@@ -1333,7 +1332,7 @@ class S3StorageStats(StorageStats):
             except requests.exceptions.SSLError as ERR:
                 # If ca_path is custom, try the default in case
                 # a global setting is incorrectly giving the wrong
-                # ca's to check agains.
+                # ca's to check against.
                 try:
                     response = requests.request(
                         method="GET",
@@ -1386,10 +1385,15 @@ class S3StorageStats(StorageStats):
                             debug=str(stats)
                             )
                     else:
-                        if len(stats['usage']) != 0:
-                            # If the bucket is emtpy, then just keep going
+                        # Even if "stats['usage']" exists, it might be an empty
+                        # dict with a new bucket.
+                        # We deal with that by setting stats 0.
+                        if stats['usage']:
                             self.stats['bytesused'] = stats['usage']['rgw.main']['size_utilized']
                             self.stats['filecount'] = stats['usage']['rgw.main']['num_objects']
+                        else:
+                            self.stats['bytesused'] = 0
+                            self.stats['filecount'] = 0
 
                         if self.plugin_settings['storagestats.quota'] != 'api':
                             self.stats['quota'] = self.plugin_settings['storagestats.quota']
@@ -1686,7 +1690,7 @@ def factory(plugin):
             )
 
 
-def get_config(config_dir=["/etc/ugr/conf.d/"]):
+def get_config(config_dir=None):
     """
     Function that returns a dictionary in which every key represents a
     storage endpoint defined in the ugr configuration files. These files will
@@ -1699,6 +1703,8 @@ def get_config(config_dir=["/etc/ugr/conf.d/"]):
     ############# Creating loggers ################
     logger = logging.getLogger(__name__)
     ###############################################
+    if config_dir is None:
+        config_dir = ["/etc/ugr/conf.d/"]
     endpoints = {}
     global_settings = {}
     config_files = []
@@ -1706,7 +1712,7 @@ def get_config(config_dir=["/etc/ugr/conf.d/"]):
     if os.path.isfile("/etc/ugr/ugr.conf"):
         config_files.append("/etc/ugr/ugr.conf")
     else:
-        logger.warn("UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. This is normal if script is run on a host that does not run Dynafed.")
+        logger.warning("UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. This is normal if script is run on a host that does not run Dynafed.")
 
     # Now we add any files and/or files inside directories given in a list to
     # the config dir and add any other .conf files to the list.
@@ -1840,7 +1846,7 @@ def get_connectionstats(endpoints, memcached_ip='127.0.0.1', memcached_port='112
                 logger.info("[%s]Endpoint was not found in connection stats. Will be assumed 'Oniline'", endpoint)
 
 
-def get_endpoints(config_dir=["/etc/ugr/conf.d/"]):
+def get_endpoints(config_dir=None):
     """
     Returns list of storage endpoint objects whose class represents each storage
     endpoint configured in UGR's configuration files.
@@ -1848,6 +1854,8 @@ def get_endpoints(config_dir=["/etc/ugr/conf.d/"]):
     ############# Creating loggers ################
     logger = logging.getLogger(__name__)
     ###############################################
+    if config_dir is None:
+        config_dir = ["/etc/ugr/conf.d/"]
     storage_objects = []
     logger.info("Looking for storage endpoint configuration files in '%s'", config_dir)
     endpoints = get_config(config_dir)
@@ -2057,7 +2065,7 @@ def process_endpoint_list_results(endpoint_list):
     logger = logging.getLogger(__name__)
     ###############################################
     if len(endpoint_list) >= 1:
-        for endpoint in list(range(1,len(endpoint_list))):
+        for endpoint in list(range(1, len(endpoint_list))):
             logger.info('[%s] Same endpoint as "%s". Copying stats.', endpoint_list[endpoint].id, endpoint_list[0].id)
             endpoint_list[endpoint].stats['filecount'] = endpoint_list[0].stats['filecount']
             endpoint_list[endpoint].stats['bytesused'] = endpoint_list[0].stats['bytesused']

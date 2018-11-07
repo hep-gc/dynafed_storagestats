@@ -136,4 +136,6 @@ v0.12.1 Changed logger handler from FileHandler to TimedRotatingFileHandler.
 v0.12.2 Added flag "-c" to work in conjunction with the "-d" flag to allow for
         specific or multiple configuration files and directories.
 v0.12.3 Added option to specify an output file, not just a dir. Renamed
-        output_dir var to output_path. 
+        output_dir var to output_path.
+v0.12.4 Improved how to deal with empty usage from ceph-admin. Fixed warnings
+        and suggestions from pylint.
