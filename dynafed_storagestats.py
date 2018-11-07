@@ -774,7 +774,6 @@ class StorageStats():
         the last warning/error, and if proper flags set, memcached indices and
         contents and full warning/error debug information from the exceptions.
         """
-        mc = memcache.Client([args.memcached_ip + ':' + args.memcached_port])
         memcached_index = "Ugrstoragestats_" + self.id
         memcached_contents = self.get_from_memcached(args.memcached_ip, args.memcached_port)
         if memcached_contents is None:
