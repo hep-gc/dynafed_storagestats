@@ -80,7 +80,7 @@ PARSER = argparse.ArgumentParser()
 
 PARSER.add_argument('-c', '--config', '-d', '--dir',
                     dest='configs_directory', action='append',
-                    default=['/etc/ugr/conf.d'],
+                    default=None,
                     help="Path to UGR's endpoint .conf files or direcotry. Can be used multiple times. Default: '/etc/ugr/conf.d'."
                    )
 PARSER.add_argument('-e', '--endpoint',
