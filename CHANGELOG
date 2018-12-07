@@ -140,6 +140,10 @@ v0.12.3 Added option to specify an output file, not just a dir. Renamed
 v0.12.4 Improved how to deal with empty usage from ceph-admin. Fixed warnings
          and suggestions from pylint.
 v1.0.0
-   * CHANGE: Installable package.
-   * CHANGE: Added sub-commands to dyanfed-storage executable instead of
-              dyanfed_storagestats.
+  CHANGE: Installable package.
+  CHANGE: Added sub-commands to dyanfed-storage executable instead of
+          dyanfed_storagestats.
+  CHANGE: -c flag now accepts several arguments for file paths instead of
+          having to use it several times. -d flag has been removed.
+  CHANGE: -o specifies output directory for flags -j, -x and -p.
+  CHANGE: Arguments for -j, -x, and -p change the default filename.
