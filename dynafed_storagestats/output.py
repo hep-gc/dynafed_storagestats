@@ -14,7 +14,7 @@ from dynafed_storagestats import xml
 # Functions #
 #############
 
-def to_json(storage_endpoints, output_path="/tmp"):
+def to_json(storage_endpoints, filename, path):
     """
     Create a single JSON file for all StorageEndpoints passed to this function.
     """
@@ -31,13 +31,10 @@ def to_json(storage_endpoints, output_path="/tmp"):
         _hostname,
     )
 
-    if os.path.isdir(output_path):
-        _filename = output_path + '/' + 'dynafed_storagestats' + '.json'
+    # Create output path
+    _filepath = path + '/' + filename
 
-    else:
-        _filename = output_path
-
-    with open(_filename, 'w') as output:
+    with open(_filepath, 'w') as output:
         output.write(_json_file)
         output.close()
 
@@ -88,7 +85,7 @@ def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'
     )
 
 
-def to_plaintext(storage_endpoints, output_path="/tmp"):
+def to_plaintext(storage_endpoints, filename, path):
     """
     Create a single txt file for all storage_shares passed to this function.
     """
@@ -100,9 +97,11 @@ def to_plaintext(storage_endpoints, output_path="/tmp"):
     _dynafed_usedsize = 0
     _dynafed_totalsize = 0
 
+    # Create output path
+    _filepath = path + '/' + filename
+
     # Open file handle to write to
-    _filename = output_path + '/' + 'dynafed_storagestats' + '.txt'
-    with open(_filename, 'w') as output:
+    with open(_filepath, 'w') as output:
         output.write("ID URL MountPoint Protocol Timestamp Quota BytesUsed BytesFree FileCount\n")
 
         for _storage_endpoint in storage_endpoints:
@@ -126,7 +125,7 @@ def to_plaintext(storage_endpoints, output_path="/tmp"):
     output.close()
 
 
-def to_xml(storage_endpoints, output_path="/tmp"):
+def to_xml(storage_endpoints, filename, path):
     """
     Create a single XML file for all storage storage_shares passed to this function.
     """
@@ -134,15 +133,12 @@ def to_xml(storage_endpoints, output_path="/tmp"):
 
     ###############################################
 
-    if os.path.isdir(output_path):
-        _filename = output_path + '/' + 'dynafed_storagestats' + '.xml'
-
-    else:
-        _filename = output_path
+    # Create output path
+    _filepath = path + '/' + filename
 
     _xml_file = xml.format_StAR(storage_endpoints)
 
-    with open(_filename, 'w') as output:
+    with open(_filepath, 'w') as output:
         output.write(_xml_file)
         output.close()
 

@@ -112,16 +112,17 @@ GROUP_OUTPUT.add_argument(
     default=False,
     dest='to_json',
     nargs='?',
-    help="Set to output json file with storage stats. " \
+    help="Set to output stats to json file. Add argument to set filename." \
+         "Default: dynafed_storagestats.json"
          "!!In development!!"
 )
 GROUP_OUTPUT.add_argument(
-    '-o', '--output',
+    '-o', '--output-dir',
     action='store',
-    default='/tmp',
+    default='.',
     dest='output_path',
-    help="Directory or file to output storage stat files. " \
-         "Default: /tmp/dynafed_storagestats.json"
+    help="Set output directory for flags -j, -x and -p. " \
+         "Default: '.'"
 )
 GROUP_OUTPUT.add_argument(
     '-p', '--plain',
@@ -130,7 +131,8 @@ GROUP_OUTPUT.add_argument(
     default=False,
     dest='to_plaintext',
     nargs='?',
-    help="Set to output stats to plain txt file."
+    help="Set to output stats to plain txt file. Add argument to set filename." \
+         "Default: dynafed_storagestats.txt"
 )
 GROUP_OUTPUT.add_argument(
     '--stdout',
@@ -147,7 +149,8 @@ GROUP_OUTPUT.add_argument(
     default=False,
     dest='output_xml',
     nargs='?',
-    help="Set to output xml file with StAR format. " \
+    help="Set to output stats to json file. Add argument to set filename." \
+         "Default: dynafed_storagestats.json"
          "!!In development!!"
 )
 
@@ -217,15 +220,15 @@ def main():
 
     # Create StAR Storagestats XML files for each storage share.
     if ARGS.output_xml:
-        output.to_xml(storage_endpoints, ARGS.output_path)
+        output.to_xml(storage_endpoints, ARGS.to_xml, ARGS.output_path)
 
     # Create json file with storagestats
     if ARGS.to_json:
-        output.to_json(storage_endpoints, ARGS.output_path)
+        output.to_json(storage_endpoints, ARGS.to_json, ARGS.output_path)
 
     # Create txt file with storagestats
     if ARGS.to_plaintext:
-        output.to_plaintext(storage_endpoints, ARGS.output_path)
+        output.to_plaintext(storage_endpoints, ARGS.to_plaintext, ARGS.output_path)
 
 
 #############
