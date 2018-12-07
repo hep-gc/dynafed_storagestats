@@ -10,6 +10,6 @@ __pycache__
 /*.egg-info
 
 # Remove local tests
-/local/bootstrap.txt
-/local/cloudwatch.py
-/local/endpoints.conf
+tests/local/bootstrap.txt
+tests/local/cloudwatch.py
+tests/local/endpoints.conf
