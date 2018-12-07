@@ -1,4 +1,4 @@
-# dynafed_storagestats.py
+# dynafed_storagestats
 
 Module to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints and upload the
@@ -14,17 +14,15 @@ So far it supports has been tested with:
 - DPM via WebDAV
 - dCache via WebDAV
 
-## Prerequisites (older versions might work, but these are the oldest one that have been tested):
+## Installation
 
-Python >= 3.4.8
+Linux:
 
-Python Modules:
-- azure-storage >= 0.36.0 (pip3 install azure-storage)
-- boto3 >= 1.6.1 (CentOS 7.5 does not have python3 repo modules, use pip3 install boto3)
-- lxml >= 4.2.1   (CentOS 7.5 does not have python3 repo modules, use pip3 install lxml)
-- python-memcached >= 1.59
-- requests >= 2.12.5
-- requests_aws4auth >= 0.9 (pip3 install requests-aws4auth)
+```sh
+pip3 install .
+```
+This will install all necessary dependencies and create the executable
+'/usr/bin/dynafed-storage'
 
 ### CentOS / SL 6
 
@@ -33,20 +31,25 @@ Python 3.4 is available from EPEL repository.
 In order to install the above modules in python 3, pip3 needs to be setup. Since
 it is not in the repos, run the following command:
 
-```
+```bash
 sudo  python3 /usr/lib/python3.4/site-packages/easy_install.py pip
 ```
 
 ## Usage
 
-This module is intended to be run periodically as a cron job, so place it in
-an appropriate location and make sure the user that runs it is able to read
-UGR's configuration files.
+This module is intended to be run periodically as a cron job, make sure the
+user that runs it is able to read UGR's configuration files.
+
+It has two sub commands:
+-stats: Contacts each storage endpoint, obtains available stats and outputs
+them according settings.
+-reports: In development, nothing at the moment but ideally will be used to
+create file lists and stats reports in formats according to experiment's needs.
 
 First run with the following flags:
 
-```
-./dynafed_storagestats.py -d /etc/ugr/conf.d --stdout -m -v
+```bash
+dynafed-storage stats -c /etc/ugr/conf.d --stdout -m -v
 ```
 
 This will printout any warnings and errors as they are encountered as well as
@@ -57,65 +60,87 @@ change the --loglevel to INFO or DEBUG, just be warned DEBUG might print a lot
 of information.
 
 It is recommended to create a directory for the logfile, such as
-"/var/log/dynafed_storagestats/dynafed_storagestats.log",as the default is
+"/var/log/dynafed_storagestats/dynafed_storagestats.log", as the default is
 "/tmp/dynafed_storagestats.log".
 
 When everything looks to be setup as desired, setup cron to run the following
 (add any other options that make sense to your site).
-```
-dynafed_storagestats.py -d /etc/ugr/conf.d -m --loglevel=WARNING --logfile='/var/log/dynafed_storagestats/dynafed_storagestats.log'
+
+```bash
+dynafed-storage stats -c /etc/ugr/conf.d -m --loglevel=WARNING --logfile='/var/log/dynafed_storagestats/dynafed_storagestats.log'
 ```
 
 To get help:
-```
-dynafed_storagestats -h
+```bash
+dynafed-storage -h
+usage: dynafed-storage [-h] [-v] [--logfile LOGFILE]
+                            [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                            {stats,reports} ...
 
-usage: dynafed_storagestats.py [-h] [-c CONFIGS_DIRECTORY] [-e ENDPOINT]
-                               [--logfile LOGFILE]
-                               [--loglevel {DEBUG,INFO,WARNING,ERROR}]
-                               [--memhost MEMCACHED_IP]
-                               [--memport MEMCACHED_PORT] [--debug] [-m]
-                               [--json] [-o OUTPUT_PATH] [--plain] [--stdout]
-                               [-v] [--xml]
+positional arguments:
+  {stats,reports}       sub-command help
+    stats               Subcommand to contact StorageEndpoints and output
+                        stats.
+    reports             Subcommand to generate reports.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -c CONFIGS_DIRECTORY, --config CONFIGS_DIRECTORY, -d CONFIGS_DIRECTORY, --dir CONFIGS_DIRECTORY
-                        Path to UGR's endpoint .conf files or direcotry. Can
-                        be used multiple times. Default: '/etc/ugr/conf.d'.
+  -v, --verbose         Show on stderr events according to loglevel.
+
+```
+
+```bash
+dynafed-storage stats -h
+usage: dynafed-storage stats [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
+                                  [-e ENDPOINT] [--memhost MEMCACHED_IP]
+                                  [--memport MEMCACHED_PORT] [--debug] [-m]
+                                  [-j [TO_JSON]] [-o OUTPUT_PATH]
+                                  [-p [TO_PLAINTEXT]] [--stdout]
+                                  [-x [OUTPUT_XML]]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
+                        Path to UGRs endpoint .conf files or directories.
+                        Accepts any number of arguments. Default:
+                        '/etc/ugr/conf.d'.
   -e ENDPOINT, --endpoint ENDPOINT
                         Choose endpoint to check. If not present, all
                         endpoints will be checked.
-
 Logging options:
-  --logfile LOGFILE     Change where to ouput logs. Default:
+  --logfile LOGFILE     Set logfile path. Default:
                         /tmp/dynafed_storagestats.log
   --loglevel {DEBUG,INFO,WARNING,ERROR}
-                        Set file log level. Default: WARNING.
+                        Set log output level. Default: WARNING.
 
 Memcached Options:
   --memhost MEMCACHED_IP
-                        IP or hostname of memcached instance. Default:
+                        IP or hostname of memcached instance.Default:
                         127.0.0.1
   --memport MEMCACHED_PORT
-                        Port where memcached instances listens on. Default:
-                        11211
+                        Port of memcached instance. Default: 11211
 
 Output options:
   --debug               Declare to enable debug output on stdout.
-  -m, --memcached       Declare to enable uploading information to memcached.
-  --json                Set to output json file with storage stats. !!In
+  -m, --memcached       Declare to enable uploading storage stats to
+                        memcached.
+  -j [TO_JSON], --json [TO_JSON]
+                        Set to output json file with storage stats. !!In
                         development!!
   -o OUTPUT_PATH, --output OUTPUT_PATH
                         Directory or file to output storage stat files.
-                        Defautl: /tmp/dynafed_storagestats.json
-  --plain               Set to output stats to plain txt file.
+                        Default: /tmp/dynafed_storagestats.json
+  -p [TO_PLAINTEXT], --plain [TO_PLAINTEXT]
+                        Set to output stats to plain txt file.
   --stdout              Set to output stats on stdout.
-  -v, --verbose         Show on stderr events according to loglevel.
-  --xml                 Set to output xml file with StAR format. !!In
+  -x [OUTPUT_XML], --xml [OUTPUT_XML]
+                        Set to output xml file with StAR format. !!In
                         development!!
 ```
-**Important Note: DEBUG level might an enormous amount of data as it will log the contents obtained from requests. In the case of the generic methods this will print all the stats for each file being parsed. It is recommended to use this level with only the endpoint one wants to troulbeshoot.**
+**Important Note: DEBUG level might print an enormous amount of data as it will
+log the contents obtained from requests. In the case of the generic methods this
+will print all the stats for each file being parsed. It is recommended to use
+this level with only the endpoint one wants to troubleshoot.**
 
 ## Endpoints Configuration
 
@@ -124,7 +149,7 @@ be added to the endpoints.conf configuration file.
 
 ### Known issues
 
-
+:)
 
 ### General
 
@@ -145,10 +170,10 @@ The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase
 ### Azure
 
 ```
-locplugin.<ID>.storagestats.api: [generic]
+locplugin.<ID>.storagestats.api: [list-blobs]
 ```
 
-##### generic
+##### list-blobs
 
 This setting will list all objects in a blob container and add the individual
 sizes.
@@ -157,17 +182,17 @@ Each GET request obtains 5,000 objects. Therefore 10,005 objects cost 3 GET's.
 ### DAV/HTTP
 
 ```
-locplugin.<ID>.storagestats.api: [generic, rfc4331]
+locplugin.<ID>.storagestats.api: [list-files, rfc4331]
 ```
 
-##### generic
+##### list-objects
 
 This setting will list all objects behind the endpoint and add the individual
-sizes. For this method to recrusivley get all objects, the DAV server needs
+sizes. For this method to recursively get all objects, the DAV server needs
 to header "Depth" with attribute "infinity". This is not recommended as
-it is an expensive method, can use a lot of memory and is suceptible to
+it is an expensive method, can use a lot of memory and is susceptible to
 denial of service. Therefore this setting should be avoided if possible in
-favor of rfc4331
+favour of rfc4331
 
 ##### rfc4331
 
@@ -176,7 +201,7 @@ This setting will query the DAV server according to [RFC4331](https://tools.ietf
 ### S3
 
 ```
-locplugin.<ID>.storagestats.api: [generic, ceph-admin]
+locplugin.<ID>.storagestats.api: [list-objects, ceph-admin]
 ```
 
 ##### generic
@@ -209,7 +234,7 @@ to be used, is created for each endpoint containing all the settings and
 methods necessary to request and process storage stats and quota information.
 
 Memcache is contacted to look for UGR's endpoint connection stats. Any endpoints
-flagged as "Offline" here will be skipped and flagged this will be infomred in
+flagged as "Offline" here will be skipped and flagged this will be informed in
 the output. For those that are "Online", or if they could not be found to have
 information will be contacted to obtain the storage stats. The information is
 then stored a dictionary attribute "stats" in each object.
@@ -221,9 +246,9 @@ depending on the options chosen when invoking this script.
 
 Keyword/Setting | Status Code
 --------------- | -----------
-Unknown Gneral Warning/Error | 000
+Unknown General Warning/Error | 000
 Unknown/Invalid setting error | 001
-Setting ID Mismatch | 002
+No Config Files / ID Mismatch | 002
 **General Settings/DAV Plugin** |
 cli_certificate | 003
 cli_private_key | 004
@@ -250,10 +275,48 @@ Memcached Index | 082
 Unknown | 090
 Client Certificate Path | 091
 Server SSL Validation | 092
-Boto Param Validatoin Error | 095
+Boto Param Validation Error | 095
 RFC4331 DAV Quota Method Not Supported | 096
 No Quota Given by Endpoint | 098
 Ceph S3 Bucket Quota Disabled | 099
 Connection Error | 400
 Element/Bucket/Blob not found | 404
 Endpoint Offline | 503
+
+## Development setup
+
+To install in "edit" mode, add the "-e" flag to pip3. This installs the package
+as a symlink to the source code, so any changes made are reflected automatically
+when running the executable.
+
+```bash
+pip3 install -e .
+```
+
+## Release History
+
+* 0.2.1
+    * CHANGE: Update docs (module code remains unchanged)
+* 0.2.0
+    * CHANGE: Remove `setDefaultXYZ()`
+    * ADD: Add `init()`
+* 0.1.1
+    * FIX: Crash when calling `baz()` (Thanks @GenerousContributorName!)
+* 0.1.0
+    * The first proper release
+    * CHANGE: Rename `foo()` to `bar()`
+* 0.0.1
+    * Work in progress
+
+## Meta
+
+Fernando Fernandez – ffernandezgalindo@triumf.ca
+
+Distributed under the Apache license. See [``LICENSE``](LICENSE) for more information.
+
+[https://github.com/hep-gc/dynafed_storagestats](https://github.com/hep-gc/dynafed_storagestats)
+
+## Contributing
+
+<!-- Markdown link & img dfn's -->
+[wiki]: https://github.com/hep-gc/dynafed_storagestats/wiki

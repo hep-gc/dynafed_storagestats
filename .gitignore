@@ -1,4 +1,15 @@
 __pycache__
+
+# Compiled python modules.
 *.pyc
-*.conf
-*.log
+
+# Setuptools distribution folder.
+/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+
+# Remove local tests
+/tests/bootstrap.txt
+/tests/cloudwatch.py
+/tests/endpoints.conf
