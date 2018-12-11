@@ -147,3 +147,5 @@ v1.0.0
           having to use it several times. -d flag has been removed.
   CHANGE: -o specifies output directory for flags -j, -x and -p.
   CHANGE: Arguments for -j, -x, and -p change the default filename.
+v1.0.1
+  FIX: Azure list-blob can get full list of blobs on containers with > 5k blobs.
