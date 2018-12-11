@@ -339,7 +339,7 @@ def list_objects(storage_share):
             try:
                 _response['Contents']
             except KeyError:
-                storage_share.stats['bytesused'] = '0'
+                storage_share.stats['bytesused'] = 0
                 break
             else:
                 for _file in _response['Contents']:
