@@ -21,7 +21,6 @@ def main():
     """
     # Generate Help/Usage and ARGS.
     ARGS = args.parse_args()
-    print(ARGS)
 
     # Setup logger
     helpers.setup_logger(
@@ -30,9 +29,28 @@ def main():
         verbose=ARGS.verbose,
     )
 
-    print(ARGS)
+    # Run the specified sub-command.
+    if ARGS.cmd == 'reports':
+        reports(ARGS)
+    elif ARGS.cmd == 'stats':
+        stats(ARGS)
+
+################
+# Sub-Commands #
+################
+
+def reports(ARGS):
+    """
+    Logic to execute the 'reports' sub-command.
+    """
+
+    print("In development, nothing useful yet.")
+
 
 def stats(ARGS):
+    """
+    Logic to execute the 'stats' sub-command.
+    """
     # Get list of StorageShare objects from the configuration files.
     storage_shares = configloader.get_storage_shares(
         ARGS.config_path

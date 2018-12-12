@@ -149,3 +149,9 @@ v1.0.0
   CHANGE: Arguments for -j, -x, and -p change the default filename.
 v1.0.1
   FIX: Azure list-blob can get full list of blobs on containers with > 5k blobs.
+v1.0.2
+  CHANGE: Argparse has been moved from runner.py to args.py. Now it works as
+          different functions for each of the sub-commands.
+  CHANGE: main() in runner.py has been split. Now it selects which sub-command
+          function to run depending on the positional argument passed by the
+          user. Added stats() and reports() functions.
