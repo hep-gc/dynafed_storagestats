@@ -173,7 +173,7 @@ The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase
 locplugin.<ID>.storagestats.api: [list-blobs]
 ```
 
-##### list-blobs
+##### list-blobs (deprecated: generic)
 
 This setting will list all objects in a blob container and add the individual
 sizes.
@@ -185,7 +185,7 @@ Each GET request obtains 5,000 objects. Therefore 10,005 objects cost 3 GET's.
 locplugin.<ID>.storagestats.api: [list-files, rfc4331]
 ```
 
-##### list-objects
+##### list-files (deprecated: generic)
 
 This setting will list all objects behind the endpoint and add the individual
 sizes. For this method to recursively get all objects, the DAV server needs
@@ -201,19 +201,25 @@ This setting will query the DAV server according to [RFC4331](https://tools.ietf
 ### S3
 
 ```
-locplugin.<ID>.storagestats.api: [list-objects, ceph-admin]
+locplugin.<ID>.storagestats.api: [list-objects, ceph-admin, cloudwatch]
 ```
 
-##### generic
+##### list-objects (deprecated: generic)
 
 This setting will list all objects behind the bucket and add the individual
 sizes.
-Each GET request obtains 1,000 objects. Therefore 2,005 objects cost 3 GET's
+Each GET request obtains 1,000 objects. Therefore 2,005 objects cost 3 GET's.
 
 ##### ceph-admin
 
 Use this setting if Ceph's Admin API is to be used. The credentials of the
 configured user should have the "bucket read" caps enabled.
+
+##### cloudwatch
+
+For AWS. Configure the cloudwatch metrics BucketSizeBytes and  NumberOfObjects.
+This setting will poll these two. These metrics are updated daily at 00:00 UTC.
+Read AWS's documentation for more information about Cloudwatch.
 
 ```
 locplugin.<ID>.s3.signature_ver: [s3, s3v4]

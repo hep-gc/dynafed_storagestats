@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='dynafed_storagestats',
-      version='1.0.2',
+      version='1.0.3',
       description='Dynafed Storage Stats Module',
       long_description=long_description,
       long_description_content_type='text/markdown',

@@ -155,3 +155,7 @@ v1.0.2
   CHANGE: main() in runner.py has been split. Now it selects which sub-command
           function to run depending on the positional argument passed by the
           user. Added stats() and reports() functions.
+v1.0.3
+  ADDED: For S3, added cloudwatch() function to obtain the following metrics:
+         BucketSizeBytes and  NumberOfObjects. These need to be setup in AWS
+         before being able to poll.
