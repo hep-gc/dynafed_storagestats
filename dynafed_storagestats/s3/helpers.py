@@ -2,6 +2,7 @@
 Module with helper functions used to contact S3 based API's
 """
 
+import datetime
 import logging
 import time
 
@@ -197,6 +198,168 @@ def ceph_admin(storage_share):
                         )
 
 
+def cloudwatch(storage_share):
+    """
+    If the metrics BucketSizeBytes and NumberOfObjects have been set in AWS
+    Cloudwatch, then this function contacts Cloudwatch's API and obtains those
+    "Maximum" numbers for the past day.
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    _seconds_in_one_day = 86400
+
+    # Create boto client to query AWS API.
+    _connection = boto3.client(
+        'cloudwatch',
+        region_name=storage_share.plugin_settings['s3.region'],
+        aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
+        aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
+        use_ssl=True,
+        verify=True,
+        config=Config(
+            signature_version=storage_share.plugin_settings['s3.signature_ver'],
+            connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
+            retries=dict(max_attempts=0)
+        ),
+    )
+
+    # Define cloudwatch metrics to probe. 'Result' key will be used to store the
+    # metric. For the other keys, if unsure, try the following in cli to obtain
+    # what to add, assuming aws is installed and configured.
+    # Change the namespace accordingly:
+    # aws cloudwatch list-metrics --namespace AWS/S3
+    _metrics = {
+        'BucketSizeBytes': {
+            'Namespace': 'AWS/S3',
+            'Statistics': ['Maximum'],
+            'Unit': 'Bytes',
+            'Dimensions': [
+                {
+                    'Name': 'BucketName',
+                    'Value': storage_share.uri['bucket']
+                },
+                {
+                    'Name': 'StorageType',
+                    'Value': 'StandardStorage'
+                }
+            ],
+            'Result': 0,
+        },
+        'NumberOfObjects': {
+            'Namespace': 'AWS/S3',
+            'Statistics': ['Maximum'],
+            'Unit': 'Count',
+            'Dimensions': [
+                {
+                    'Name': 'BucketName',
+                    'Value': storage_share.uri['bucket']
+                },
+                {
+                    'Name': 'StorageType',
+                    'Value': 'AllStorageTypes'
+                }
+            ],
+            'Result': 0,
+        }
+    }
+
+    _logger.debug(
+        "[%s]Requesting storage stats with: API Method: %s",
+        storage_share.id,
+        storage_share.plugin_settings['storagestats.api'].lower(),
+    )
+
+    for _metric in _metrics:
+        _logger.info(
+            "[%s]Requesting Cloudwatch metric: %s",
+            storage_share.id,
+            _metric,
+        )
+        try:
+            _response = _connection.get_metric_statistics(
+                Period=_seconds_in_one_day,
+                MetricName=_metric,
+                Namespace=_metrics[_metric]['Namespace'],
+                StartTime=datetime.datetime.utcnow() - datetime.timedelta(days=1),
+                EndTime=datetime.datetime.utcnow(),
+                Statistics=_metrics[_metric]['Statistics'],
+                Unit=_metrics[_metric]['Unit'],
+                Dimensions=_metrics[_metric]['Dimensions']
+            )
+
+        except botoExceptions.ClientError as ERR:
+            raise exceptions.DSSConnectionError(
+                error=ERR.__class__.__name__,
+                status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
+                debug=str(ERR),
+            )
+
+        except botoRequestsExceptions.SSLError as ERR:
+            raise exceptions.DSSConnectionError(
+                error=ERR.__class__.__name__,
+                status_code="092",
+                debug=str(ERR),
+            )
+
+        except botoRequestsExceptions.RequestException as ERR:
+            raise exceptions.DSSConnectionError(
+                error=ERR.__class__.__name__,
+                status_code="400",
+                debug=str(ERR),
+            )
+
+        except botoExceptions.ParamValidationError as ERR:
+            raise exceptions.DSSConnectionError(
+                error=ERR.__class__.__name__,
+                status_code="095",
+                debug=str(ERR),
+            )
+
+        except botoExceptions.BotoCoreError as ERR:
+            raise exceptions.DSSConnectionError(
+                error=ERR.__class__.__name__,
+                status_code="400",
+                debug=str(ERR),
+            )
+
+        else:
+            _logger.debug(
+                "[%s]Response from Cloudwatch metric: %s: %s",
+                storage_share.id,
+                _metric,
+                _response
+            )
+            # Extract the metric value from the response.
+            _metrics[_metric]['Result'] = \
+                _response['Datapoints'][0][
+                    _metrics[_metric]['Statistics'][0]
+                ]
+
+
+    # Save time when data was obtained.
+    storage_share.stats['endtime'] = int(time.time())
+
+    # Upload metrics to storage_share
+    storage_share.stats['bytesused'] = int(_metrics['BucketSizeBytes']['Result'])
+    storage_share.stats['filecount'] = int(_metrics['NumberOfObjects']['Result'])
+
+    # Obtain or set default quota and calculate freespace.
+    if storage_share.plugin_settings['storagestats.quota'] == 'api':
+        storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
+        storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+        raise exceptions.DSSQuotaWarning(
+            error="NoQuotaGiven",
+            status_code="098",
+            default_quota=storage_share.stats['quota'],
+        )
+
+    else:
+        storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+        storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+
+
 def list_objects(storage_share):
     """
     Contacts an S3 endpoints and uses the "list_objects" API to recursively
@@ -355,6 +518,7 @@ def list_objects(storage_share):
     storage_share.stats['endtime'] = int(time.time())
     storage_share.stats['bytesused'] = _total_bytes
 
+    # Obtain or set default quota and calculate freespace.
     if storage_share.plugin_settings['storagestats.quota'] == 'api':
         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
         storage_share.stats['filecount'] = _total_files

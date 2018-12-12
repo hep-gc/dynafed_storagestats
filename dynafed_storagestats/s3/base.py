@@ -35,7 +35,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 'default': 'generic',
                 'required': False,
                 'status_code': '070',
-                'valid': ['ceph-admin', 'generic', 'list-objects'],
+                'valid': ['ceph-admin', 'cloudwatch', 'generic', 'list-objects'],
             },
             's3.priv_key': {
                 'required': True,
@@ -96,6 +96,9 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         elif self.plugin_settings['storagestats.api'].lower() == 'generic' \
         or   self.plugin_settings['storagestats.api'].lower() == 'list-objects':
             s3helpers.list_objects(self)
+
+        elif self.plugin_settings['storagestats.api'].lower() == 'cloudwatch':
+            s3helpers.cloudwatch(self)
 
 
     def validate_schema(self):
