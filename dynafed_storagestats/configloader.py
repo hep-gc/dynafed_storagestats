@@ -8,8 +8,8 @@ import glob
 import os
 import sys
 
-from dynafed_storagestats.base import StorageShare, StorageEndpoint
 from dynafed_storagestats.azure import base as azure
+from dynafed_storagestats.base import StorageShare, StorageEndpoint
 from dynafed_storagestats.dav import base as dav
 from dynafed_storagestats.s3 import base as s3
 from dynafed_storagestats import exceptions
