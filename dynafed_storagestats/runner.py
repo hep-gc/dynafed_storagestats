@@ -16,8 +16,8 @@ from dynafed_storagestats import output
 ########
 
 def main():
-    """
-    Runner to gather storage share information.
+    """Runner to gather storage share information.
+
     """
     # Generate Help/Usage and ARGS.
     ARGS = args.parse_args()
@@ -40,17 +40,30 @@ def main():
 ################
 
 def reports(ARGS):
-    """
-    Logic to execute the 'reports' sub-command.
+    """Execute the 'reports' sub-command.
+
+    Run the main() function with 'reports -h' arguments to see help.
+
+    Arguments:
+    ARGS -- argparse object from dynafed_storagestats.args.parse_args()
     """
 
     print("In development, nothing useful yet.")
 
 
 def stats(ARGS):
+    """Execute the 'stats' sub-command.
+
+    Run the main() function with 'stats -h' arguments to see help.
+
+    Deals with obtaining config file(s) settings, contacting the storage
+    endpoints and output the data using functions from the dynafed_storagestats
+    package.
+
+    Arguments:
+    ARGS -- argparse object from dynafed_storagestats.args.parse_args()
     """
-    Logic to execute the 'stats' sub-command.
-    """
+    
     # Get list of StorageShare objects from the configuration files.
     storage_shares = configloader.get_storage_shares(
         ARGS.config_path

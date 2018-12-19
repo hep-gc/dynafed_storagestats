@@ -10,9 +10,10 @@ import sys
 #############
 
 def parse_args():
-    """
-    Generate the argument parsers and and Usage/Help by invoking the functions
-    requested.
+    """Generates argparse object and Usage/Help using functions.
+
+    Returns:
+    argparse object.
     """
     # Get CLI arguments
     args = sys.argv[1:]
@@ -37,8 +38,10 @@ def parse_args():
 
 
 def add_general_options(parser):
-    """
-    General optional arguments
+    """Parses general optional arguments for all subcommands.
+
+    Arguments:
+    parser -- Object form argparse.ArgumentParser()
     """
 
     parser.add_argument(
@@ -51,8 +54,10 @@ def add_general_options(parser):
 
 
 def add_reports_subparser(subparser):
-    """
-    Optional arguments for the 'reports' sub-command.
+    """Parses optional arguments for the 'reports' sub-command.
+
+    Arguments:
+    subparser -- Object form argparse.ArgumentParser().add_subparsers()
     """
     # Initiate parser.
     parser = subparser.add_parser(
@@ -84,8 +89,10 @@ def add_reports_subparser(subparser):
     )
 
 def add_stats_subparser(subparser):
-    """
-    Optional arguments for the 'stats' sub-command.
+    """Parses optional arguments for the 'stats' sub-command.
+
+    Arguments:
+    subparser -- Object form argparse.ArgumentParser().add_subparsers()
     """
     # Initiate parser.
     parser = subparser.add_parser(
