@@ -1,6 +1,4 @@
-"""
-Functions to deal with the formatting and handling  of JSON data.
-"""
+"""Functions to deal with the formatting and handling  of JSON data."""
 
 import json
 import time
@@ -10,11 +8,20 @@ import time
 #############
 
 def format_wlcg(storage_endpoints, hostname="localhost"):
-    """
+    """Create JSON file representing Dynafed site storage stats in WLCG format.
+
     Creates a JSON file containing the storage stats information for each
     StorageEndpoint and StorageShare. Tries to adhere to the format given by
     the WLCG Accounting Task Force used for Storage Space Accounting:
     https://twiki.cern.ch/twiki/bin/view/LCG/StorageSpaceAccounting
+
+    Arguments:
+    storage_endpoints -- List of dynafed_storagestats StorageEndpoint objects.
+    hostname -- string defining Dynafed host.
+
+    Returns:
+    String in JSON format.
+
     """
     #Create the json structure in python terms
     _dynafed_usedsize = 0

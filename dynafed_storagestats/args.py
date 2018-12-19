@@ -1,5 +1,8 @@
-"""
-Module to create Help/Usage and to deal with arguments.
+"""Creates Help/Usage deals with arguments.
+
+The parse_args() calls any other functions defined here to add the necessary
+parser as sub-parsers. Any new sub-commands should be  a sub-parser.
+
 """
 
 import argparse
@@ -10,9 +13,11 @@ import sys
 #############
 
 def parse_args():
-    """
-    Generate the argument parsers and and Usage/Help by invoking the functions
-    requested.
+    """Generate Usage/Help with help from functions and parse the CLI arguments.
+
+    Returns:
+    argparse object.
+
     """
     # Get CLI arguments
     args = sys.argv[1:]
@@ -37,10 +42,12 @@ def parse_args():
 
 
 def add_general_options(parser):
-    """
-    General optional arguments
-    """
+    """Add general optional arguments used by any subcommand.
 
+    Arguments:
+    parser -- Object form argparse.ArgumentParser()
+
+    """
     parser.add_argument(
         '-v', '--verbose',
         action='store_true',
@@ -51,8 +58,11 @@ def add_general_options(parser):
 
 
 def add_reports_subparser(subparser):
-    """
-    Optional arguments for the 'reports' sub-command.
+    """Add optional arguments for the 'reports' sub-command.
+
+    Arguments:
+    subparser -- Object form argparse.ArgumentParser().add_subparsers()
+
     """
     # Initiate parser.
     parser = subparser.add_parser(
@@ -60,7 +70,7 @@ def add_reports_subparser(subparser):
         help="In development"
     )
 
-    # Set the cmd to execute
+    # Set the sub-command routine to run.
     parser.set_defaults(cmd='reports')
 
     # Logging options
@@ -83,9 +93,13 @@ def add_reports_subparser(subparser):
         "Default: WARNING."
     )
 
+
 def add_stats_subparser(subparser):
-    """
-    Optional arguments for the 'stats' sub-command.
+    """Add optional arguments for the 'stats' sub-command.
+
+    Arguments:
+    subparser -- Object form argparse.ArgumentParser().add_subparsers()
+
     """
     # Initiate parser.
     parser = subparser.add_parser(
@@ -93,7 +107,7 @@ def add_stats_subparser(subparser):
         help="Obtain and output storage stats."
     )
 
-    # Set the cmd to execute
+    # Set the sub-command routine to run.
     parser.set_defaults(cmd='stats')
 
     # General options

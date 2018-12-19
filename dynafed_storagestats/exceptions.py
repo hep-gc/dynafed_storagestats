@@ -1,6 +1,4 @@
-"""
-Exceptions classes.
-"""
+"""Exceptions classes."""
 
 #############
 ## Classes ##

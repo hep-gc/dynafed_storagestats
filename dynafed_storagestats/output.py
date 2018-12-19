@@ -1,6 +1,4 @@
-"""
-Functions to deal with the formatting and handling  to output of data.
-"""
+"""Functions to deal with the formatting and handling data to output."""
 
 import os
 import logging
@@ -15,8 +13,13 @@ from dynafed_storagestats import xml
 #############
 
 def to_json(storage_endpoints, filename, path):
-    """
-    Create a single JSON file for all StorageEndpoints passed to this function.
+    """Call helper functions to create a JSON file with storage stats.
+
+    Arguments:
+    storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
+    filename -- Name of the JSON file.
+    path -- Path to write the JSON file to.
+
     """
     ############# Creating loggers ################
 
@@ -40,9 +43,21 @@ def to_json(storage_endpoints, filename, path):
 
 
 def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'):
-    """
-    Uploads the StorageShare storage stats to a memcached instance:
-    storage_share.id, storage_share.stats['quota'], storage_share.stats['bytesused']
+    """Upload the StorageShare storage stats to a memcached instance.
+
+    Arguments:
+    storage_share  -- dynafed_storagestats StorageShare object.
+    memcached_ip   -- memcached instance IP.
+    memcahced_port -- memcached instance Port.
+
+    Memcache output is a string of the following variables concatenated by '%%':
+    storage_share.id
+    storage_share.storageprotocol
+    storage_share.stats['bytesused']
+    storage_share.stats['bytesfree']
+    storage_share.stats['quota']
+    storage_share.stats['starttime']
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -86,8 +101,13 @@ def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'
 
 
 def to_plaintext(storage_endpoints, filename, path):
-    """
-    Create a single txt file for all storage_shares passed to this function.
+    """Create a single TXT file for all storage_shares passed to this function.
+
+    Arguments:
+    storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
+    filename -- Name of the TXT file.
+    path -- Path to write the TXT file to.
+
     """
     ############# Creating loggers ################
 
@@ -126,8 +146,13 @@ def to_plaintext(storage_endpoints, filename, path):
 
 
 def to_xml(storage_endpoints, filename, path):
-    """
-    Create a single XML file for all storage storage_shares passed to this function.
+    """Call helper functions to create a XML file with storage stats.
+
+    Arguments:
+    storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
+    filename -- Name of the XML file.
+    path -- Path to write the XML file to.
+
     """
     ############# Creating loggers ################
 
@@ -144,15 +169,23 @@ def to_xml(storage_endpoints, filename, path):
 
 
 def to_stdout(storage_endpoints, args):
-    """
-    Prints all the storage stats information for each StorageShare belonging to
-    each StorageEndpoint in the storage_endpoints list, including
-    the last warning/error, and if proper flags set, memcached indices and
-    contents and full warning/error debug information from the exceptions.
-    Connects to a memcached instance and tries to obtain the storage stats
-    from the index belonging to the storage_share making the call.
-    """
+    """Print to stdout the storage stats information including memcache indices.
 
+    Does this for each StorageShare belonging to each StorageEndpoint in the
+    storage_endpoints list, including the last warning/error. Connects to a
+    memcached instance and tries to obtain the storage stats from the index
+    belonging to the storage_share's.
+
+    Arguments:
+    storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
+    args -- argparse object.
+
+    Argument flags
+    args.debug -- full warning/error information from the exceptions.
+    args.memcached_ip -- memcached instance IP.
+    args.memcached_port -- memcached instance Port.
+
+    """
     for _storage_endpoint in storage_endpoints:
         for _storage_share in _storage_endpoint.storage_shares:
             _memcached_index = "Ugrstoragestats_" + _storage_share.id

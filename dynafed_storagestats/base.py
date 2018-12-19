@@ -1,6 +1,4 @@
-"""
-Module containing the base Classes for StorageEndpoint and StorageShares.
-"""
+"""Define the base Classes StorageEndpoint and StorageShares."""
 
 import logging
 import time
@@ -15,56 +13,76 @@ from dynafed_storagestats import exceptions
 #############
 
 class StorageEndpoint():
+    """Base class representing unique URL storage endpoint.
+
+    Will be completed with one or several StorageShare objects that share the
+    same URL, as a list in self.storage_shares.
+
     """
-    Base class defining unique URL storage endpoint. Will be completed with one
-    or several StorageShare objects, each from specific ID's from UGR's
-    configuration files.
-    """
+
     def __init__(self, url):
+        """Create storage_shares and url attributes.
+
+        Arguments:
+        url -- string.
+
+        """
         self.storage_shares = []
         self.url = url
 
+
     def add_storage_share(self, storage_share):
-        """
-        Add StorageShare object to list of StorageShares associated with this
-        StorageEndpoint.
+        """Add StorageShare object to self.storage_share list.
+
+        Arguments:
+        storage_share  -- dynafed_storagestats StorageShare object.
+
         """
         self.storage_shares.append(storage_share)
 
 
 class StorageShare():
-    """
-    Base class containing all the settings and protocol specific StorageShare
-    methods. Each sub-class will add it's own unique methods, settings, etc.
-    """
-    def __init__(self, config_endpoint):
+    """Base class representing unique storage share.
 
+    Contains all the settings and general StorageShare methods. It is meant to
+    be extended with protocol specific methods and settings.
+
+    """
+
+    def __init__(self, storage_share):
+        """Create attributes from UGR's endpoint settings and defaults.
+
+        Arguments:
+        storage_share  -- dict containing single storage share and its settings.
+                          Produced by configloader.parse_conf_files().
+
+        """
         # ID used in UGR's configuration file to define the StorageShare/endpoint.
-        self.id = config_endpoint['id']
+        self.id = storage_share['id']
 
         # All settings obtained from UGR's configuration file.
         # Any missing settings will be added with specified defaults.
-        self.plugin_settings = config_endpoint['plugin_settings']
+        self.plugin_settings = storage_share['plugin_settings']
 
         # We add the url form the conf file to the plugin_settings as the one
         # in the uri attribute below will be modified depending on the
         # StorageShare/endpoint protocol.
-        self.plugin_settings.update({'url': config_endpoint['url']})
+        self.plugin_settings.update({'url': storage_share['url']})
 
         # URL split needed to simplify the formation of the form needed to make
         # protocol specific API requests.
-        _url = urlsplit(config_endpoint['url'])
+        _url = urlsplit(storage_share['url'])
         self.uri = {
             'hostname': _url.hostname,
             'netloc':   _url.netloc,
             'path':     _url.path,
             'port':     _url.port,
             'scheme':   _url.scheme,
-            'url':      config_endpoint['url'],
+            'url':      storage_share['url'],
         }
 
         # UGR's plugin used to communicate withe  StorageShare/endpoint.
-        self.plugin = config_endpoint['plugin']
+        self.plugin = storage_share['plugin']
 
         # Attributes that will hold error/warning status messages.
         self.debug = []
@@ -119,18 +137,20 @@ class StorageShare():
 
 
     def get_storagestats(self):
-        """
-        Method(s) for contacting a storage endpoint and obtain storage stats.
-        Will be re-defined for each protocol sub-class as each requires different
-        API's.
+        """Contact a storage endpoint and obtain storage stats.
+
+        Method(s) for each protocol are added via their respective sub-classes
+        to deal with the different API's.
+
         """
         pass
 
 
     def validate_plugin_settings(self):
-        """
-        Check the StorageShare/endpoint plugin_settings from UGR's configuration
-        file against the self.validators dict.
+        """Validate the StorageShare plugin_settings against self.validators.
+
+        Handles exceptions arising from missing/incorrect settings and logging.
+
         """
         ############# Creating loggers ################
         _logger = logging.getLogger(__name__)
@@ -233,8 +253,11 @@ class StorageShare():
 
 
     def validate_schema(self):
-        """
-        Validate the URN's protocol schema.
+        """Validate the URN's protocol schema.
+
+        Method for each protocol is added via their respective sub-classes
+        to deal with the different schema's to be checked.
+
         """
         ############# Creating loggers ################
         _logger = logging.getLogger(__name__)
