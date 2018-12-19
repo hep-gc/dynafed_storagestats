@@ -159,3 +159,6 @@ v1.0.3
   ADDED: For S3, added cloudwatch() function to obtain the following metrics:
          BucketSizeBytes and  NumberOfObjects. These need to be setup in AWS
          before being able to poll.
+v1.0.4
+  CHANGE: Updated docstrings on all modules (except 'exceptions') to conform with
+          PEP257.

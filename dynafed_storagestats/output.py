@@ -1,6 +1,4 @@
-"""
-Functions to deal with the formatting and handling  to output of data.
-"""
+"""Functions to deal with the formatting and handling data to output."""
 
 import os
 import logging
@@ -15,12 +13,13 @@ from dynafed_storagestats import xml
 #############
 
 def to_json(storage_endpoints, filename, path):
-    """Calls helper functions to create a JSON file with storage stats.
+    """Call helper functions to create a JSON file with storage stats.
 
     Arguments:
     storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
     filename -- Name of the JSON file.
     path -- Path to write the JSON file to.
+
     """
     ############# Creating loggers ################
 
@@ -44,7 +43,7 @@ def to_json(storage_endpoints, filename, path):
 
 
 def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'):
-    """Uploads the StorageShare storage stats to a memcached instance.
+    """Upload the StorageShare storage stats to a memcached instance.
 
     Arguments:
     storage_share  -- dynafed_storagestats StorageShare object.
@@ -52,12 +51,13 @@ def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'
     memcahced_port -- memcached instance Port.
 
     Memcache output is a string of the following variables concatenated by '%%':
-    storage_share.id,
-    storage_share.storageprotocol,
-    storage_share.stats['bytesused'],
-    storage_share.stats['bytesfree'],
-    storage_share.stats['quota'],
-    storage_share.stats['starttime'],
+    storage_share.id
+    storage_share.storageprotocol
+    storage_share.stats['bytesused']
+    storage_share.stats['bytesfree']
+    storage_share.stats['quota']
+    storage_share.stats['starttime']
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -107,6 +107,7 @@ def to_plaintext(storage_endpoints, filename, path):
     storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
     filename -- Name of the TXT file.
     path -- Path to write the TXT file to.
+
     """
     ############# Creating loggers ################
 
@@ -145,12 +146,13 @@ def to_plaintext(storage_endpoints, filename, path):
 
 
 def to_xml(storage_endpoints, filename, path):
-    """Calls helper functions to create a XML file with storage stats.
+    """Call helper functions to create a XML file with storage stats.
 
     Arguments:
     storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
     filename -- Name of the XML file.
     path -- Path to write the XML file to.
+
     """
     ############# Creating loggers ################
 
@@ -182,8 +184,8 @@ def to_stdout(storage_endpoints, args):
     args.debug -- full warning/error information from the exceptions.
     args.memcached_ip -- memcached instance IP.
     args.memcached_port -- memcached instance Port.
-    """
 
+    """
     for _storage_endpoint in storage_endpoints:
         for _storage_share in _storage_endpoint.storage_shares:
             _memcached_index = "Ugrstoragestats_" + _storage_share.id

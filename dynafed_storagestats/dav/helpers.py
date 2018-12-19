@@ -1,6 +1,4 @@
-"""
-Module with helper functions used to contact DAV based API's
-"""
+"""Helper functions used to contact DAV based API's."""
 
 import logging
 import time
@@ -15,11 +13,16 @@ from dynafed_storagestats import exceptions
 ###############
 
 def list_files(storage_share):
-    """
+    """Contact DAV endpoint to list all files and sum their sizes.
+
     Contacts a DAV endpoints and uses the header "'Depth': 'infinity'" to
     recursively obtain all the objects in a container and sum their size to
     obtain total space usage. Endpoint must accept the infinity value.
     ***Not recomended due to high resource usage for hosts wit a lot of files***
+
+    Attributes:
+    storage_share -- dynafed_storagestats StorageShare object.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -116,10 +119,16 @@ def list_files(storage_share):
 
 
 def rfc4331(storage_share):
-    """
+    """Contact DAV endpoint using RFC4331 to obtain storage stats.
+
     Utilizes the RFC4331 specification to ask a DAV endpoint for the quota
     and used space. DAV endpoint must support this specification and be
-    properly configured.
+    properly configured. For more information about RFC4331:
+    https://tools.ietf.org/html/rfc4331
+
+    Attributes:
+    storage_share -- dynafed_storagestats StorageShare object.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -211,9 +220,19 @@ def rfc4331(storage_share):
                 )
 
 def send_dav_request(storage_share, api_url, headers, data):
-    """
-    Function that contacts DAV endpoint with given headers and data. Returns
-    endpoints response.
+    """Contact DAV endpoint with given headers and data.
+
+    Arguments:
+    storage_share -- dynafed_storagestats StorageShare object.
+    api_url -- string defining API's url.
+    headers -- dict containing HTML headers used in the request.
+    data -- string containing data to be sent in the request. RFC4331 method
+            uses this to request the stats in XML format. Obtained from:
+            dynafed_storagestats.xml.create_rfc4331_request()
+
+    Returns:
+    String containing endpoint's response.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)

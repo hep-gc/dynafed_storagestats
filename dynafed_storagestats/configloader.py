@@ -1,7 +1,4 @@
-"""
-This module includes functions to deal with reading the configuration files from
-UGR.
-"""
+"""Functions to deal with reading the configuration files from UGR."""
 
 import logging
 import glob
@@ -19,16 +16,15 @@ from dynafed_storagestats import exceptions
 #############
 
 def factory(plugin):
-    """Return StorageShare sub-class to use based on the plugin specified in the
-    UGR's configuration files.
+    """Return StorageShare sub-class based on the plugin set in UGR's config.
 
     Arguments:
     plugin -- string to compare against _plugin_dict keys.
 
     Returns:
     StorageShare sub-class object.
-    """
 
+    """
     _plugin_dict = {
         'libugrlocplugin_dav.so': dav.DAVStorageShare,
         'libugrlocplugin_http.so': dav.DAVStorageShare,
@@ -49,7 +45,7 @@ def factory(plugin):
 
 
 def get_conf_files(config_path):
-    """Returns a list of all files "*.conf" found at the path(s) given.
+    """Return list of all files "*.conf" found at the path(s) given.
 
     By default adds UGR's 'main' config file /etc/ugr/ugr.conf if it is found
     as some global settings might be found there.
@@ -59,6 +55,7 @@ def get_conf_files(config_path):
 
     Returns:
     List of strings, each being the path to a single file.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -114,6 +111,7 @@ def get_storage_endpoints(storage_share_objects, storage_shares_mask=True):
 
     Returns:
     List of dynafed_storagestats StorageEnpoint objects.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -148,13 +146,14 @@ def get_storage_endpoints(storage_share_objects, storage_shares_mask=True):
 
 
 def get_storage_shares(config_path):
-    """Returns a list of StorageShare objects from UGR's configuration files.
+    """Return list of StorageShare objects from UGR's configuration files.
 
     Arguments:
     config_path -- list of paths, could be to a file(s) or directory(s).
 
     Returns:
     Output of get_storage_share_objects(). (A list of StorageShare objects)
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -189,13 +188,14 @@ def get_storage_shares(config_path):
 
 
 def get_storage_share_objects(storage_shares):
-    """Returns list of StorageShare objects with the appropriate sub-class.
+    """Return list of StorageShare objects with the appropriate sub-class.
 
     Arguments:
     storage_shares -- dict of storage shares obtained from parse_conf_files()
 
     Returns:
     List of dyanfed_storagestats StorageShare objects.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -235,7 +235,7 @@ def get_storage_share_objects(storage_shares):
 
 
 def parse_conf_files(config_files):
-    """ Return dict for each storage share in passed configuration files.
+    """Return dict for each storage share in passed configuration files.
 
     Extract storage shares/endpoints and their plugin_settings from the given
     list of UGR's configuration files and create a dictionary where each storage
@@ -261,6 +261,7 @@ def parse_conf_files(config_files):
             'plugin_settings': {} <- Plugin settings stored as a nested dict.
         }
     }
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)

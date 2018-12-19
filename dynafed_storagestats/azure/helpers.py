@@ -1,6 +1,4 @@
-"""
-Module with helper functions used to contact Azure based API's
-"""
+"""Helper functions used to contact Azure based API's."""
 
 import logging
 
@@ -14,10 +12,15 @@ from dynafed_storagestats import exceptions
 ###############
 
 def list_blobs(storage_share):
-    """
+    """Contact Azure endpoint using "list_blobs" method.
+
     Contacts an Azure blob and uses the "list_blobs" API to recursively obtain
     all the objects in a container and sum their size to obtain total space
     usage.
+
+    Attributes:
+    storage_share -- dynafed_storagestats StorageShare object.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)

@@ -1,6 +1,4 @@
-"""
-Module with helper functions used to contact S3 based API's
-"""
+"""Helper functions used to contact S3 based API's."""
 
 import datetime
 import logging
@@ -22,8 +20,16 @@ from dynafed_storagestats import exceptions
 ###############
 
 def ceph_admin(storage_share):
-    """
-    # Getting the storage Stats CephS3's Admin API
+    """Contact S3 endpoint using Ceph's Admin API.
+
+    Obtains the storage stats from CephS3's Admin API as long as the endpoint
+    has been configured to allow such requests by the user whose credentials
+    are being supplied. User needs bucket "caps". See Ceph's documentation:
+    https://docs.ceph.com/docs/master/radosgw/admin/
+
+    Attributes:
+    storage_share -- dynafed_storagestats StorageShare object.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -199,10 +205,16 @@ def ceph_admin(storage_share):
 
 
 def cloudwatch(storage_share):
-    """
+    """Contact S3 endpoint using AWS Cloudwatch API.
+
     If the metrics BucketSizeBytes and NumberOfObjects have been set in AWS
-    Cloudwatch, then this function contacts Cloudwatch's API and obtains those
-    "Maximum" numbers for the past day.
+    Cloudwatch, this function contacts Cloudwatch's API and obtains those
+    "Maximum" numbers for the past day. See AWS documentation for more info:
+    https://docs.aws.amazon.com/cloudwatch/index.html
+
+    Attributes:
+    storage_share -- dynafed_storagestats StorageShare object.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -361,10 +373,15 @@ def cloudwatch(storage_share):
 
 
 def list_objects(storage_share):
-    """
+    """Contact S3 endpoint using list_objects API.
+
     Contacts an S3 endpoints and uses the "list_objects" API to recursively
     obtain all the objects in a container and sum their size to obtain total
     space usage.
+
+    Attributes:
+    storage_share -- dynafed_storagestats StorageShare object.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)

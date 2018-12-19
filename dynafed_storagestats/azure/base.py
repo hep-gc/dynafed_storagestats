@@ -1,7 +1,4 @@
-"""
-Module intended to hold SubClasses, methods and functions to deal with storage
-shares in Azure.
-"""
+"""Defines Azure's StorageShare sub-class."""
 
 import dynafed_storagestats.base
 import dynafed_storagestats.azure.helpers as azurehelpers
@@ -11,11 +8,14 @@ import dynafed_storagestats.azure.helpers as azurehelpers
 #############
 
 class AzureStorageShare(dynafed_storagestats.base.StorageShare):
-    """
-    Subclass that defines methods for obtaining storage stats of Azure endpoints.
-    """
-    def __init__(self, *args, **kwargs):
+    """StorageShare sub-class for Azure.
 
+    Subclass that defines methods and validators for Azure endpoints.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Extend StorageShare class attributes."""
         # First we call the super function to initialize the initial attributes
         # given by the StorageShare class.
         super().__init__(*args, **kwargs)
@@ -47,10 +47,7 @@ class AzureStorageShare(dynafed_storagestats.base.StorageShare):
 
 
     def get_storagestats(self):
-        """
-        Uses Azure's API to obtain the storage usage.
-        "generic": parses every blob in the account and sums the content-length.
-        """
+        """Contact endpoint using requested method."""
         ############# Creating loggers ################
 
         ###############################################

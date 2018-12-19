@@ -1,7 +1,4 @@
-"""
-Module intended to hold SubClasses, methods and functions to deal with storage
-shares in S3 storage types.
-"""
+"""Defines S3's StorageShare sub-class."""
 
 import logging
 
@@ -13,11 +10,14 @@ import dynafed_storagestats.s3.helpers as s3helpers
 #############
 
 class S3StorageShare(dynafed_storagestats.base.StorageShare):
-    """
-    Subclass that defines methods for obtaining storage stats of S3 endpoints.
-    """
-    def __init__(self, *args, **kwargs):
+    """StorageShare sub-class for S3.
 
+    Subclass that defines methods and validators for S3 endpoints.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Extend StorageShare class attributes."""
         # First we call the super function to initialize the initial attributes
         # given by the StorageShare class.
         super().__init__(*args, **kwargs)
@@ -76,10 +76,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
 
     def get_storagestats(self):
-        """
-        Connect to the storage endpoint with the defined or generic API's
-        to obtain the storage status.
-        """
+        """Contact endpoint using requested method."""
         ############# Creating loggers ################
 
         ###############################################
@@ -102,10 +99,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
 
     def validate_schema(self):
-        """
-        Used to translate s3 into http/https since requests doesn't
-        support the former schema.
-        """
+        """Translate s3 into http/https."""
         ############# Creating loggers ################
         _logger = logging.getLogger(__name__)
         ###############################################

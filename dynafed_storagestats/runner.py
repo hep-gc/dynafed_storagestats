@@ -1,8 +1,6 @@
 #!/bin/python3
 
-"""
-Runner to gather storage share information.
-"""
+"""Runner to gather storage share information."""
 
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -16,9 +14,7 @@ from dynafed_storagestats import output
 ########
 
 def main():
-    """Runner to gather storage share information.
-
-    """
+    """Runner to gather storage share information."""
     # Generate Help/Usage and ARGS.
     ARGS = args.parse_args()
 
@@ -46,8 +42,8 @@ def reports(ARGS):
 
     Arguments:
     ARGS -- argparse object from dynafed_storagestats.args.parse_args()
-    """
 
+    """
     print("In development, nothing useful yet.")
 
 
@@ -62,8 +58,8 @@ def stats(ARGS):
 
     Arguments:
     ARGS -- argparse object from dynafed_storagestats.args.parse_args()
+
     """
-    
     # Get list of StorageShare objects from the configuration files.
     storage_shares = configloader.get_storage_shares(
         ARGS.config_path

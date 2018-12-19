@@ -1,7 +1,4 @@
-"""
-Module intended to hold SubClasses, methods and functions to deal with storage
-shares compatible with WebDAV.
-"""
+"""Defines DAV's StorageShare sub-class."""
 
 import logging
 
@@ -13,11 +10,14 @@ import dynafed_storagestats.dav.helpers as davhelpers
 #############
 
 class DAVStorageShare(dynafed_storagestats.base.StorageShare):
-    """
-    Subclass that defines methods for obtaining storage stats of DAV endpoints.
-    """
-    def __init__(self, *args, **kwargs):
+    """StorageShare sub-class for DAV.
 
+    Subclass that defines methods and validators for DAV endpoints.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Extend StorageShare class attributes."""
         # First we call the super function to initialize the initial attributes
         # given by the StorageShare class.
         super().__init__(*args, **kwargs)
@@ -49,11 +49,7 @@ class DAVStorageShare(dynafed_storagestats.base.StorageShare):
 
 
     def get_storagestats(self):
-        """
-        Connect to the storage endpoint and will try WebDAV's quota and bytesfree
-        method as defined by RFC 4331 if "api" setting is selected. Or use PROPFIND
-        with Depth: Infinity to scan all files and add the contentlength.
-        """
+        """Contact endpoint using requested method."""
         ############# Creating loggers ################
 
         ###############################################
@@ -67,10 +63,7 @@ class DAVStorageShare(dynafed_storagestats.base.StorageShare):
 
 
     def validate_schema(self):
-        """
-        Used to translate dav/davs into http/https since requests doesn't
-        support the former schema.
-        """
+        """Translate dav/davs into http/https."""
         ############# Creating loggers ################
         _logger = logging.getLogger(__name__)
         ###############################################
