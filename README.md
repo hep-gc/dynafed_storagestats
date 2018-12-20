@@ -19,7 +19,7 @@ So far it supports has been tested with:
 Linux:
 
 ```sh
-pip3 install .
+pip3 install dynafed-storagestats
 ```
 This will install all necessary dependencies and create the executable
 '/usr/bin/dynafed-storage'
