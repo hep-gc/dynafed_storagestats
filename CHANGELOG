@@ -162,3 +162,7 @@ v1.0.3
 v1.0.4
   CHANGE: Updated docstrings on all modules (except 'exceptions') to conform with
           PEP257.
+v1.0.5
+  CHANGE: Python is now chosen via environmental variable instead of path.
+  ADDED: Try-except to configloader.parse_conf_files() to deal with bad unicode.
+         This will skip the file if there are issues decoding and log a warning.

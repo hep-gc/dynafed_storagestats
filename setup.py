@@ -13,7 +13,7 @@ with open(path.join(PWD, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='dynafed_storagestats',
-    version='1.0.4',
+    version='1.0.5',
     description='Dynafed Storage Stats Module',
     long_description=long_description,
     long_description_content_type='text/markdown',
