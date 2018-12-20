@@ -139,3 +139,6 @@ v0.12.3 Added option to specify an output file, not just a dir. Renamed
         output_dir var to output_path.
 v0.12.4 Improved how to deal with empty usage from ceph-admin. Fixed warnings
         and suggestions from pylint.
+v0.12.5 Python is now chosed via env. Added try-except when parsing config
+        files so that when an error is detected that file is skipped printng
+        a log line. Added Dockerfile and requirements.txt
