@@ -1728,49 +1728,53 @@ def get_config(config_dir=None):
 
     # Finally we parse them.
     for config_file in config_files:
-        logger.info("Reading file '%s'", os.path.realpath(config_file))
-        with open(config_file, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line.startswith("#"):
-
-                    if "glb.locplugin[]" in line:
-                        _plugin, _id, _concurrency, _url = line.split()[1::]
-                        endpoints.setdefault(_id, {})
-                        endpoints[_id].update({'id':_id.strip()})
-                        endpoints[_id].update({'url':_url.strip()})
-                        endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
-                        logger.info("Found endpoint '%s' using plugin '%s'. Reading configuration.", endpoints[_id]['id'], endpoints[_id]['plugin'])
-
-                    elif "locplugin" in line:
-                        key, value = line.partition(":")[::2]
-                        # Match an _id in key
-                        try:
-                            if '*' in key:
-                            # Add any global settings to its own key.
-                                _setting = key.split('*'+'.')[-1]
-                                global_settings.update({_setting:value.strip()})
-                                logger.info("Found global setting '%s': %s.", key, value)
-                            elif _id in key:
-                                _setting = key.split(_id+'.')[-1]
-                                endpoints.setdefault(_id, {})
-                                endpoints[_id].setdefault('plugin_settings', {})
-                                endpoints[_id]['plugin_settings'].update({_setting:value.strip()})
-                            else:
-                                raise UGRConfigFileErrorIDMismatch(
-                                    error="SettingIDMismatch",
-                                    line=line.split(":")[0],
-                                    )
-                        except UGRConfigFileError as ERR:
-                            logger.critical("[%s]%s", _id, ERR.debug)
-                            print("[CRITICAL][%s]%s" % (_id, ERR.debug))
-                            sys.exit(1)
-                            # self.debug.append("[ERROR]" + ERR.debug)
-                            # self.status = "[ERROR]" + ERR.error_code
-                    else:
-                        # Ignore any other lines
-                        #print( "I don't know what to do with %s", line)
-                        pass
+        try:
+            logger.info("Reading file '%s'", os.path.realpath(config_file))
+            with open(config_file, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line.startswith("#"):
+    
+                        if "glb.locplugin[]" in line:
+                            _plugin, _id, _concurrency, _url = line.split()[1::]
+                            endpoints.setdefault(_id, {})
+                            endpoints[_id].update({'id':_id.strip()})
+                            endpoints[_id].update({'url':_url.strip()})
+                            endpoints[_id].update({'plugin':_plugin.split("/")[-1]})
+                            logger.info("Found endpoint '%s' using plugin '%s'. Reading configuration.", endpoints[_id]['id'], endpoints[_id]['plugin'])
+    
+                        elif "locplugin" in line:
+                            key, value = line.partition(":")[::2]
+                            # Match an _id in key
+                            try:
+                                if '*' in key:
+                                # Add any global settings to its own key.
+                                    _setting = key.split('*'+'.')[-1]
+                                    global_settings.update({_setting:value.strip()})
+                                    logger.info("Found global setting '%s': %s.", key, value)
+                                elif _id in key:
+                                    _setting = key.split(_id+'.')[-1]
+                                    endpoints.setdefault(_id, {})
+                                    endpoints[_id].setdefault('plugin_settings', {})
+                                    endpoints[_id]['plugin_settings'].update({_setting:value.strip()})
+                                else:
+                                    raise UGRConfigFileErrorIDMismatch(
+                                        error="SettingIDMismatch",
+                                        line=line.split(":")[0],
+                                        )
+                            except UGRConfigFileError as ERR:
+                                logger.critical("[%s]%s", _id, ERR.debug)
+                                print("[CRITICAL][%s]%s" % (_id, ERR.debug))
+                                sys.exit(1)
+                                # self.debug.append("[ERROR]" + ERR.debug)
+                                # self.status = "[ERROR]" + ERR.error_code
+                        else:
+                            # Ignore any other lines
+                            #print( "I don't know what to do with %s", line)
+                            pass
+        except Exception:
+            logger.warning("Cannot parse file, skipping configuration in %s", config_file)
+            continue
     # If any global settings were found, apply them to any endpoint missing
     # that particular setting. Endpoint specific settings supersede global ones.
     for setting, value in global_settings.items():
@@ -1875,7 +1879,6 @@ def get_endpoints(config_dir=None):
         storage_objects.append(ep)
 
     return storage_objects
-
 
 def output_json(endpoints, output_path="/tmp"):
     """
