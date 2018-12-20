@@ -23,7 +23,7 @@ setup(
     license='Apache',
     classifiers=[
         'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: Apache License',
+        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3',
     ],
     packages=find_packages(exclude=['docs', 'scripts', 'tests']),
