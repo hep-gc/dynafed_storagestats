@@ -166,3 +166,5 @@ v1.0.5
   CHANGE: Python is now chosen via environmental variable instead of path.
   ADDED: Try-except to configloader.parse_conf_files() to deal with bad unicode.
          This will skip the file if there are issues decoding and log a warning.
+v1.0.6
+  ADDED: __init__.py files to create pypi package.
