@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 Module to interact with UGR's configuration files in order to obtain
 storage status information from various types of endpoints.
