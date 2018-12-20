@@ -22,7 +22,7 @@ setup(
     author_email='ffernandezgalindo@triumf.ca',
     license='Apache',
     classifiers=[
-        'Development Status :: 4 - Beta'
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: Apache License',
         'Programming Language :: Python :: 3',
     ],
