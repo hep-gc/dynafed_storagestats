@@ -1,0 +1,415 @@
+"""Exceptions classes."""
+
+#############
+## Classes ##
+#############
+
+class DSSBaseException(Exception):
+    """
+    Base exception class for dynafed_storagestats module. Formats the message
+    and debug attibutes with the variables passed from the SubClasses.
+    """
+    def __init__(self, error="ERROR", status_code="000", message=None, debug=None):
+
+        self.error_code = "[%s][%s]" %(error, status_code)
+
+        if message is None:
+            # Set some default useful error message
+            self.message = self.error_code + "An unknown exception occurred processing"
+        else:
+            self.message = self.error_code + message
+        if debug is None:
+            self.debug = self.message
+        else:
+            self.debug = self.message + debug
+
+        super().__init__(self.message)
+
+
+### Defining Error Exception Classes ###
+
+class DSSBaseError(DSSBaseException):
+    """
+    Base error exception Subclass.
+    """
+    def __init__(self, error="ERROR", status_code="000", message=None, debug=None):
+
+        if message is None:
+            # Set some default useful error message
+            self.message = "A unknown error occurred."
+        else:
+            self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConfigFileError(DSSBaseError):
+    """
+    Base error exception subclass for anything relating to the config file(s).
+    """
+    def __init__(self, error="ConfigFileError", status_code="001", message=None, debug=None):
+
+        if message is None:
+            # Set some default useful error message
+            self.message = "An unknown error occurred reading a configuration file."
+        else:
+            self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConfigFileErrorIDMismatch(DSSConfigFileError):
+    """
+    Exception error when a line in the configuration file under a specific
+    endpoint does not match the given endpoint ID. Usually a typo.
+    """
+    def __init__(self, storage_share, config_file, line_number, line, error="SettingIDMismatch", status_code="002", debug=None):
+
+        self.storage_share = storage_share
+
+        self.message = 'Failed to match ID file: "%s" @ line: [%i] "%s". Check your configuration.' \
+                       % (config_file, line_number, line)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConfigFileErrorInvalidSetting(DSSConfigFileError):
+    """
+    Exception error when the value given for an setting in the configuration file
+    does not match the 'valid' values specified in the 'validators' attribute.
+    """
+    def __init__(self, setting, valid_plugin_settings, error="InvalidSetting", status_code="001", debug=None):
+
+        self.message = 'Incorrect value given in setting "%s". Valid plugin_settings: %s' \
+                       % (setting, valid_plugin_settings)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConfigFileErrorMissingRequiredSetting(DSSConfigFileError):
+    """
+    Exception error when a setting required by this module to obtain the Storage
+    Stats is missing from the config files for the endpoint being processed.
+    """
+    def __init__(self, setting, error="MissingRequiredSetting", status_code="001", debug=None):
+
+        self.message = '"%s" is required. Check your configuration.' \
+                       % (setting)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConfigFileErrorNoConfigFilesFound(DSSConfigFileError):
+    """
+    Exception error when no configuration files have been found.
+    """
+    def __init__(self, config_path, error="NoConfigFilesFound", status_code="002", debug=None):
+
+        self.message = 'No configuration files found in the path(s): %s' \
+                       % (config_path)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+class DSSMemcachedError(DSSBaseError):
+    """
+    Base error exception subclass for issues deailng with memcached
+    communication.
+    """
+    def __init__(self, error="MemcachedError", status_code="080", message=None, debug=None):
+
+        if message is None:
+            self.message = 'Unknown memcached error.'
+        else:
+            self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSMemcachedConnectionError(DSSMemcachedError):
+    """
+    Exception error when script cannot connect to a memcached instance as
+    requested.
+    """
+    def __init__(self, error="MemcachedConnectionError", status_code="081", debug=None):
+
+        self.message = 'Failed to connect to memcached.'
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSMemcachedIndexError(DSSMemcachedError):
+    """
+    Exception error when the requested index in memcached cannot be found.
+    """
+    def __init__(self, error="MemcachedIndexError", status_code="082", debug=None):
+
+        self.message = 'Unable to get memcached index contents.'
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSError(DSSBaseError):
+    """
+    Base error exception subclass for issues dealing when failing to obtain
+    the endpoint's storage stats.
+    """
+    def __init__(self, error="StorageStatsError", status_code="090", message=None, debug=None):
+
+        if message is None:
+            # Set some default useful error message
+            self.message = "An unknown error occurred while obtaining storage stats."
+        else:
+            self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConnectionError(DSSError):
+    """
+    Exception error when there is an issue connecting to the endpoint's URN.
+    """
+    def __init__(self, error="ConnectionError", status_code="400", debug=None):
+
+        self.message = 'Failed to establish a connection.'
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConnectionErrorAzureAPI(DSSError):
+    """
+    Exception error when there is an issue connecting to Azure's API.
+    """
+    def __init__(self, error="ConnectionError", status_code="400", api=None, debug=None):
+
+        self.message = 'Error requesting stats using API "%s".' \
+                       % (api)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConnectionErrorDAVCertPath(DSSError):
+    """
+    Exception caused when there is an issue reading a client X509 certificate
+    as configured in the config files for the endpoint being processed.
+    """
+    def __init__(self, error="ClientCertError", status_code="091", certfile=None, debug=None):
+
+        self.message = 'Invalid client certificate path "%s".' \
+                       % (certfile)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConnectionErrorInvalidSchema(DSSError):
+    """
+    Exception error when the URN's schema does not match any valid options.
+    """
+    def __init__(self, error="InvalidSchema", status_code="008", schema=None, debug=None):
+
+        self.message = 'Invalid schema "%s".' \
+                       % (schema)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConnectionErrorS3API(DSSError):
+    """
+    Exception error when there is an issue connecting to an S3 API.
+    """
+    def __init__(self, error="ConnectionError", status_code="400", api=None, debug=None):
+
+        self.message = 'Error requesting stats using API "%s".' \
+                       % (api)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSErrorAzureContainerNotFound(DSSError):
+    """
+    Exception error when the Azure container requested could not be found.
+    """
+    def __init__(self, error="ContainerNotFound", status_code="404", debug=None, container=''):
+
+        self.message = 'Container tried: %s' \
+                       % (container)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSErrorDAVQuotaMethod(DSSError):
+    """
+    Exception error when the DAV endpoint does not support the RFC 4331 method.
+    """
+    def __init__(self, error="UnsupportedMethod", status_code="096", debug=None):
+
+        self.message = 'WebDAV Quota Method.'
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSErrorS3MissingBucketUsage(DSSError):
+    """
+    Exception error when no bucket usage stats were returned.
+    """
+    def __init__(self, error="MissingBucketUsage", status_code="098", debug=None):
+
+        self.message = '[%s][%s] Failed to get bucket usage information.'
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSOfflineEndpointError(DSSError):
+    """
+    Exception error when and endpoint is detected to have been flagged as offline.
+    """
+    def __init__(self, error="EndpointOffline", status_code="503", debug=None):
+
+        self.message = 'Dynafed has flagged this endpoint as offline.'
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSUnsupportedPluginError(DSSConfigFileError):
+    """
+    Exception error when an endpoint of an unsupported type/protocol plugin
+    is detected.
+    """
+    def __init__(self, error="UnsupportedPlugin", status_code="009", plugin=None, debug=None):
+
+        self.message = 'StorageStats method for "%s" not implemented yet.' \
+                       % (plugin)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+### Defining Warning Exception Classes ###
+
+class DSSBaseWarning(DSSBaseException):
+    """
+    Base error exception Subclass.
+    """
+    def __init__(self, error="WARNING", status_code="000", message=None, debug=None):
+
+        if message is None:
+            # Set some default useful error message
+            self.message = 'A unknown warning occurred.'
+        else:
+            self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConfigFileWarning(DSSBaseWarning):
+    """
+    Base warning exception subclass for anything relating to the config file(s).
+    """
+    def __init__(self, error="ConfigFileWarning", status_code="001", message=None, debug=None):
+
+        if message is None:
+            # Set some default useful error message
+            self.message = 'An unknown error occurred reading a configuration file.'
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSConfigFileWarningMissingSetting(DSSConfigFileWarning):
+    """
+    Exception warning when an setting not flagged as required by this module
+    to obtain the storage stats is missing from the config file(s). Prints
+    out the default setting given by the 'validators' attribute that will be used
+    in this absence.
+    """
+    def __init__(self, setting, setting_default, error="MissingSetting", status_code="001", debug=None):
+
+        self.message = 'Unspecified "%s" setting. Using default value "%s"' \
+                       % (setting, setting_default)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSWarning(DSSBaseWarning):
+    """
+    Base warning exception subclass for issues dealing when non-critical errors
+    are detected when trying to obtain the endpoint's storage stats.
+    """
+    def __init__(self, error="StorageStatsWarning", status_code="090", message=None, debug=None):
+
+        if message is None:
+            # Set some default useful error message
+            self.message = 'An unknown error occurred reading storage stats'
+        else:
+            self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSQuotaWarning(DSSWarning):
+    """
+    Exception warning when no quota has been provided by the endpoint's API
+    when requested. Prints out the default being used as specified in the
+    StorageStats object class's attribute self.stats['quota']
+    """
+    def __init__(self, error="NoQuotaGiven", status_code="098", debug=None, default_quota="1TB"):
+
+        self.message = 'No quota obtained from API or configuration file. Using default of %s' \
+                       % (default_quota)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSCephS3QuotaDisabledWarning(DSSWarning):
+    """
+    Exception warning when contacting a Ceph S3 Admin API and it is detected
+    that no quota has been enabled for the bucket.
+    """
+    def __init__(self, error="BucketQuotaDisabled", status_code="099", debug=None, default_quota="1TB"):
+
+        self.message = 'Bucket quota is disabled. Using default of %s' \
+                       % (default_quota)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class DSSDAVZeroQuotaWarning(DSSWarning):
+    """
+    Exception warning when a DAV based endpoint utilizing RFC4331 returns
+    quota-available-bytes as 0. It well could mean there is no more space
+    in the endpoint, or, more likely, the quota is not properly configured.
+    We raise a warning to let the operator know.
+    """
+    def __init__(self, error="ZeroAvailableBytes", status_code="098", debug=None):
+
+        self.message = 'RFC4331 reports quota-available-bytes as "0". '       \
+                       'While the endpoint could be full, this could also '   \
+                       'indicate an issue with the back-end configuration or '\
+                       'lack of support returning this information. '         \
+                       'If necessary input a quota manually in the configuration file.'
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)

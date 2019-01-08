@@ -1,5 +1,24 @@
 __pycache__
+
+*.DS_store
+
+# Compiled python modules.
 *.pyc
+<<<<<<< HEAD
 *.conf
 *.log
 conf.d
+=======
+
+# Setuptools distribution folder.
+/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+
+# Remove local tests
+tests/local/*
+
+# Build files
+/build/
+>>>>>>> dev
