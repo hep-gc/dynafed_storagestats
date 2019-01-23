@@ -372,7 +372,7 @@ def cloudwatch(storage_share):
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
-def list_objects(storage_share):
+def list_objects(storage_share, prefix=''):
     """Contact S3 endpoint using list_objects API.
 
     Contacts an S3 endpoints and uses the "list_objects" API to recursively
@@ -425,7 +425,8 @@ def list_objects(storage_share):
 
     _kwargs = {
         'Bucket': storage_share.uri['bucket'],
-        'Delimiter': '*'
+        'Delimiter': '*',
+        'Prefix': prefix,
     }
 
     # This loop is needed to obtain all objects as the API can only
