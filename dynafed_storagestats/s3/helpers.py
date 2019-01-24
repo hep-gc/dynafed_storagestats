@@ -372,7 +372,7 @@ def cloudwatch(storage_share):
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
-def list_objects(storage_share, prefix=''):
+def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt', request='storagestats'):
     """Contact S3 endpoint using list_objects API.
 
     Contacts an S3 endpoints and uses the "list_objects" API to recursively
@@ -381,6 +381,7 @@ def list_objects(storage_share, prefix=''):
 
     Attributes:
     storage_share -- dynafed_storagestats StorageShare object.
+    prefix -- string
 
     """
     ############# Creating loggers ################
@@ -517,20 +518,38 @@ def list_objects(storage_share, prefix=''):
             #     response['Contents']
             # )
 
-            try:
-                _response['Contents']
-            except KeyError:
-                storage_share.stats['bytesused'] = 0
-                break
-            else:
-                for _file in _response['Contents']:
-                    _total_bytes += _file['Size']
-                    _total_files += 1
+            if request == 'storagestats':
+                try:
+                    _response['Contents']
+                except KeyError:
+                    storage_share.stats['bytesused'] = 0
+                    break
+                else:
+                    for _file in _response['Contents']:
+                        _total_bytes += _file['Size']
+                        _total_files += 1
 
-            try:
-                _kwargs['Marker'] = _response['NextMarker']
-            except KeyError:
-                break
+                try:
+                    _kwargs['Marker'] = _response['NextMarker']
+                except KeyError:
+                    break
+
+            elif request == 'filelist':
+                try:
+                    _response['Contents']
+                except KeyError:
+                    break
+                else:
+                    print ("chale")
+                    with open(report_file, 'w') as output:
+                        for _file in _response['Contents']:
+                            output.write("%s\n" % _file['Key'])
+                            _total_files += 1
+
+                try:
+                    _kwargs['Marker'] = _response['NextMarker']
+                except KeyError:
+                    break
 
     # Save time when data was obtained.
     storage_share.stats['endtime'] = int(time.time())
