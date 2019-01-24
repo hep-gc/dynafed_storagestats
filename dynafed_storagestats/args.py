@@ -30,8 +30,8 @@ def parse_args():
     add_general_options(parser)
 
     # Sub-command options argument sub-parsers
-    add_stats_subparser(subparser)
     add_reports_subparser(subparser)
+    add_stats_subparser(subparser)
 
     # Print help if no arguments were passed
     if len(sys.argv) == 1:
@@ -71,7 +71,25 @@ def add_reports_subparser(subparser):
     )
 
     # Set the sub-command routine to run.
-    parser.set_defaults(cmd='reports')
+    # General options
+    parser.add_argument(
+        '-c', '--config',
+        action='store',
+        default=['/etc/ugr/conf.d'],
+        dest='config_path',
+        nargs='*',
+        help="Path to UGR's endpoint .conf files or directories. " \
+             "Accepts any number of arguments. " \
+             "Default: '/etc/ugr/conf.d'."
+    )
+    parser.add_argument(
+        '-e', '--endpoint',
+        action='store',
+        default=True,
+        dest='endpoint',
+        help="Choose endpoint to check. " \
+             "If not present, all endpoints will be checked."
+    )
 
     # Logging options
     group_logging = parser.add_argument_group("Logging options")
@@ -91,6 +109,51 @@ def add_reports_subparser(subparser):
         dest='loglevel',
         help="Set log output level. " \
         "Default: WARNING."
+    )
+
+    # Output Options
+    group_output = parser.add_argument_group("Output options")
+    group_output.add_argument(
+        '--debug',
+        action='store_true',
+        default=False,
+        dest='debug',
+        help="Declare to enable debug output on stdout."
+    )
+
+    group_output.add_argument(
+        '-f', '--filename',
+        action='store',
+        default='report.txt',
+        dest='report_filename',
+        help="Set output filename. " \
+             "Default: 'report_filename'"
+    )
+
+    group_output.add_argument(
+        '-o', '--output-dir',
+        action='store',
+        default='.',
+        dest='output_path',
+        help="Set output directory for flags -j, -x and -p. " \
+             "Default: '.'"
+    )
+    group_output.add_argument(
+        '-p', '--plain',
+        action='store',
+        const="dynafed_storagestats.txt",
+        default=False,
+        dest='to_plaintext',
+        nargs='?',
+        help="Set to output stats to plain txt file. Add argument to set filename." \
+             "Default: dynafed_storagestats.txt"
+    )
+    group_output.add_argument(
+        '--stdout',
+        action='store_true',
+        default=False,
+        dest='output_stdout',
+        help="Set to output stats on stdout."
     )
 
 
