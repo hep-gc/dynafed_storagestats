@@ -98,6 +98,16 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             s3helpers.cloudwatch(self)
 
 
+    def get_filelist(self, prefix='', report_file='/tmp/filelist_report.txt'):
+        """Contanct enpoint and generate a filelist.
+
+        Generates a list using the prefix var to select specific keys.
+
+        """
+        s3helpers.list_objects(self, prefix, request='filelist')
+
+
+
     def validate_schema(self):
         """Translate s3 into http/https."""
         ############# Creating loggers ################
