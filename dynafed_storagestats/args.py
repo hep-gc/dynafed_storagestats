@@ -85,8 +85,9 @@ def add_reports_subparser(subparser):
     parser.add_argument(
         '-e', '--endpoint',
         action='store',
-        default=True,
+        default=['all'],
         dest='endpoint',
+        nargs='*',
         help="Choose endpoint to check. " \
              "If not present, all endpoints will be checked."
     )
@@ -187,8 +188,9 @@ def add_stats_subparser(subparser):
     parser.add_argument(
         '-e', '--endpoint',
         action='store',
-        default=True,
+        default=['all'],
         dest='endpoint',
+        nargs='*',
         help="Choose endpoint to check. " \
              "If not present, all endpoints will be checked."
     )
