@@ -132,7 +132,10 @@ def get_storage_endpoints(storage_share_objects, storage_shares_mask=True):
             "Dictionary of URL's and associated StorageShares: %s",
             _urls_dict
         )
-
+    else:
+        _logger.critical("No StorageShares to check found in configuration file(s).")
+        print("[CRITICAL]No StorageShares to check found in configuration file(s).")
+        sys.exit(1)
 
     # Generate a StorageEnpoint object from the URL and attach any StorageShares
     # that share this URL.
