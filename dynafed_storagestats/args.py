@@ -88,7 +88,8 @@ def add_reports_subparser(subparser):
         default=['all'],
         dest='endpoint',
         nargs='*',
-        help="Choose endpoint to check. " \
+        help="Choose endpoint(s) to check. " \
+             "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
     )
 
@@ -191,7 +192,8 @@ def add_stats_subparser(subparser):
         default=['all'],
         dest='endpoint',
         nargs='*',
-        help="Choose endpoint to check. " \
+        help="Choose endpoint(s) to check. " \
+             "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
     )
 
