@@ -168,3 +168,7 @@ v1.0.5
          This will skip the file if there are issues decoding and log a warning.
 v1.0.6
   ADDED: __init__.py files to create pypi package.
+
+v1.0.7
+  ADDED: Adds support to specify more than one endpoint to check instead of just
+         one or all, using the -e flag.
