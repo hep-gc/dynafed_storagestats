@@ -123,14 +123,19 @@ def get_storage_endpoints(storage_share_objects, storage_shares_mask=True):
     # Populate _urls_dict using storage_share_objects URL's as the keys
     # and each StorageShare as a list under these keys.
     for _storage_share_object in storage_share_objects:
-        if _storage_share_object.id == storage_shares_mask or storage_shares_mask is True:
+        if _storage_share_object.id in storage_shares_mask or storage_shares_mask[0] == 'all':
             _urls_dict.setdefault(_storage_share_object.uri['url'], [])
             _urls_dict[_storage_share_object.uri['url']].append(_storage_share_object)
 
-    _logger.debug(
-        "Dictionary of URL's and associated StorageShares: %s",
-        _urls_dict
-    )
+    if _urls_dict:
+        _logger.debug(
+            "Dictionary of URL's and associated StorageShares: %s",
+            _urls_dict
+        )
+    else:
+        _logger.critical("No StorageShares to check found in configuration file(s).")
+        print("[CRITICAL]No StorageShares to check found in configuration file(s).")
+        sys.exit(1)
 
     # Generate a StorageEnpoint object from the URL and attach any StorageShares
     # that share this URL.

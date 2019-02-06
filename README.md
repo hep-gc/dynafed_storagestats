@@ -49,7 +49,7 @@ create file lists and stats reports in formats according to experiment's needs.
 First run with the following flags:
 
 ```bash
-dynafed-storage stats -c /etc/ugr/conf.d --stdout -m -v
+dynafed-storage -v stats -c /etc/ugr/conf.d --stdout -m
 ```
 
 This will printout any warnings and errors as they are encountered as well as
@@ -68,6 +68,13 @@ When everything looks to be setup as desired, setup cron to run the following
 
 ```bash
 dynafed-storage stats -c /etc/ugr/conf.d -m --loglevel=WARNING --logfile='/var/log/dynafed_storagestats/dynafed_storagestats.log'
+```
+
+If instead of checking all configured endpoints, specific endpoint ID's can be
+specified with the "-e" flag:
+
+```bash
+dynafed-storage stats -c /etc/ugr/conf.d -m -e endpoint1 endpoint2 
 ```
 
 To get help:
@@ -92,23 +99,27 @@ optional arguments:
 ```bash
 dynafed-storage stats -h
 usage: dynafed-storage stats [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                                  [-e ENDPOINT] [--memhost MEMCACHED_IP]
-                                  [--memport MEMCACHED_PORT] [--debug] [-m]
-                                  [-j [TO_JSON]] [-o OUTPUT_PATH]
-                                  [-p [TO_PLAINTEXT]] [--stdout]
-                                  [-x [OUTPUT_XML]]
+                             [-e [ENDPOINT [ENDPOINT ...]]]
+                             [--logfile LOGFILE]
+                             [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                             [--memhost MEMCACHED_IP]
+                             [--memport MEMCACHED_PORT] [--debug] [-m]
+                             [-j [TO_JSON]] [-o OUTPUT_PATH]
+                             [-p [TO_PLAINTEXT]] [--stdout] [-x [OUTPUT_XML]]
 
 optional arguments:
   -h, --help            show this help message and exit
   -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
-                        Path to UGRs endpoint .conf files or directories.
+                        Path to UGR's endpoint .conf files or directories.
                         Accepts any number of arguments. Default:
                         '/etc/ugr/conf.d'.
-  -e ENDPOINT, --endpoint ENDPOINT
-                        Choose endpoint to check. If not present, all
-                        endpoints will be checked.
+  -e [ENDPOINT [ENDPOINT ...]], --endpoint [ENDPOINT [ENDPOINT ...]]
+                        Choose endpoint(s) to check. Accepts any number of
+                        arguments. If not present, all endpoints will be
+                        checked.
+
 Logging options:
-  --logfile LOGFILE     Set logfile path. Default:
+  --logfile LOGFILE     Set logfile's path. Default:
                         /tmp/dynafed_storagestats.log
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
@@ -125,16 +136,19 @@ Output options:
   -m, --memcached       Declare to enable uploading storage stats to
                         memcached.
   -j [TO_JSON], --json [TO_JSON]
-                        Set to output json file with storage stats. !!In
+                        Set to output stats to json file. Add argument to set
+                        filename.Default: dynafed_storagestats.json!!In
                         development!!
-  -o OUTPUT_PATH, --output OUTPUT_PATH
-                        Directory or file to output storage stat files.
-                        Default: /tmp/dynafed_storagestats.json
+  -o OUTPUT_PATH, --output-dir OUTPUT_PATH
+                        Set output directory for flags -j, -x and -p. Default:
+                        '.'
   -p [TO_PLAINTEXT], --plain [TO_PLAINTEXT]
-                        Set to output stats to plain txt file.
+                        Set to output stats to plain txt file. Add argument to
+                        set filename.Default: dynafed_storagestats.txt
   --stdout              Set to output stats on stdout.
   -x [OUTPUT_XML], --xml [OUTPUT_XML]
-                        Set to output xml file with StAR format. !!In
+                        Set to output stats to json file. Add argument to set
+                        filename.Default: dynafed_storagestats.json!!In
                         development!!
 ```
 **Important Note: DEBUG level might print an enormous amount of data as it will
