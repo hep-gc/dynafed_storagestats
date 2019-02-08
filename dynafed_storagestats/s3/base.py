@@ -81,19 +81,20 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
         ###############################################
 
-        # Getting the storage Stats CephS3's Admin API
+        # Getting the storage stats CephS3's Admin API
         if self.plugin_settings['storagestats.api'].lower() == 'ceph-admin':
             s3helpers.ceph_admin(self)
 
-        # Getting the storage Stats AWS S3 API
+        # Getting the storage stats AWS S3 API
         #elif self.plugin_settings['storagestats.api'].lower() == 'aws-cloudwatch':
 
-        # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
-        # API, should work for any compatible S3 endpoint.
+        # Getting the storage stats using AWS-Boto3 list-objects API, should
+        # work for any compatible S3 endpoint.
         elif self.plugin_settings['storagestats.api'].lower() == 'generic' \
         or   self.plugin_settings['storagestats.api'].lower() == 'list-objects':
             s3helpers.list_objects(self)
 
+        # Getting the storage stats using AWS Cloudwatch
         elif self.plugin_settings['storagestats.api'].lower() == 'cloudwatch':
             s3helpers.cloudwatch(self)
 
@@ -104,7 +105,14 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         Generates a list using the prefix var to select specific keys.
 
         """
-        s3helpers.list_objects(self, prefix, request='filelist')
+
+        with open(report_file, 'w') as _output:
+            s3helpers.list_objects(
+                self,
+                prefix,
+                report_file=_output,
+                request='filelist'
+            )
 
 
 

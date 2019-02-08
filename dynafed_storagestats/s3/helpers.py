@@ -541,10 +541,9 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
                     break
                 else:
                     print ("chale")
-                    with open(report_file, 'w') as output:
-                        for _file in _response['Contents']:
-                            output.write("%s\n" % _file['Key'])
-                            _total_files += 1
+                    for _file in _response['Contents']:
+                        report_file.write("%s\n" % _file['Key'])
+                        _total_files += 1
 
                 try:
                     _kwargs['Marker'] = _response['NextMarker']
