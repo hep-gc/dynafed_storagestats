@@ -71,6 +71,9 @@ def add_reports_subparser(subparser):
     )
 
     # Set the sub-command routine to run.
+    parser.set_defaults(cmd='reports')
+
+    # Set the sub-command routine to run.
     # General options
     parser.add_argument(
         '-c', '--config',
