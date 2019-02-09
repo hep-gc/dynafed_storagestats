@@ -44,7 +44,15 @@ def reports(ARGS):
     ARGS -- argparse object from dynafed_storagestats.args.parse_args()
 
     """
-    print("In development, nothing useful yet.")
+    # Get list of StorageShare objects from the configuration files.
+    storage_shares = configloader.get_storage_shares(
+        ARGS.config_path
+    )
+
+    for _storage_share in storage_shares:
+        _storage_share.get_filelist()
+
+
 
 
 def stats(ARGS):
