@@ -187,12 +187,29 @@ def process_storagereports(storage_endpoint, args):
     _logger = logging.getLogger(__name__)
     ###############################################
     report_file = '/tmp/filelist_report.txt'
+    prefix = ''
     try:
-        _logger.info("[%s]Contacting endpoint.", storage_endpoint.storage_shares[0].id)
+        _logger.info(
+            "[%s]Contacting endpoint.",
+            storage_endpoint.storage_shares[0].id
+        )
+
+        _logger.info(
+            "[%s]Writing file-list report to '%s'",
+            storage_endpoint.storage_shares[0].id,
+            report_file
+        )
+
+        _logger.debug(
+            "[%s]Writing file-list report using options 'report_file': '%s', 'prefix': '%s'",
+            storage_endpoint.storage_shares[0].id,
+            report_file,
+            prefix
+        )
 
         with open(report_file, 'w') as _report_file:
             storage_endpoint.storage_shares[0].get_filelist(
-                prefix='',
+                prefix=prefix,
                 report_file=_report_file,
             )
 
@@ -200,21 +217,21 @@ def process_storagereports(storage_endpoint, args):
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
-        print('yolo!')
+        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
         os.remove(report_file)
 
     except exceptions.DSSWarning as WARN:
         _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
         storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
         storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
-        print('yolo!')
+        _logger.warning("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
         os.remove(report_file)
 
     except exceptions.DSSError as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
-        print('yolo!')
+        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
         os.remove(report_file)
 
 
