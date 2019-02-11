@@ -540,7 +540,6 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
                 except KeyError:
                     break
                 else:
-                    print ("chale")
                     for _file in _response['Contents']:
                         report_file.write("%s\n" % _file['Key'])
                         _total_files += 1
