@@ -1,7 +1,6 @@
 """Defines S3's StorageShare sub-class."""
 
 import logging
-import os
 
 import dynafed_storagestats.base
 import dynafed_storagestats.s3.helpers as s3helpers
@@ -107,20 +106,12 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
         """
 
-
-        try:
-            with open(report_file, 'w') as _output:
-                s3helpers.list_objects(
-                    self,
-                    prefix,
-                    report_file=_output,
-                    request='filelist'
-                )
-        # Delete file if any error is raised. Maybe this needs to be somewhere
-        # else?
-        except:
-            print('yolo!')
-            os.remove(report_file)
+        s3helpers.list_objects(
+            self,
+            prefix,
+            report_file=report_file,
+            request='filelist'
+        )
 
 
     def validate_schema(self):

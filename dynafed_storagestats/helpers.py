@@ -1,6 +1,7 @@
 """Helper functions used by the other modules."""
 
 import logging, logging.handlers
+import os
 
 from dynafed_storagestats import exceptions
 from dynafed_storagestats import memcache
@@ -163,6 +164,59 @@ def get_connectionstats(storage_share_objects, memcached_ip='127.0.0.1', memcach
                     "Will be assumed 'Online'",
                     _storage_share
                 )
+
+
+def process_storagereports(storage_endpoint, args):
+    """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
+
+    Runs get_filelist() method for the first StorageShare in the list of the
+    StorageEndpoint as long as it has not been flagged as offline.
+
+    #It then calls
+    #process_endpoint_list_results() to copy the results if there are multiple
+    #StorageShares. Then if requested upload the stats to memcached.
+    Also handles the exceptions to failures in creating the report file,
+    deleting it in case of error.
+
+    Arguments:
+    storage_endpoint -- dynafed_storagestats StorageEndpoint.
+    args -- args -- argparse object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+    report_file = '/tmp/filelist_report.txt'
+    try:
+        _logger.info("[%s]Contacting endpoint.", storage_endpoint.storage_shares[0].id)
+
+        with open(report_file, 'w') as _report_file:
+            storage_endpoint.storage_shares[0].get_filelist(
+                prefix='',
+                report_file=_report_file,
+            )
+
+    except exceptions.DSSOfflineEndpointError as ERR:
+        _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
+        storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
+        storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
+        print('yolo!')
+        os.remove(report_file)
+
+    except exceptions.DSSWarning as WARN:
+        _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
+        storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
+        storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
+        print('yolo!')
+        os.remove(report_file)
+
+    except exceptions.DSSError as ERR:
+        _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
+        storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
+        storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
+        print('yolo!')
+        os.remove(report_file)
+
 
 
 def process_storagestats(storage_endpoint, args):
