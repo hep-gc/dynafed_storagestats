@@ -7,7 +7,7 @@ import uuid
 from io import BytesIO
 from lxml import etree
 
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 
 #############
 # Functions #
@@ -207,7 +207,7 @@ def process_rfc4331_response(response, storage_share):
     # Check that we got the requested information. If not, then
     # the method is not supported.
     if _node is None:
-        raise exceptions.DSSErrorDAVQuotaMethod(
+        raise dynafed_storagestats.exceptions.ErrorDAVQuotaMethod(
             error="UnsupportedMethod"
         )
 
@@ -224,7 +224,7 @@ def process_rfc4331_response(response, storage_share):
         # actually full. We warn for the operator to make a
         # decision.
         if storage_share.stats['bytesfree'] is 0:
-            raise exceptions.DSSDAVZeroQuotaWarning(
+            raise dynafed_storagestats.exceptions.DAVZeroQuotaWarning(
                 debug=str(response.content)
             )
 

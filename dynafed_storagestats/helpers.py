@@ -3,7 +3,7 @@
 import logging, logging.handlers
 import os
 
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 from dynafed_storagestats import memcache
 from dynafed_storagestats import output
 
@@ -88,7 +88,7 @@ def get_connectionstats(storage_share_objects, memcached_ip='127.0.0.1', memcach
         )
 
         if _idx is None:
-            raise exceptions.DSSMemcachedConnectionError()
+            raise dynafed_storagestats.exceptions.MemcachedConnectionError()
 
         if isinstance(_idx, bytes):
             _idx = str(_idx, 'utf-8')
@@ -108,9 +108,9 @@ def get_connectionstats(storage_share_objects, memcached_ip='127.0.0.1', memcach
 
         # Check if we actually got information
         if _connection_stats is None:
-            raise exceptions.DSSMemcachedIndexError()
+            raise dynafed_storagestats.exceptions.MemcachedIndexError()
 
-    except exceptions.DSSMemcachedError as ERR:
+    except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
             "%s Server %s did not return data. All storage_shares will be " \
             "assumed 'Online'.",
@@ -213,21 +213,21 @@ def process_storagereports(storage_endpoint, args):
                 report_file=_report_file,
             )
 
-    except exceptions.DSSOfflineEndpointError as ERR:
+    except dynafed_storagestats.exceptions.OfflineEndpointError as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
         _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
         os.remove(report_file)
 
-    except exceptions.DSSWarning as WARN:
+    except dynafed_storagestats.exceptions.Warning as WARN:
         _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
         storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
         storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
         _logger.warning("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
         os.remove(report_file)
 
-    except exceptions.DSSError as ERR:
+    except dynafed_storagestats.exceptions.Error as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
@@ -266,7 +266,7 @@ def process_storagestats(storage_endpoint, args):
                 storage_endpoint.storage_shares[0].stats['check']
             )
 
-            raise exceptions.DSSOfflineEndpointError(
+            raise dynafed_storagestats.exceptions.OfflineEndpointError(
                 status_code="400",
                 error="EndpointOffline"
             )
@@ -278,17 +278,17 @@ def process_storagestats(storage_endpoint, args):
                 storage_endpoint.storage_shares[0].stats['check']
             )
 
-    except exceptions.DSSOfflineEndpointError as ERR:
+    except dynafed_storagestats.exceptions.OfflineEndpointError as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
 
-    except exceptions.DSSWarning as WARN:
+    except dynafed_storagestats.exceptions.Warning as WARN:
         _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
         storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
         storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
 
-    except exceptions.DSSError as ERR:
+    except dynafed_storagestats.exceptions.Error as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
@@ -310,7 +310,7 @@ def process_storagestats(storage_endpoint, args):
                 try:
                     output.to_memcached(storage_share, args.memcached_ip, args.memcached_port)
 
-                except exceptions.DSSMemcachedConnectionError as ERR:
+                except dynafed_storagestats.exceptions.MemcachedConnectionError as ERR:
                     _logger.error("[%s]%s", storage_share.id, ERR.debug)
                     storage_share.debug.append("[ERROR]" + ERR.debug)
                     storage_share.status = storage_share.status + "," + "[ERROR]" + ERR.error_code

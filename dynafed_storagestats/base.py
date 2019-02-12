@@ -6,7 +6,7 @@ import time
 from urllib.parse import urlsplit
 
 import dynafed_storagestats.helpers
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 
 #############
 ## Classes ##
@@ -174,21 +174,21 @@ class StorageShare():
             except KeyError:
                 try:
                     if self.validators[_setting]['required']:
-                        raise exceptions.DSSConfigFileErrorMissingRequiredSetting(
+                        raise dynafed_storagestats.exceptions.ConfigFileErrorMissingRequiredSetting(
                             error="MissingRequiredSetting",
                             setting=_setting,
                             status_code=self.validators[_setting]['status_code'],
                         )
 
                     else:
-                        raise exceptions.DSSConfigFileWarningMissingSetting(
+                        raise dynafed_storagestats.exceptions.ConfigFileWarningMissingSetting(
                             error="MissingSetting",
                             setting=_setting,
                             setting_default=self.validators[_setting]['default'],
                             status_code=self.validators[_setting]['status_code'],
                         )
 
-                except exceptions.DSSConfigFileErrorMissingRequiredSetting as ERR:
+                except dynafed_storagestats.exceptions.ConfigFileErrorMissingRequiredSetting as ERR:
                     # Mark StorageShare/endpoint to be skipped with a reason.
                     self.stats['check'] = 'MissingRequiredSetting'
                     self.plugin_settings.update({_setting: ''})
@@ -197,7 +197,7 @@ class StorageShare():
                     self.debug.append("[ERROR]" + ERR.debug)
                     self.status.append("[ERROR]" + ERR.error_code)
 
-                except exceptions.DSSConfigFileWarningMissingSetting as WARN:
+                except dynafed_storagestats.exceptions.ConfigFileWarningMissingSetting as WARN:
                     # Set the default value for this setting.
                     self.plugin_settings.update({_setting: self.validators[_setting]['default']})
 
@@ -213,7 +213,7 @@ class StorageShare():
                     if self.plugin_settings[_setting] not in self.validators[_setting]['valid']:
                         # Mark StorageShare/endpoint to be skipped with a reason.
                         self.stats['check'] = 'InvalidSetting'
-                        raise exceptions.DSSConfigFileErrorInvalidSetting(
+                        raise dynafed_storagestats.exceptions.ConfigFileErrorInvalidSetting(
                             error="InvalidSetting",
                             setting=_setting,
                             status_code=self.validators[_setting]['status_code'],

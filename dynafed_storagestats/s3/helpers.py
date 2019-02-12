@@ -13,7 +13,7 @@ import requests
 from requests_aws4auth import AWS4Auth
 
 import dynafed_storagestats.helpers
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 
 ###############
 ## Functions ##
@@ -95,7 +95,7 @@ def ceph_admin(storage_share):
         )
 
     except requests.exceptions.InvalidSchema as ERR:
-        raise exceptions.DSSConnectionErrorInvalidSchema(
+        raise dynafed_storagestats.exceptions.ConnectionErrorInvalidSchema(
             error='InvalidSchema',
             schema=storage_share.uri['scheme'],
             debug=str(ERR),
@@ -126,14 +126,14 @@ def ceph_admin(storage_share):
             )
 
         except requests.exceptions.SSLError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="092",
                 debug=str(ERR),
             )
 
     except requests.ConnectionError as ERR:
-        raise exceptions.DSSConnectionError(
+        raise dynafed_storagestats.exceptions.ConnectionError(
             error=ERR.__class__.__name__,
             debug=str(ERR),
         )
@@ -147,7 +147,7 @@ def ceph_admin(storage_share):
                 _stats = _response.json()
 
             except ValueError:
-                raise exceptions.DSSConnectionErrorS3API(
+                raise dynafed_storagestats.exceptions.ConnectionErrorS3API(
                     error="NoContent",
                     status_code=_response.status_code,
                     api=storage_share.plugin_settings['storagestats.api'],
@@ -160,7 +160,7 @@ def ceph_admin(storage_share):
                 _stats['usage']
 
             except KeyError as ERR:
-                raise exceptions.DSSErrorS3MissingBucketUsage(
+                raise dynafed_storagestats.exceptions.ErrorS3MissingBucketUsage(
                     status_code=_response.status_code,
                     error=_stats['Code'],
                     debug=str(_stats)
@@ -190,14 +190,14 @@ def ceph_admin(storage_share):
                     elif _stats['bucket_quota']['enabled'] is False:
                         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
                         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-                        raise exceptions.DSSCephS3QuotaDisabledWarning(
+                        raise dynafed_storagestats.exceptions.CephS3QuotaDisabledWarning(
                             default_quota=storage_share.stats['quota'],
                         )
 
                     else:
                         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
                         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-                        raise exceptions.DSSQuotaWarning(
+                        raise dynafed_storagestats.exceptions.QuotaWarning(
                             error="NoQuotaGiven",
                             status_code="098",
                             default_quota=storage_share.stats['quota'],
@@ -302,35 +302,35 @@ def cloudwatch(storage_share):
             )
 
         except botoExceptions.ClientError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
                 debug=str(ERR),
             )
 
         except botoRequestsExceptions.SSLError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="092",
                 debug=str(ERR),
             )
 
         except botoRequestsExceptions.RequestException as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="400",
                 debug=str(ERR),
             )
 
         except botoExceptions.ParamValidationError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="095",
                 debug=str(ERR),
             )
 
         except botoExceptions.BotoCoreError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="400",
                 debug=str(ERR),
@@ -361,7 +361,7 @@ def cloudwatch(storage_share):
     if storage_share.plugin_settings['storagestats.quota'] == 'api':
         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-        raise exceptions.DSSQuotaWarning(
+        raise dynafed_storagestats.exceptions.QuotaWarning(
             error="NoQuotaGiven",
             status_code="098",
             default_quota=storage_share.stats['quota'],
@@ -447,14 +447,14 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
             _response = _connection.list_objects(**_kwargs)
 
         except botoExceptions.ClientError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
                 debug=str(ERR),
             )
 
         except botoRequestsExceptions.InvalidSchema as ERR:
-            raise exceptions.DSSConnectionErrorInvalidSchema(
+            raise dynafed_storagestats.exceptions.ConnectionErrorInvalidSchema(
                 error='InvalidSchema',
                 schema=storage_share.uri['scheme'],
                 debug=str(ERR),
@@ -483,28 +483,28 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
                 _response = _connection.list_objects(**_kwargs)
 
             except botoRequestsExceptions.SSLError as ERR:
-                raise exceptions.DSSConnectionError(
+                raise dynafed_storagestats.exceptions.ConnectionError(
                     error=ERR.__class__.__name__,
                     status_code="092",
                     debug=str(ERR),
                 )
 
         except botoRequestsExceptions.RequestException as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="400",
                 debug=str(ERR),
             )
 
         except botoExceptions.ParamValidationError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="095",
                 debug=str(ERR),
             )
 
         except botoExceptions.BotoCoreError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="400",
                 debug=str(ERR),
@@ -558,7 +558,7 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
         storage_share.stats['filecount'] = _total_files
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-        raise exceptions.DSSQuotaWarning(
+        raise dynafed_storagestats.exceptions.QuotaWarning(
             error="NoQuotaGiven",
             status_code="098",
             default_quota=storage_share.stats['quota'],

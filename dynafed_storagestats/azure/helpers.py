@@ -5,7 +5,7 @@ import logging
 from azure.storage.blob.baseblobservice import BaseBlobService
 import azure.common
 
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 
 ###############
 ## Functions ##
@@ -55,7 +55,7 @@ def list_blobs(storage_share):
             )
 
         except azure.common.AzureMissingResourceHttpError as ERR:
-            raise exceptions.DSSErrorAzureContainerNotFound(
+            raise dynafed_storagestats.exceptions.ErrorAzureContainerNotFound(
                 error='ContainerNotFound',
                 status_code="404",
                 debug=str(ERR),
@@ -63,7 +63,7 @@ def list_blobs(storage_share):
             )
 
         except azure.common.AzureHttpError as ERR:
-            raise exceptions.DSSConnectionErrorAzureAPI(
+            raise dynafed_storagestats.exceptions.ConnectionErrorAzureAPI(
                 error='ConnectionError',
                 status_code="400",
                 debug=str(ERR),
@@ -71,7 +71,7 @@ def list_blobs(storage_share):
             )
 
         except azure.common.AzureException as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error='ConnectionError',
                 status_code="400",
                 debug=str(ERR),
