@@ -116,49 +116,40 @@ def add_reports_subparser(subparser):
         "Default: WARNING."
     )
 
-    # Output Options
-    group_output = parser.add_argument_group("Output options")
-    group_output.add_argument(
-        '--debug',
-        action='store_true',
-        default=False,
-        dest='debug',
-        help="Declare to enable debug output on stdout."
-    )
+    # # Output Options
+    # group_output = parser.add_argument_group("Output options")
+    # group_output.add_argument(
+    #     '--debug',
+    #     action='store_true',
+    #     default=False,
+    #     dest='debug',
+    #     help="Declare to enable debug output on stdout."
+    # )
 
-    group_output.add_argument(
-        '-f', '--filename',
-        action='store',
-        default='report.txt',
-        dest='report_filename',
-        help="Set output filename. " \
-             "Default: 'report_filename'"
-    )
+    # group_output.add_argument(
+    #     '-f', '--filename',
+    #     action='store',
+    #     default='report.txt',
+    #     dest='report_filename',
+    #     help="Set output filename. " \
+    #          "Default: 'report_filename'"
+    # )
 
     group_output.add_argument(
         '-o', '--output-dir',
         action='store',
         default='.',
         dest='output_path',
-        help="Set output directory for flags -j, -x and -p. " \
+        help="Set output directory. " \
              "Default: '.'"
     )
     group_output.add_argument(
-        '-p', '--plain',
+        '-p', '--path', '--prefix',
         action='store',
-        const="dynafed_storagestats.txt",
-        default=False,
-        dest='to_plaintext',
-        nargs='?',
-        help="Set to output stats to plain txt file. Add argument to set filename." \
-             "Default: dynafed_storagestats.txt"
-    )
-    group_output.add_argument(
-        '--stdout',
-        action='store_true',
-        default=False,
-        dest='output_stdout',
-        help="Set to output stats on stdout."
+        default='',
+        dest='prefix',
+        help="Set the prefix/path from where to make the list." \
+             "Default: ''"
     )
 
 
