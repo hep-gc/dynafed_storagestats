@@ -116,8 +116,8 @@ def add_reports_subparser(subparser):
         "Default: WARNING."
     )
 
-    # # Output Options
-    # group_output = parser.add_argument_group("Output options")
+    # Output Options
+    group_output = parser.add_argument_group("Output options")
     # group_output.add_argument(
     #     '--debug',
     #     action='store_true',

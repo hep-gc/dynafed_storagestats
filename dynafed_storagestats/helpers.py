@@ -186,8 +186,8 @@ def process_storagereports(storage_endpoint, args):
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
     ###############################################
-    report_file = '/tmp/filelist_report.txt'
-    prefix = ''
+    report_file = args.output_path + storage_endpoint.storage_shares[0].id + '.txt'
+
     try:
         _logger.info(
             "[%s]Contacting endpoint.",
@@ -209,7 +209,7 @@ def process_storagereports(storage_endpoint, args):
 
         with open(report_file, 'w') as _report_file:
             storage_endpoint.storage_shares[0].get_filelist(
-                prefix=prefix,
+                prefix=args.prefix,
                 report_file=_report_file,
             )
 
