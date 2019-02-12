@@ -207,10 +207,10 @@ def process_storagereports(storage_endpoint, args):
             args.prefix
         )
 
-        with open(_filename, 'w') as __filename:
+        with open(_filename, 'w') as _report_file:
             storage_endpoint.storage_shares[0].get_filelist(
                 prefix=args.prefix,
-                report_file=_filename,
+                report_file=_report_file,
             )
 
     except dynafed_storagestats.exceptions.OfflineEndpointError as ERR:
