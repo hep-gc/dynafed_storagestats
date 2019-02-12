@@ -186,7 +186,7 @@ def process_storagereports(storage_endpoint, args):
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
     ###############################################
-    report_file = args.output_path + storage_endpoint.storage_shares[0].id + '.txt'
+    _filename = args.output_path + storage_endpoint.storage_shares[0].id + '.txt'
 
     try:
         _logger.info(
@@ -197,42 +197,42 @@ def process_storagereports(storage_endpoint, args):
         _logger.info(
             "[%s]Writing file-list report to '%s'",
             storage_endpoint.storage_shares[0].id,
-            report_file
+            _filename
         )
 
         _logger.debug(
-            "[%s]Writing file-list report using options 'report_file': '%s', 'prefix': '%s'",
+            "[%s]Writing file-list report using options '_filename': '%s', 'prefix': '%s'",
             storage_endpoint.storage_shares[0].id,
-            report_file,
-            prefix
+            _filename,
+            args.prefix
         )
 
-        with open(report_file, 'w') as _report_file:
+        with open(_filename, 'w') as __filename:
             storage_endpoint.storage_shares[0].get_filelist(
                 prefix=args.prefix,
-                report_file=_report_file,
+                report_file=_filename,
             )
 
     except dynafed_storagestats.exceptions.OfflineEndpointError as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
-        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
-        os.remove(report_file)
+        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, _filename)
+        os.remove(_filename)
 
     except dynafed_storagestats.exceptions.Warning as WARN:
         _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
         storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
         storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
-        _logger.warning("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
-        os.remove(report_file)
+        _logger.warning("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, _filename)
+        os.remove(_filename)
 
     except dynafed_storagestats.exceptions.Error as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
-        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
-        os.remove(report_file)
+        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, _filename)
+        os.remove(_filename)
 
 
 
