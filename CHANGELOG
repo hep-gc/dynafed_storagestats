@@ -172,3 +172,5 @@ v1.0.6
 v1.0.7
   ADDED: Adds support to specify more than one endpoint to check instead of just
          one or all, using the -e flag.
+v1.0.8
+  CHANGE: Import full path to exceptions modules. Removed 'DSS' from class names.
