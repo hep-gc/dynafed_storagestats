@@ -224,8 +224,6 @@ def process_storagereports(storage_endpoint, args):
         _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
         storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
         storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
-        _logger.warning("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, _filepath)
-        os.remove(_filepath)
 
     except dynafed_storagestats.exceptions.Error as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
