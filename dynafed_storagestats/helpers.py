@@ -209,6 +209,7 @@ def process_storagereports(storage_endpoint, args):
 
         with open(_filepath, 'w') as _report_file:
             storage_endpoint.storage_shares[0].get_filelist(
+                delta=args.delta,
                 prefix=args.prefix,
                 report_file=_report_file,
             )

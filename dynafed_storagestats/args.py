@@ -96,6 +96,15 @@ def add_reports_subparser(subparser):
              "If not present, all endpoints will be checked."
     )
 
+    parser.add_argument(
+        '--delta',
+        action='store',
+        default=1,
+        dest='delta',
+        help="Mask for Last Modified Date of files. Integer in days. " \
+             "Default: 1"
+    )
+
     # Logging options
     group_logging = parser.add_argument_group("Logging options")
     group_logging.add_argument(

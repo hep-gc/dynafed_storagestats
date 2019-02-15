@@ -372,7 +372,7 @@ def cloudwatch(storage_share):
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
-def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt', request='storagestats'):
+def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_report.txt', request='storagestats'):
     """Contact S3 endpoint using list_objects API.
 
     Contacts an S3 endpoints and uses the "list_objects" API to recursively
@@ -535,14 +535,20 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
                     break
 
             elif request == 'filelist':
+                # Setup timestamp delta mask.
+                _today = datetime.datetime.today()
+                _delta = _today - datetime.timedelta(days=delta)
+
                 try:
                     _response['Contents']
                 except KeyError:
                     break
                 else:
                     for _file in _response['Contents']:
-                        report_file.write("%s\n" % _file['Key'])
-                        _total_files += 1
+                        # Output files older than the specified delta.
+                        if _file['LastModified'] <  _delta:
+                            report_file.write("%s\n" % _file['Key'])
+                            _total_files += 1
 
                 try:
                     _kwargs['Marker'] = _response['NextMarker']
