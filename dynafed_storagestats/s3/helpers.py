@@ -536,7 +536,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
 
             elif request == 'filelist':
                 # Setup timestamp delta mask.
-                _today = datetime.datetime.today()
+                _today = datetime.datetime.today().replace(hour=0,minute=0,second=0,microsecond=0)
                 _delta = _today - datetime.timedelta(days=delta)
 
                 try:
