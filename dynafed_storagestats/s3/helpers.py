@@ -353,10 +353,10 @@ def cloudwatch(storage_share):
                 ]
 
 
-    # Save time when data was obtained.
+    # Save the timestamp when data was obtained.
     storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
-    # Upload metrics to storage_share
+    # Save metrics to storage_share.
     storage_share.stats['bytesused'] = int(_metrics['BucketSizeBytes']['Result'])
     storage_share.stats['filecount'] = int(_metrics['NumberOfObjects']['Result'])
 
@@ -435,10 +435,6 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
         'Prefix': prefix,
     }
 
-    # This loop is needed to obtain all objects as the API can only
-    # server 1,000 objects per request. The 'NextMarker' tells where
-    # to start the next 1,000. If no 'NextMarker' is received, all
-    # objects have been obtained.
     _logger.debug(
         "[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s",
         storage_share.id,
@@ -447,6 +443,10 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
         _kwargs
     )
 
+    # This loop is needed to obtain all objects as the API can only
+    # server 1,000 objects per request. The 'NextMarker' tells where
+    # to start the next 1,000. If no 'NextMarker' is received, all
+    # objects have been obtained.
     while True:
         try:
             _response = _connection.list_objects(**_kwargs)
@@ -523,6 +523,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
             #     response['Contents']
             # )
 
+            # Check what type of request is asked being used.
             if request == 'storagestats':
                 try:
                     # Make sure we got a list of objects.
