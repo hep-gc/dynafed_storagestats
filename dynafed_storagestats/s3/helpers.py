@@ -35,6 +35,7 @@ def ceph_admin(storage_share):
     _logger = logging.getLogger(__name__)
     ###############################################
 
+    # Generate the API's URL to contact.
     if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
     or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
 
@@ -50,11 +51,13 @@ def ceph_admin(storage_share):
             bucket=storage_share.uri['bucket']
         )
 
+    # API attributes.
     _payload = {
         'bucket': storage_share.uri['bucket'],
         'stats': 'True'
     }
 
+    # Create authorization object.
     _auth = AWS4Auth(
         storage_share.plugin_settings['s3.pub_key'],
         storage_share.plugin_settings['s3.priv_key'],
@@ -222,7 +225,7 @@ def cloudwatch(storage_share):
 
     _seconds_in_one_day = 86400
 
-    # Create boto client to query AWS API.
+    # Generate boto client to query AWS API.
     _connection = boto3.client(
         'cloudwatch',
         region_name=storage_share.plugin_settings['s3.region'],
@@ -388,6 +391,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
     _logger = logging.getLogger(__name__)
     ###############################################
 
+    # Generate the API's URL to contact.
     if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
     or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
 
@@ -402,6 +406,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
             domain=storage_share.uri['domain']
         )
 
+    # Generate boto client to query S3 endpoint.
     _connection = boto3.client(
         's3',
         region_name=storage_share.plugin_settings['s3.region'],
@@ -417,13 +422,13 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
         ),
     )
 
+    # Initialize counters.
     _total_bytes = 0
     _total_files = 0
 
     # We define the arguments for the API call. Delimiter is set to *
     # to get all keys. This is necessary for AWS to return the "NextMarker"
     # attribute necessary to iterate when there are > 1,000 objects.
-
     _kwargs = {
         'Bucket': storage_share.uri['bucket'],
         'Delimiter': '*',
@@ -520,6 +525,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
 
             if request == 'storagestats':
                 try:
+                    # Make sure we got a list of objects.
                     _response['Contents']
                 except KeyError:
                     storage_share.stats['bytesused'] = 0
@@ -536,6 +542,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
 
             elif request == 'filelist':
                 try:
+                    # Make sure we got a list of objects.
                     _response['Contents']
                 except KeyError:
                     break
