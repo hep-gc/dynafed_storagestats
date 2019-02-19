@@ -101,6 +101,7 @@ def add_reports_subparser(subparser):
         action='store',
         default=1,
         dest='delta',
+        type=int,
         help="Mask for Last Modified Date of files. Integer in days. " \
              "Default: 1"
     )
