@@ -1,7 +1,7 @@
 """Define the base Classes StorageEndpoint and StorageShares."""
 
+import datetime
 import logging
-import time
 
 from urllib.parse import urlsplit
 
@@ -103,7 +103,7 @@ class StorageShare():
             'endtime': 0,
             'filecount': -1,
             'quota': 1000**4,
-            'starttime': int(time.time()),
+            'starttime': int(datetime.datetime.now().timestamp()),
             'check': True, # To flag whether this endpoint should be contacted.
         }
 

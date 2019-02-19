@@ -2,7 +2,6 @@
 
 import datetime
 import logging
-import time
 
 import boto3
 import botocore.vendored.requests.exceptions as botoRequestsExceptions
@@ -88,7 +87,7 @@ def ceph_admin(storage_share):
         )
 
         # Save time when data was obtained.
-        storage_share.stats['endtime'] = int(time.time())
+        storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
         #Log contents of response
         _logger.debug(
@@ -119,7 +118,7 @@ def ceph_admin(storage_share):
             )
 
             # Save time when data was obtained.
-            storage_share.stats['endtime'] = int(time.time())
+            storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
             #Log contents of response
             _logger.debug(
@@ -286,6 +285,7 @@ def cloudwatch(storage_share):
         storage_share.plugin_settings['storagestats.api'].lower(),
     )
 
+    # Requesting the information for each defined metric.
     for _metric in _metrics:
         _logger.info(
             "[%s]Requesting Cloudwatch metric: %s",
@@ -354,7 +354,7 @@ def cloudwatch(storage_share):
 
 
     # Save time when data was obtained.
-    storage_share.stats['endtime'] = int(time.time())
+    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
     # Upload metrics to storage_share
     storage_share.stats['bytesused'] = int(_metrics['BucketSizeBytes']['Result'])
@@ -559,7 +559,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
                     break
 
     # Save time when data was obtained.
-    storage_share.stats['endtime'] = int(time.time())
+    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
     storage_share.stats['bytesused'] = _total_bytes
 
     # Obtain or set default quota and calculate freespace.

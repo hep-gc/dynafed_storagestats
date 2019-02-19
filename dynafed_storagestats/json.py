@@ -1,7 +1,8 @@
 """Functions to deal with the formatting and handling  of JSON data."""
 
+import datetime
 import json
-import time
+
 
 #############
 # Functions #
@@ -75,7 +76,7 @@ def format_wlcg(storage_endpoints, hostname="localhost"):
         # 'servicetype': "tbd",
         "implementation": "dynafed",
         # 'implementationversion': "tbd",
-        "latesupdate": int(time.time()),
+        "latesupdate": int(datetime.datetime.now().timestamp()),
         "storageservicecapacity": {
             "totalsize": _dynafed_totalsize,
             "usedsize": _dynafed_usedsize,
