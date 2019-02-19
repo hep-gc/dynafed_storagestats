@@ -536,11 +536,6 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
                         _total_bytes += _file['Size']
                         _total_files += 1
 
-                try:
-                    _kwargs['Marker'] = _response['NextMarker']
-                except KeyError:
-                    break
-
             elif request == 'filelist':
                 try:
                     # Make sure we got a list of objects.
@@ -554,10 +549,11 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
                             report_file.write("%s\n" % _file['Key'])
                             _total_files += 1
 
-                try:
-                    _kwargs['Marker'] = _response['NextMarker']
-                except KeyError:
-                    break
+            # Exit if no "NextMarker" as list is now over.
+            try:
+                _kwargs['Marker'] = _response['NextMarker']
+            except KeyError:
+                break
 
     # Save time when data was obtained.
     storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
