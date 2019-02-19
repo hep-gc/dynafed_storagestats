@@ -381,7 +381,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
 
     Attributes:
     storage_share -- dynafed_storagestats StorageShare object.
-    prefix -- string
+    prefix -- string.
 
     """
     ############# Creating loggers ################
@@ -535,10 +535,6 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
                     break
 
             elif request == 'filelist':
-                # Setup timestamp delta mask.
-                _today = datetime.datetime.today().replace(hour=0,minute=0,second=0,microsecond=0)
-                _delta = _today - datetime.timedelta(days=delta)
-
                 try:
                     _response['Contents']
                 except KeyError:
@@ -546,7 +542,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
                 else:
                     for _file in _response['Contents']:
                         # Output files older than the specified delta.
-                        if _file['LastModified'] <  _delta:
+                        if dynafed_storagestats.helpers.mask_timestamp_by_delta(_file['LastModified'], delta):
                             report_file.write("%s\n" % _file['Key'])
                             _total_files += 1
 
