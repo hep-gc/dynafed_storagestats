@@ -1,8 +1,10 @@
 """Helper functions used by the other modules."""
 
+import datetime
 import logging, logging.handlers
 import os
 
+import dateutil.tz
 import dynafed_storagestats.exceptions
 from dynafed_storagestats import memcache
 from dynafed_storagestats import output
@@ -165,6 +167,30 @@ def get_connectionstats(storage_share_objects, memcached_ip='127.0.0.1', memcach
                     _storage_share
                 )
 
+
+def today():
+    """Returns today's aware datetime object at 00:00 UTC
+
+
+    """
+    _today = datetime.datetime.now(dateutil.tz.tzutc())
+    _today = _today.replace(hour=0,minute=0,second=0,microsecond=0)
+
+    return _today
+
+def mask_timestamp(timestamp, delta):
+    """Return true for timestamps earlier than the delta in days.
+
+
+    """
+
+    _today = today()
+    _mask =_today - datetime.timedelta(days=delta)
+
+    if timestamp < _mask:
+        return True
+    else:
+        return False
 
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
