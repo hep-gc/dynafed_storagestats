@@ -100,7 +100,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             s3helpers.cloudwatch(self)
 
 
-    def get_filelist(self, prefix='', report_file='/tmp/filelist_report.txt'):
+    def get_filelist(self, delta=1, prefix='', report_file='/tmp/filelist_report.txt'):
         """Contact endpoint and generate a file-list.
 
         Generates a list using the prefix var to select specific keys.
@@ -109,6 +109,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
         s3helpers.list_objects(
             self,
+            delta,
             prefix,
             report_file=report_file,
             request='filelist'

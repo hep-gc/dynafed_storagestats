@@ -168,9 +168,17 @@ v1.0.5
          This will skip the file if there are issues decoding and log a warning.
 v1.0.6
   ADDED: __init__.py files to create pypi package.
-
 v1.0.7
   ADDED: Adds support to specify more than one endpoint to check instead of just
          one or all, using the -e flag.
 v1.0.8
   CHANGE: Import full path to exceptions modules. Removed 'DSS' from class names.
+v1.0.9
+  ADDED: python-dateutil requirement.
+  ADDED: now_in_utc()
+  ADDED: mask_timestamp_by_delta()
+  ADDED: '-p', '--delta', '-o' switches to reports sub-command.
+  ADDED: S3's list-objects function to output a file list instead of storage
+         stats when the 'reports' sub-command is called.
+  CHANGE: All time module imports have been changed to datetime module.
+  CHANGE: enabled 'reports' sub-command.

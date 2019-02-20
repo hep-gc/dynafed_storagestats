@@ -1,7 +1,8 @@
 """Functions to deal with the formatting and handling  of XML data."""
 
+import datetime
 import copy
-import time
+
 import uuid
 
 from io import BytesIO
@@ -95,7 +96,7 @@ def format_StAR(storage_endpoints):
             # update XML
             rec = etree.SubElement(xmlroot, SR+'StorageUsageRecord')
             rid = etree.SubElement(rec, SR+'RecordIdentity')
-            rid.set(SR+"createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time())))
+            rid.set(SR+"createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(datetime.datetime.now().timestamp())))
 
             # StAR StorageShare field (Optional)
             if share.star_fields['storage_share']:

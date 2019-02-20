@@ -1,8 +1,10 @@
 """Helper functions used by the other modules."""
 
+import datetime
 import logging, logging.handlers
 import os
 
+import dateutil.tz
 import dynafed_storagestats.exceptions
 from dynafed_storagestats import memcache
 from dynafed_storagestats import output
@@ -166,6 +168,41 @@ def get_connectionstats(storage_share_objects, memcached_ip='127.0.0.1', memcach
                 )
 
 
+def now_in_utc():
+    """Returns aware datetime object of current time in UTC
+
+
+    """
+    return datetime.datetime.now(dateutil.tz.tzutc())
+
+
+def mask_timestamp_by_delta(timestamp, delta=0):
+    """Return false for timestamps later than the masking delta in days (UTC).
+
+    Checks if the timestamp given is later than the current time +/- the
+    delta given in days. When delta == 0, it uses the current date, but when
+    delta != 0 the current date is normalized to today at 00:00 UTC before
+    calculating the mask.
+
+    Attributes:
+    timestamp -- datetime aware time object.
+    delta -- integer.
+
+    """
+
+    if delta == 0:
+        _mask = now_in_utc()
+    else:
+        _mask = now_in_utc().replace(hour=0,minute=0,second=0,microsecond=0) \
+                - datetime.timedelta(days=delta)
+
+
+    if timestamp > _mask:
+        return False
+    else:
+        return True
+
+
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
 
@@ -186,8 +223,8 @@ def process_storagereports(storage_endpoint, args):
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
     ###############################################
-    report_file = '/tmp/filelist_report.txt'
-    prefix = ''
+    _filepath = args.output_path + '/' + storage_endpoint.storage_shares[0].id + '.txt'
+
     try:
         _logger.info(
             "[%s]Contacting endpoint.",
@@ -197,19 +234,20 @@ def process_storagereports(storage_endpoint, args):
         _logger.info(
             "[%s]Writing file-list report to '%s'",
             storage_endpoint.storage_shares[0].id,
-            report_file
+            _filepath
         )
 
         _logger.debug(
-            "[%s]Writing file-list report using options 'report_file': '%s', 'prefix': '%s'",
+            "[%s]Writing file-list report using options '_filepath': '%s', 'prefix': '%s'",
             storage_endpoint.storage_shares[0].id,
-            report_file,
-            prefix
+            _filepath,
+            args.prefix
         )
 
-        with open(report_file, 'w') as _report_file:
+        with open(_filepath, 'w') as _report_file:
             storage_endpoint.storage_shares[0].get_filelist(
-                prefix=prefix,
+                delta=args.delta,
+                prefix=args.prefix,
                 report_file=_report_file,
             )
 
@@ -217,22 +255,20 @@ def process_storagereports(storage_endpoint, args):
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
-        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
-        os.remove(report_file)
+        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, _filepath)
+        os.remove(_filepath)
 
     except dynafed_storagestats.exceptions.Warning as WARN:
         _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
         storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
         storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
-        _logger.warning("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
-        os.remove(report_file)
 
     except dynafed_storagestats.exceptions.Error as ERR:
         _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
-        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, report_file)
-        os.remove(report_file)
+        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, _filepath)
+        os.remove(_filepath)
 
 
 

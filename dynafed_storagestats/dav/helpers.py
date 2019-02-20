@@ -1,7 +1,7 @@
 """Helper functions used to contact DAV based API's."""
 
+import datetime
 import logging
-import time
 
 import requests
 
@@ -251,7 +251,7 @@ def send_dav_request(storage_share, api_url, headers, data):
         timeout=int(storage_share.plugin_settings['conn_timeout'])
     )
     # Save time when data was obtained.
-    storage_share.stats['endtime'] = int(time.time())
+    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
     #Log contents of response
     _logger.debug(
