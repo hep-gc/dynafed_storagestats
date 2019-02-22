@@ -11,8 +11,9 @@ from botocore.client import Config
 import requests
 from requests_aws4auth import AWS4Auth
 
-import dynafed_storagestats.helpers
 import dynafed_storagestats.exceptions
+import dynafed_storagestats.helpers
+import dynafed_storagestats.time
 
 ###############
 ## Functions ##
@@ -548,7 +549,7 @@ def list_objects(storage_share, delta=1, prefix='',
                 else:
                     for _file in _response['Contents']:
                         # Output files older than the specified delta.
-                        if dynafed_storagestats.helpers.mask_timestamp_by_delta(_file['LastModified'], delta):
+                        if dynafed_storagestats.time.mask_timestamp_by_delta(_file['LastModified'], delta):
                             report_file.write("%s\n" % _file['Key'])
                             _total_files += 1
 

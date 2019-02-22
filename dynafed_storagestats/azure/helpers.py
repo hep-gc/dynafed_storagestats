@@ -5,8 +5,9 @@ import logging
 from azure.storage.blob.baseblobservice import BaseBlobService
 import azure.common
 
-import dynafed_storagestats.helpers
 import dynafed_storagestats.exceptions
+import dynafed_storagestats.helpers
+import dynafed_storagestats.time
 
 ###############
 ## Functions ##
@@ -109,7 +110,7 @@ def list_blobs(storage_share, delta=1, prefix='',
                 else:
                     for _blob in _blobs:
                         # Output files older than the specified delta.
-                        if dynafed_storagestats.helpers.mask_timestamp_by_delta(_blob.properties.last_modified, delta):
+                        if dynafed_storagestats.time.mask_timestamp_by_delta(_blob.properties.last_modified, delta):
                             report_file.write("%s\n" % _blob.name)
                             _total_files += 1
 
