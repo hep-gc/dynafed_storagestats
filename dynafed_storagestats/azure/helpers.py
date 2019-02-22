@@ -105,12 +105,11 @@ def list_blobs(storage_share, delta=1, prefix='',
                 except AttributeError:
                     break
                 else:
-                    try:
-                        for _blob in _blobs:
-                            # Output files older than the specified delta.
-                            if dynafed_storagestats.helpers.mask_timestamp_by_delta(_blob.properties.last_modified, delta):
-                                report_file.write("%s\n" % _blob.name)
-                                _total_files += 1
+                    for _blob in _blobs:
+                        # Output files older than the specified delta.
+                        if dynafed_storagestats.helpers.mask_timestamp_by_delta(_blob.properties.last_modified, delta):
+                            report_file.write("%s\n" % _blob.name)
+                            _total_files += 1
 
             # Exit if no "NextMarker" as list is now over.
             if _next_marker:
