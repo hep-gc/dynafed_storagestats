@@ -15,7 +15,7 @@ import dynafed_storagestats.exceptions
 def list_blobs(storage_share, delta=1, prefix='',
                report_file='/tmp/filelist_report.txt',
                request='storagestats'
-    ):
+               ):
     """Contact Azure endpoint using "list_blobs" method.
 
     Contacts an Azure blob and uses the "list_blobs" API to recursively obtain
