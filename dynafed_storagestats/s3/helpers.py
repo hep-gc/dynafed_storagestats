@@ -378,7 +378,7 @@ def cloudwatch(storage_share):
 def list_objects(storage_share, delta=1, prefix='',
                  report_file='/tmp/filelist_report.txt',
                  request='storagestats'
-    ):
+                 ):
     """Contact S3 endpoint using list_objects API.
 
     Contacts an S3 endpoints and uses the "list_objects" API to recursively
