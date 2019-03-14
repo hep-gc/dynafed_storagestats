@@ -11,8 +11,9 @@ from botocore.client import Config
 import requests
 from requests_aws4auth import AWS4Auth
 
-import dynafed_storagestats.helpers
 import dynafed_storagestats.exceptions
+import dynafed_storagestats.helpers
+import dynafed_storagestats.time
 
 ###############
 ## Functions ##
@@ -375,7 +376,10 @@ def cloudwatch(storage_share):
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
-def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_report.txt', request='storagestats'):
+def list_objects(storage_share, delta=1, prefix='',
+                 report_file='/tmp/filelist_report.txt',
+                 request='storagestats'
+                 ):
     """Contact S3 endpoint using list_objects API.
 
     Contacts an S3 endpoints and uses the "list_objects" API to recursively
@@ -545,7 +549,7 @@ def list_objects(storage_share, delta=1, prefix='', report_file='/tmp/filelist_r
                 else:
                     for _file in _response['Contents']:
                         # Output files older than the specified delta.
-                        if dynafed_storagestats.helpers.mask_timestamp_by_delta(_file['LastModified'], delta):
+                        if dynafed_storagestats.time.mask_timestamp_by_delta(_file['LastModified'], delta):
                             report_file.write("%s\n" % _file['Key'])
                             _total_files += 1
 
