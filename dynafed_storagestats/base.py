@@ -122,7 +122,7 @@ class StorageShare():
                 'valid': ['generic'],
             },
             'storagestats.periodicity': {
-                'default': '3600'
+                'default': '3600',
                 'required': False,
                 'status_code': '072'
             },
