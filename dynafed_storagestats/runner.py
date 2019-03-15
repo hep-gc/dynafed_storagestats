@@ -89,12 +89,18 @@ def stats(ARGS):
         ARGS.config_path
     )
 
-    # Flag storage shares that have been marked offline by Dynafed.
-    helpers.get_connectionstats(
+    # Obtain current stats, if any, from memcached.
+    helpers.get_currentstats(
         storage_shares,
         ARGS.memcached_ip,
         ARGS.memcached_port
     )
+
+    # # Flag storage shares that have been marked offline by Dynafed.
+    # helpers.check_connectionstats()
+    #
+    # # Flag storage shares that are under-due their period.
+    # helpers.check_periodicity()
 
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.
