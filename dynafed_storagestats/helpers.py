@@ -251,7 +251,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
     elif return_as == 'full_dictionary':
         _dictonary_of_stats = {}
 
-        for _element in _connection_stats:
+        for _element in _array_of_stats:
             _storage_share, _timestamp, _status, _latency, _status_code, _error = _element.split("%%")
 
             _dictonary_of_stats[_storage_share] = {
