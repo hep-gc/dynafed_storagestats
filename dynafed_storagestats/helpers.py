@@ -135,6 +135,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
 
         return _storage_shares_current_stats
 
+
 def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', memcached_port='11211'):
     """Obtain connection status string in memcached and return as requested object.
 
@@ -233,10 +234,10 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
     if return_as == 'string':
         return '&&'.join(_array_of_stats)
 
-    else if return_as == 'array':
+    elif return_as == 'array':
         return _array_of_stats
 
-    else if return_as == 'dictionary':
+    elif return_as == 'dictionary':
         _dictonary_of_stats = {}
 
         for _element in _array_of_stats:
@@ -245,7 +246,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
 
         return _dictonary_of_stats
 
-    else if return_as == 'full_dictionary':
+    elif return_as == 'full_dictionary':
         _dictonary_of_stats = {}
 
         for _element in _connection_stats:
@@ -260,6 +261,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
             }
 
         return _dictonary_of_stats
+
 
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
