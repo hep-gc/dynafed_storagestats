@@ -118,8 +118,8 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     try:
         _connection_stats = get_cached_connection_stats(
                               return_as='full_dictionary',
-                              memcached_ip,
-                              memcached_port
+                              memcached_ip=memcached_ip,
+                              memcached_port=memcached_port
                             )
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
@@ -250,7 +250,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
         _dictonary_of_stats = {}
 
         for _element in _connection_stats:
-            _storage_share, _timestamp, _status, _latency, _status_code, _error  = _element.split("%%")
+            _storage_share, _timestamp, _status, _latency, _status_code, _error = _element.split("%%")
 
             _dictonary_of_stats[_storage_share] = {
                 'timestamp': _timestamp,
