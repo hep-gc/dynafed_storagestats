@@ -225,9 +225,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
     for _element in _connection_stats:
         #When the connection status is OK the last element is empty. So we add an 'OK'
         if _element.split("%%")[-1] == '':
-            _element = _element + 'OK%%'
-        else:
-            _element = _element + '%%'
+            _element = _element + 'OK'
 
         _discard_duplicate, _element = _element.split("%%", 1)
         _array_of_stats.append(_element)
