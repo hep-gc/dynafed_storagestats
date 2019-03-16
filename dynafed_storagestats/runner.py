@@ -90,14 +90,14 @@ def stats(ARGS):
     )
 
     # Obtain current stats, if any, from memcached.
-    helpers.get_currentstats(
+    current_stats = helpers.get_currentstats(
         storage_shares,
         ARGS.memcached_ip,
         ARGS.memcached_port
     )
 
     # # Flag storage shares that have been marked offline by Dynafed.
-    # helpers.check_connectionstats()
+    helpers.check_connectionstats(current_stats)
     #
     # # Flag storage shares that are under-due their period.
     # helpers.check_periodicity()
