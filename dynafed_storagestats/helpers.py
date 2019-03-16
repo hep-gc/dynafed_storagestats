@@ -113,14 +113,14 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     _logger = logging.getLogger(__name__)
     ###############################################
 
-    _storage_shares_current_stats = {}
-
     try:
         _connection_stats = get_cached_connection_stats(
                               return_as='full_dictionary',
                               memcached_ip=memcached_ip,
                               memcached_port=memcached_port
                             )
+
+        #_storage_stats = get_cached_storage_stats()
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
@@ -131,8 +131,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
         )
 
     else:
-
-
+        _storage_shares_current_stats = _connection_stats #+ _storage_stats
         return _storage_shares_current_stats
 
 
@@ -262,6 +261,38 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
 
         return _dictonary_of_stats
 
+
+def get_cached_storage_stats(return_as='string', memcached_ip='127.0.0.1', memcached_port='11211'):
+    """Obtain connection status string in memcached and return as requested object.
+
+    Check if memcached has cached storage status for the StorageShares, which
+    would have been uploaded by this script previously. Turn the string of
+    information into a dictionary of StorageShare ID's and their stats,
+    which is then returned. The returned object can be a sting containing all
+    StorageShares, or an array of strings separated by StorageShares,  or a
+    dictionary whose keys are the StorageShare ID's and the value is a string
+    with all the stats, or a dictionary of dictionaries where each stat has
+    a key/value as well.
+
+    This is speciied with the 'return_as' argument as:
+    'string' -- single sting containing all StorageShares, each delimieted '&&'
+    'array'  -- each StorageShare's string is separated and the array returned.
+    'dictionary' -- each key is the StorageShare ID's and the value is a string
+    with all the stats.
+    'full_dictionary' -- each key is the StorageShare ID's and each value is a key
+    under it with it's own value.
+
+    Arguments:
+    memcached_ip   -- memcached instance IP.
+    memcahced_port -- memcached instance Port.
+
+    Returns:
+    array OR dictionary OR string
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+    return none
 
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
