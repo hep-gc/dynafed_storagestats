@@ -38,7 +38,7 @@ def list_blobs(storage_share, delta=1, prefix='',
         account_name=storage_share.uri['account'],
         account_key=storage_share.plugin_settings['azure.key'],
         # Set to true if using Azurite storage emulator for testing.
-        is_emulated=False
+        is_emulated=True
     )
 
     _container_name = storage_share.uri['container']
