@@ -218,7 +218,8 @@ def process_rfc4331_response(response, storage_share):
 
     # Determine which value to use for the quota.
     if storage_share.plugin_settings['storagestats.quota'] == 'api':
-        storage_share.stats['quota'] = storage_share.stats['bytesused'] + storage_share.stats['bytesfree']
+        storage_share.stats['quota'] = (storage_share.stats['bytesused']
+                                        + storage_share.stats['bytesfree'])
 
         # If quota-available-bytes is reported as '0' could be
         # because no quota is provided, or the endpoint is
@@ -231,3 +232,6 @@ def process_rfc4331_response(response, storage_share):
 
     else:
         storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+        # Calculate free space using pre-set quota.
+        storage_share.stats['bytesfree'] = (storage_share.stats['quota']
+                                            - storage_share.stats['bytesused'])
