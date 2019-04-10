@@ -342,25 +342,58 @@ def process_storagereports(storage_endpoint, args):
                 report_file=_report_file,
             )
 
+    except AttributeError as ERR:
+        _logger.error(
+            "[%s]Report creation is not supported for plugin type '%s'. " \
+            "Skipping storage endpoint.",
+            storage_endpoint.storage_shares[0].id,
+            storage_endpoint.storage_shares[0].plugin
+        )
+        _logger.error(
+            "[%s]Deleting report file '%s'",
+            storage_endpoint.storage_shares[0].id,
+            _filepath
+        )
+        os.remove(_filepath)
+
     except dynafed_storagestats.exceptions.OfflineEndpointError as ERR:
-        _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
+        _logger.error(
+            "[%s]%s",
+            storage_endpoint.storage_shares[0].id,
+            ERR.debug
+        )
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
-        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, _filepath)
+        _logger.error(
+            "[%s]Deleting report file '%s'",
+            storage_endpoint.storage_shares[0].id,
+            _filepath
+        )
         os.remove(_filepath)
 
     except dynafed_storagestats.exceptions.Warning as WARN:
-        _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
+        _logger.warning(
+            "[%s]%s",
+            storage_endpoint.storage_shares[0].id,
+            WARN.debug
+        )
         storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
         storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
 
     except dynafed_storagestats.exceptions.Error as ERR:
-        _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
+        _logger.error(
+            "[%s]%s",
+            storage_endpoint.storage_shares[0].id,
+            ERR.debug
+        )
         storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
         storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
-        _logger.error("[%s]Deleting report file '%s'", storage_endpoint.storage_shares[0].id, _filepath)
+        _logger.error(
+            "[%s]Deleting report file '%s'",
+            storage_endpoint.storage_shares[0].id,
+            _filepath
+        )
         os.remove(_filepath)
-
 
 
 def process_storagestats(storage_endpoint, args):
@@ -467,22 +500,39 @@ def process_endpoint_list_results(storage_share_objects):
                 storage_share_objects[0].id
             )
 
-            storage_share_objects[_storage_share].stats['filecount'] = storage_share_objects[0].stats['filecount']
-            storage_share_objects[_storage_share].stats['bytesused'] = storage_share_objects[0].stats['bytesused']
+            storage_share_objects[_storage_share].stats['filecount'] = (
+                storage_share_objects[0].stats['filecount']
+            )
+            storage_share_objects[_storage_share].stats['bytesused'] = (
+                storage_share_objects[0].stats['bytesused']
+            )
 
             # Check if the plugin settings requests the quota from API. If so,
             # copy it, else use the default or manually setup quota.
             if storage_share_objects[_storage_share].plugin_settings['storagestats.quota'] == 'api':
-                storage_share_objects[_storage_share].stats['quota'] = storage_share_objects[0].stats['quota']
-                storage_share_objects[_storage_share].stats['bytesfree'] = storage_share_objects[0].stats['bytesfree']
+                storage_share_objects[_storage_share].stats['quota'] = (
+                    storage_share_objects[0].stats['quota']
+                )
+                storage_share_objects[_storage_share].stats['bytesfree'] = (
+                    storage_share_objects[0].stats['bytesfree']
+                )
 
             else:
-                storage_share_objects[_storage_share].stats['quota'] = storage_share_objects[_storage_share].plugin_settings['storagestats.quota']
-                storage_share_objects[_storage_share].stats['bytesfree'] = storage_share_objects[_storage_share].stats['quota'] - storage_share_objects[_storage_share].stats['bytesused']
+                storage_share_objects[_storage_share].stats['quota'] = (
+                    storage_share_objects[_storage_share].plugin_settings['storagestats.quota']
+                )
+                storage_share_objects[_storage_share].stats['bytesfree'] = (
+                    storage_share_objects[_storage_share].stats['quota']
+                    - storage_share_objects[_storage_share].stats['bytesused']
+                )
 
             # Might need to append any issues with the configuration settings
-            storage_share_objects[_storage_share].status = storage_share_objects[0].status
-            storage_share_objects[_storage_share].debug = storage_share_objects[0].debug
+            storage_share_objects[_storage_share].status = (
+                storage_share_objects[0].status
+            )
+            storage_share_objects[_storage_share].debug = (
+                storage_share_objects[0].debug
+            )
 
 
 def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):

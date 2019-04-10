@@ -158,7 +158,7 @@ def add_reports_subparser(subparser):
         action='store',
         default='',
         dest='prefix',
-        help="Set the prefix/path from where to make the list." \
+        help="Set the prefix/path from where to start the recursive list." \
              "Default: ''"
     )
 
