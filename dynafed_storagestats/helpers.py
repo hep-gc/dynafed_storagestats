@@ -234,7 +234,6 @@ def process_storagereports(storage_endpoint, args):
         os.remove(_filepath)
 
 
-
 def process_storagestats(storage_endpoint, args):
     """Run StorageShare.get_storagestats() for storage shares in StorageEndpoint.
 
