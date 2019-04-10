@@ -115,7 +115,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
 
     try:
         _connection_stats = get_cached_connection_stats(
-                              return_as='full_dictionary',
+                              return_as='expanded_dictionary',
                               memcached_ip=memcached_ip,
                               memcached_port=memcached_port
                             )
@@ -152,7 +152,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
     'array'  -- each StorageShare's string is separated and the array returned.
     'dictionary' -- each key is the StorageShare ID's and the value is a string
     with all the stats.
-    'full_dictionary' -- each key is the StorageShare ID's and each value is a key
+    'expanded_dictionary' -- each key is the StorageShare ID's and each value is a key
     under it with it's own value.
 
     Arguments:
@@ -245,7 +245,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
 
         return _dictonary_of_stats
 
-    elif return_as == 'full_dictionary':
+    elif return_as == 'expanded_dictionary':
         _dictonary_of_stats = {}
 
         for _element in _array_of_stats:
@@ -279,7 +279,7 @@ def get_cached_storage_stats(return_as='string', memcached_ip='127.0.0.1', memca
     'array'  -- each StorageShare's string is separated and the array returned.
     'dictionary' -- each key is the StorageShare ID's and the value is a string
     with all the stats.
-    'full_dictionary' -- each key is the StorageShare ID's and each value is a key
+    'expanded_dictionary' -- each key is the StorageShare ID's and each value is a key
     under it with it's own value.
 
     Arguments:
