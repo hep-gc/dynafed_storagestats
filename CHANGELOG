@@ -186,3 +186,6 @@ v10.0.10
   ADDED: get_file method to AzureStorageShare to generate file list for reports.
   ADDED: storagestats.periodicity option validator.
   CHANGE: Moved time helper functions to time.py file.
+v1.0.11
+  BUGFIX: DAV storage now properly caluclates free space when quota is manually
+          set and RFC4331 is used to get stats.
