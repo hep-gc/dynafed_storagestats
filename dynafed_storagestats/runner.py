@@ -95,13 +95,13 @@ def stats(ARGS):
         ARGS.memcached_ip,
         ARGS.memcached_port
     )
-    # How to deal when there are no stats?
 
-    # # Flag storage shares that have been marked offline by Dynafed.
-    helpers.check_connectionstats(storage_shares, current_stats)
-    #
-    # # Flag storage shares that are under-due their period.
-    # helpers.check_periodicity()
+    if current_stats is not None:
+        # Flag storage shares that have been marked offline by Dynafed.
+        helpers.check_connectionstats(storage_shares, current_stats)
+
+        # Flag storage shares that are under-due their period.
+        # helpers.check_periodicity()
 
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.
