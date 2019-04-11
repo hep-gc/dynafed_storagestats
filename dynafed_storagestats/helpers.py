@@ -6,6 +6,7 @@ import os
 import dynafed_storagestats.exceptions
 from dynafed_storagestats import memcache
 from dynafed_storagestats import output
+from dynafed_storagestats import time
 
 #############
 # Functions #
@@ -55,7 +56,7 @@ def convert_size_to_bytes(size):
         exit()
 
 
-def check_connectionstats(storage_shares_objects, stats):
+def check_connectionstats(storage_share_objects, stats):
     """Check each storage share's offline/online status and flag accordingly.
 
     Check if each StorageShare in the list has a connection status in the
@@ -64,7 +65,7 @@ def check_connectionstats(storage_shares_objects, stats):
     Otherwise, it is updated to represent the status obtained.
 
     Arguments:
-    storage_shares_objects -- list of dynafed_storagestats StorageShare objects.
+    storage_share_objects -- list of dynafed_storagestats StorageShare objects.
     stats -- dictionary of storage_shares and their status obtained from
              get_cached_connection_stats with return_as='expanded_dictionary'.
 
@@ -73,7 +74,7 @@ def check_connectionstats(storage_shares_objects, stats):
     _logger = logging.getLogger(__name__)
     ###############################################
 
-    for _storage_share in storage_shares_objects:
+    for _storage_share in storage_share_objects:
         try:
             if stats[_storage_share.id] == '2':
                 _storage_share.stats['check'] = "EndpointOffline"
@@ -95,12 +96,48 @@ def check_connectionstats(storage_shares_objects, stats):
             )
 
 
-def check_periodicity():
+def check_periodicity(storage_share_objects, stats):
     """Compare last check timestamp to defined periodicity and flag accordingly.
 
-    """
+    Arguments:
+    storage_share_objects -- list of dynafed_storagestats StorageShare objects.
+    stats -- dictionary of storage_shares and their status obtained from
+             get_cached_connection_stats with return_as='expanded_dictionary'.
 
-    pass
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    for _storage_share in storage_share_objects:
+        _logger.info(
+            "[%s]Checking if checkpoint has been reached.",
+            _storage_share.id
+        )
+
+        try:
+            if stats[_storage_share.id]:
+                if time.is_later(
+                    int(stats[_storage_share.id]['timestamp']),
+                    int(_storage_share.plugin_settings['storagestats.periodicity'])
+                ):
+                    _logger.info(
+                        "[%s]Checkpoint has been reached. Endpoint will be checked",
+                        _storage_share.id
+                    )
+                else:
+                    _storage_share.stats['check'] = "PeriodNotReached"
+                    _logger.info(
+                        "[%s]Checkpoint has not been reached. Endpoint will be skipped.",
+                        _storage_share.id
+                    )
+
+        except KeyError:
+            _logger.warning(
+                "[%s]No periodicity found. Endpoint will be checked.",
+                _storage_share.id
+            )
+
 
 
 def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_port='11211'):
@@ -157,7 +194,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
     with all the stats, or a dictionary of dictionaries where each stat has
     a key/value as well.
 
-    This is speciied with the 'return_as' argument as:
+    This is specified with the 'return_as' argument as:
     'string' -- single sting containing all StorageShares, each delimieted '&&'
     'array'  -- each StorageShare's string is separated and the array returned.
     'dictionary' -- each key is the StorageShare ID's and the value is a string
@@ -284,7 +321,7 @@ def get_cached_storage_stats(return_as='string', memcached_ip='127.0.0.1', memca
     with all the stats, or a dictionary of dictionaries where each stat has
     a key/value as well.
 
-    This is speciied with the 'return_as' argument as:
+    This is specified with the 'return_as' argument as:
     'string' -- single sting containing all StorageShares, each delimieted '&&'
     'array'  -- each StorageShare's string is separated and the array returned.
     'dictionary' -- each key is the StorageShare ID's and the value is a string
