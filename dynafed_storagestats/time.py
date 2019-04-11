@@ -6,13 +6,27 @@ import dateutil.tz
 # Functions #
 #############
 
-def now_in_utc():
-    """Returns aware datetime object of current time in UTC
+def is_later(timestamp, period):
+    """Return true if the current time > timestamp + period.
 
+    Checks if the timestamp given is later than the current time + the
+    period given in seconds.
+
+    Attributes:
+    timestamp -- integer, EPOCH.
+    period -- integer, seconds.
 
     """
-    
-    return datetime.datetime.now(dateutil.tz.tzutc())
+
+    _timestamp_to_check = (
+        datetime.datetime.fromtimestamp(timestamp, dateutil.tz.tzutc())
+        + datetime.timedelta(seconds=period)
+    )
+
+    if now_in_utc() > _timestamp_to_check:
+        return True
+    else:
+        return False
 
 
 def mask_timestamp_by_delta(timestamp, delta=0):
@@ -40,3 +54,12 @@ def mask_timestamp_by_delta(timestamp, delta=0):
         return False
     else:
         return True
+
+
+def now_in_utc():
+    """Returns aware datetime object of current time in UTC
+
+
+    """
+
+    return datetime.datetime.now(dateutil.tz.tzutc())
