@@ -55,15 +55,25 @@ def convert_size_to_bytes(size):
         exit()
 
 
-def check_connectionstats(storage_shares, stats):
-    """Check offline/online status and flag accordingly
+def check_connectionstats(storage_shares_objects, stats):
+    """Check each storage share's offline/online status and flag accordingly.
+
+    Check if each StorageShare in the list has a connection status in the
+    "stats" dict passed. When no status is found, default flag "True" in
+    storage_share.stats['check'] is respected and therefore assumed online.
+    Otherwise, it is updated to represent the status obtained.
+
+    Arguments:
+    storage_shares_objects -- list of dynafed_storagestats StorageShare objects.
+    stats -- dictionary of storage_shares and their status obtained from
+             get_cached_connection_stats with return_as='expanded_dictionary'.
 
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
     ###############################################
 
-    for _storage_share in storage_shares:
+    for _storage_share in storage_shares_objects:
         try:
             if stats[_storage_share.id] == '2':
                 _storage_share.stats['check'] = "EndpointOffline"
