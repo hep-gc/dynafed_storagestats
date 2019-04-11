@@ -101,7 +101,7 @@ def stats(ARGS):
         helpers.check_connectionstats(storage_shares, current_stats)
 
         # Flag storage shares that are under-due their period.
-        helpers.check_periodicity(storage_shares)
+        helpers.check_periodicity(storage_shares, current_stats)
 
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.
