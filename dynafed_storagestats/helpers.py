@@ -55,18 +55,17 @@ def convert_size_to_bytes(size):
         exit()
 
 
-def check_connectionstats(storage_share, status):
+def check_connectionstats(storage_shares, stats):
     """Check offline/online status and flag accordingly
 
     """
-    for _element in _connection_stats:
-        _storage_share, _stats = _element.split("%%", 1)
-        _status = _stats.split("%%")[2]
-        _storage_shares_current_stats[_storage_share] = _status
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
 
-    for _storage_share in storage_share_objects:
-        if _storage_share.id in _storage_shares_current_stats:
-            if _storage_shares_current_stats[_storage_share.id] == '2':
+    for _storage_share in storage_shares:
+        try:
+            if stats[_storage_share.id] == '2':
                 _storage_share.stats['check'] = "EndpointOffline"
                 _logger.info(
                     "[%s]Endpoint reported 'Offline'",
@@ -78,11 +77,11 @@ def check_connectionstats(storage_share, status):
                     "[%s]Endpoint reported 'Online'",
                     _storage_share.id
                 )
-        else:
-            _logger.info(
-                "[%s]Endpoint was not found in connection stats. " \
-                "Will be assumed 'Online'",
-                _storage_share
+        # If an endpoint is not found, we catch it here.
+        except KeyError:
+            _logger.warning(
+                "[%s]Endpoint stats not found in cache. Assuming 'Online'",
+                _storage_share.id
             )
 
 
@@ -92,6 +91,7 @@ def check_periodicity():
     """
 
     pass
+
 
 def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_port='11211'):
     """Obtain StorageShares' status contained in memcached and return as dict.
