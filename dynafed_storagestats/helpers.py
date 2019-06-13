@@ -96,8 +96,8 @@ def check_connectionstats(storage_share_objects, stats):
             )
 
 
-def check_periodicity(storage_share_objects, stats):
-    """Compare last check timestamp to defined periodicity and flag accordingly.
+def check_frequency(storage_share_objects, stats):
+    """Compare last check timestamp to defined frequency and flag accordingly.
 
     Arguments:
     storage_share_objects -- list of dynafed_storagestats StorageShare objects.
@@ -119,7 +119,7 @@ def check_periodicity(storage_share_objects, stats):
             if stats[_storage_share.id]:
                 if time.is_later(
                     int(stats[_storage_share.id]['timestamp']),
-                    int(_storage_share.plugin_settings['storagestats.periodicity'])
+                    int(_storage_share.plugin_settings['storagestats.frequency'])
                 ):
                     _logger.info(
                         "[%s]Checkpoint has been reached. Endpoint will be checked",
@@ -134,7 +134,7 @@ def check_periodicity(storage_share_objects, stats):
 
         except KeyError:
             _logger.warning(
-                "[%s]No periodicity found. Endpoint will be checked.",
+                "[%s]No frequency found. Endpoint will be checked.",
                 _storage_share.id
             )
 
