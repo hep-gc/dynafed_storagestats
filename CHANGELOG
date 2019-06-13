@@ -191,3 +191,5 @@ v1.0.11
           set and RFC4331 is used to get stats.
   ADDED: Exception handler and logging when file list report is not supported
          by plugin type using "AttributeError" exception.
+v1.0.12
+  CHANGE: Renamed 'periodicity' to 'frequency'.
