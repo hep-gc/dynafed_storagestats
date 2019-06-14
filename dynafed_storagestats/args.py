@@ -48,14 +48,6 @@ def add_general_options(parser):
     parser -- Object form argparse.ArgumentParser()
 
     """
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        default=False,
-        dest='verbose',
-        help="Show on stderr events according to loglevel."
-    )
-
 
 def add_reports_subparser(subparser):
     """Add optional arguments for the 'reports' sub-command.
@@ -86,6 +78,15 @@ def add_reports_subparser(subparser):
              "Default: '/etc/ugr/conf.d'."
     )
     parser.add_argument(
+        '--delta',
+        action='store',
+        default=1,
+        dest='delta',
+        type=int,
+        help="Mask for Last Modified Date of files. Integer in days. " \
+             "Default: 1"
+    )
+    parser.add_argument(
         '-e', '--endpoint',
         action='store',
         default=['all'],
@@ -95,15 +96,12 @@ def add_reports_subparser(subparser):
              "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
     )
-
     parser.add_argument(
-        '--delta',
-        action='store',
-        default=1,
-        dest='delta',
-        type=int,
-        help="Mask for Last Modified Date of files. Integer in days. " \
-             "Default: 1"
+        '-v', '--verbose',
+        action='store_true',
+        default=False,
+        dest='verbose',
+        help="Show on stderr events according to loglevel."
     )
 
     # Logging options
@@ -199,6 +197,13 @@ def add_stats_subparser(subparser):
         help="Choose endpoint(s) to check. " \
              "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        default=False,
+        dest='verbose',
+        help="Show on stderr events according to loglevel."
     )
 
     # Logging options
