@@ -122,7 +122,7 @@ class StorageShare():
                 'valid': ['generic'],
             },
             'storagestats.frequency': {
-                'default': '3600',
+                'default': '600',
                 'required': False,
                 'status_code': '072'
             },
