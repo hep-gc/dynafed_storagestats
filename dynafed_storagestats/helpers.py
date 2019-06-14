@@ -361,6 +361,7 @@ def process_storagereports(storage_endpoint, args):
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
     ###############################################
+
     _filepath = args.output_path + '/' + storage_endpoint.storage_shares[0].id + '.txt'
 
     try:
@@ -388,6 +389,20 @@ def process_storagereports(storage_endpoint, args):
                 prefix=args.prefix,
                 report_file=_report_file,
             )
+
+    except FileNotFoundError as ERR:
+        _logger.critical(
+            "[%s]Failed to create file. Path does not exist: %s",
+             storage_endpoint.storage_shares[0].id,
+             args.output_path
+        )
+
+    except PermissionError as ERR:
+        _logger.critical(
+            "[%s]Failed to create file. Permission denied to write at: %s",
+             storage_endpoint.storage_shares[0].id,
+             args.output_path
+        )
 
     except AttributeError as ERR:
         _logger.error(
