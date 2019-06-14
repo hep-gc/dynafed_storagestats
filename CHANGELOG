@@ -193,3 +193,6 @@ v1.0.11
          by plugin type using "AttributeError" exception.
 v1.0.12
   CHANGE: Renamed 'periodicity' to 'frequency'.
+  CHANGE: Moved -v switch to the positional arguments, now it needs to be placed
+          after them instead of in-between.
+  ADDED: Exception handling when unable to create repot files.
