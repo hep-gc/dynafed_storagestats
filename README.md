@@ -42,19 +42,15 @@ Make sure the user that runs it is able to read UGR's configuration files.
 
 ```bash
 dynafed-storage -h
-usage: dynafed-storage [-h] [-v] [--logfile LOGFILE]
-                            [--loglevel {DEBUG,INFO,WARNING,ERROR}]
-                            {stats,reports} ...
+usage: dynafed-storage [-h] {reports,stats} ...
 
 positional arguments:
-  {stats,reports}       sub-command help
-    stats               Subcommand to contact StorageEndpoints and output
-                        stats.
-    reports             Subcommand to generate reports.
+  {reports,stats}
+    reports        In development
+    stats          Obtain and output storage stats.
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -v, --verbose         Show on stderr events according to loglevel.
+  -h, --help       show this help message and exit
 
 ```
 #### Sub-commands
@@ -70,7 +66,7 @@ according settings.
 First run with the following flags:
 
 ```bash
-dynafed-storage -v stats -c /etc/ugr/conf.d --stdout -m
+dynafed-storage stats -v -c /etc/ugr/conf.d --stdout -m
 ```
 
 This will printout any warnings and errors as they are encountered as well as
@@ -102,7 +98,7 @@ dynafed-storage stats -c /etc/ugr/conf.d -m -e endpoint1 endpoint2
 ```bash
 dynafed-storage stats -h
 usage: dynafed-storage stats [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                             [-e [ENDPOINT [ENDPOINT ...]]]
+                             [-e [ENDPOINT [ENDPOINT ...]]] [-v]
                              [--logfile LOGFILE]
                              [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                              [--memhost MEMCACHED_IP]
@@ -120,6 +116,7 @@ optional arguments:
                         Choose endpoint(s) to check. Accepts any number of
                         arguments. If not present, all endpoints will be
                         checked.
+  -v, --verbose         Show on stderr events according to loglevel.
 
 Logging options:
   --logfile LOGFILE     Set logfile's path. Default:
@@ -155,7 +152,7 @@ Output options:
                         development!!
 ```
 ##### Reports
-**Note: Currently only works with S3 endpoints**
+**Note: Only works with Azure and S3 endpoints**
 
 This sub-command is intended to be used to obtain file reports from the storage
 endpoints. At this time, what is being developed is to be able to create
@@ -174,12 +171,12 @@ filename is the endpoint's ID name in the endpoints.conf file.
 dynafed-storage reports -c ~/lab/dynafed_storagestats/tests/local/ -o /tmp/delete --delta 1 -p rucio -e endpoint1 endpoint2
 ```
 
-**stats help:**
+**reports help:**
 ```bash
 dynafed-storage reports --help
 usage: dynafed-storage reports [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                               [-e [ENDPOINT [ENDPOINT ...]]] [--delta DELTA]
-                               [--logfile LOGFILE]
+                               [--delta DELTA] [-e [ENDPOINT [ENDPOINT ...]]]
+                               [-v] [--logfile LOGFILE]
                                [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                [-o OUTPUT_PATH] [-p PREFIX]
 
@@ -189,12 +186,13 @@ optional arguments:
                         Path to UGR's endpoint .conf files or directories.
                         Accepts any number of arguments. Default:
                         '/etc/ugr/conf.d'.
+  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
+                        Default: 1
   -e [ENDPOINT [ENDPOINT ...]], --endpoint [ENDPOINT [ENDPOINT ...]]
                         Choose endpoint(s) to check. Accepts any number of
                         arguments. If not present, all endpoints will be
                         checked.
-  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
-                        Default: 1
+  -v, --verbose         Show on stderr events according to loglevel.
 
 Logging options:
   --logfile LOGFILE     Set logfile's path. Default:
@@ -206,9 +204,8 @@ Output options:
   -o OUTPUT_PATH, --output-dir OUTPUT_PATH
                         Set output directory. Default: '.'
   -p PREFIX, --path PREFIX, --prefix PREFIX
-                        Set the prefix/path from where to make the
+                        Set the prefix/path from where to start the recursive
                         list.Default: ''
-
 ```
 **Important Note: DEBUG level might print an enormous amount of data as it will
 log the contents obtained from requests. In the case of the generic methods this
@@ -233,8 +230,14 @@ using the relevant API. Failing this, a default quota of 1TB will used.
 Will try to obtain the quota from the storage endpoint. If that fails a default
 of 1TB will be used.
 
-##### bytes
+##### (bytes)
 The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase.
+
+```
+locplugin.<ID>.storagestats.frequency: [ 600 ]
+```
+
+This setting tells the script the number of seconds to wait before checking the endpoint again according to the timestamp of the last check stored in memcache. The default is 10 minutes (600 seconds).
 
 ### Azure
 
