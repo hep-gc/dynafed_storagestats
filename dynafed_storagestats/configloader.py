@@ -9,7 +9,7 @@ from dynafed_storagestats.azure import base as azure
 from dynafed_storagestats.base import StorageShare, StorageEndpoint
 from dynafed_storagestats.dav import base as dav
 from dynafed_storagestats.s3 import base as s3
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 
 #############
 # Functions #
@@ -38,7 +38,7 @@ def factory(plugin):
         return _plugin_dict.get(plugin)
 
     else:
-        raise exceptions.DSSUnsupportedPluginError(
+        raise dynafed_storagestats.exceptions.UnsupportedPluginError(
             error="UnsupportedPlugin",
             plugin=plugin,
         )
@@ -90,7 +90,7 @@ def get_conf_files(config_path):
             )
 
     if not _config_files:
-        raise exceptions.DSSConfigFileErrorNoConfigFilesFound(
+        raise dynafed_storagestats.exceptions.ConfigFileErrorNoConfigFilesFound(
             config_path=config_path,
         )
 
@@ -174,7 +174,7 @@ def get_storage_shares(config_path):
     try:
         _config_files = get_conf_files(config_path)
 
-    except exceptions.DSSConfigFileErrorNoConfigFilesFound as ERR:
+    except dynafed_storagestats.exceptions.ConfigFileErrorNoConfigFilesFound as ERR:
         _logger.critical("%s", ERR.debug)
         print("[CRITICAL]%s" % (ERR.debug))
         sys.exit(1)
@@ -183,7 +183,7 @@ def get_storage_shares(config_path):
     try:
         _storage_shares = parse_conf_files(_config_files)
 
-    except exceptions.DSSConfigFileErrorIDMismatch as ERR:
+    except dynafed_storagestats.exceptions.ConfigFileErrorIDMismatch as ERR:
         _logger.critical("[%s]%s", ERR.storage_share, ERR.debug)
         print("[CRITICAL][%s]%s" % (ERR.storage_share, ERR.debug))
         sys.exit(1)
@@ -228,7 +228,7 @@ def get_storage_share_objects(storage_shares):
                 storage_shares[_storage_share]['plugin']
             )
 
-        except exceptions.DSSUnsupportedPluginError as ERR:
+        except dynafed_storagestats.exceptions.UnsupportedPluginError as ERR:
             _logger.error("[%s]%s", storage_shares[_storage_share]['id'], ERR.debug)
             _storage_share_object = StorageShare(storage_shares[_storage_share])
             _storage_share_object.debug.append("[ERROR]" + ERR.debug)
@@ -323,7 +323,7 @@ def parse_conf_files(config_files):
                                 )
 
                             else:
-                                raise exceptions.DSSConfigFileErrorIDMismatch(
+                                raise dynafed_storagestats.exceptions.ConfigFileErrorIDMismatch(
                                     storage_share=_id,
                                     error="SettingIDMismatch",
                                     line_number=_line_number,

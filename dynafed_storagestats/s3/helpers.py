@@ -2,7 +2,6 @@
 
 import datetime
 import logging
-import time
 
 import boto3
 import botocore.vendored.requests.exceptions as botoRequestsExceptions
@@ -12,8 +11,9 @@ from botocore.client import Config
 import requests
 from requests_aws4auth import AWS4Auth
 
+import dynafed_storagestats.exceptions
 import dynafed_storagestats.helpers
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.time
 
 ###############
 ## Functions ##
@@ -35,6 +35,7 @@ def ceph_admin(storage_share):
     _logger = logging.getLogger(__name__)
     ###############################################
 
+    # Generate the API's URL to contact.
     if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
     or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
 
@@ -50,11 +51,13 @@ def ceph_admin(storage_share):
             bucket=storage_share.uri['bucket']
         )
 
+    # API attributes.
     _payload = {
         'bucket': storage_share.uri['bucket'],
         'stats': 'True'
     }
 
+    # Create authorization object.
     _auth = AWS4Auth(
         storage_share.plugin_settings['s3.pub_key'],
         storage_share.plugin_settings['s3.priv_key'],
@@ -85,7 +88,7 @@ def ceph_admin(storage_share):
         )
 
         # Save time when data was obtained.
-        storage_share.stats['endtime'] = int(time.time())
+        storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
         #Log contents of response
         _logger.debug(
@@ -95,7 +98,7 @@ def ceph_admin(storage_share):
         )
 
     except requests.exceptions.InvalidSchema as ERR:
-        raise exceptions.DSSConnectionErrorInvalidSchema(
+        raise dynafed_storagestats.exceptions.ConnectionErrorInvalidSchema(
             error='InvalidSchema',
             schema=storage_share.uri['scheme'],
             debug=str(ERR),
@@ -116,7 +119,7 @@ def ceph_admin(storage_share):
             )
 
             # Save time when data was obtained.
-            storage_share.stats['endtime'] = int(time.time())
+            storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
             #Log contents of response
             _logger.debug(
@@ -126,14 +129,14 @@ def ceph_admin(storage_share):
             )
 
         except requests.exceptions.SSLError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="092",
                 debug=str(ERR),
             )
 
     except requests.ConnectionError as ERR:
-        raise exceptions.DSSConnectionError(
+        raise dynafed_storagestats.exceptions.ConnectionError(
             error=ERR.__class__.__name__,
             debug=str(ERR),
         )
@@ -147,7 +150,7 @@ def ceph_admin(storage_share):
                 _stats = _response.json()
 
             except ValueError:
-                raise exceptions.DSSConnectionErrorS3API(
+                raise dynafed_storagestats.exceptions.ConnectionErrorS3API(
                     error="NoContent",
                     status_code=_response.status_code,
                     api=storage_share.plugin_settings['storagestats.api'],
@@ -160,7 +163,7 @@ def ceph_admin(storage_share):
                 _stats['usage']
 
             except KeyError as ERR:
-                raise exceptions.DSSErrorS3MissingBucketUsage(
+                raise dynafed_storagestats.exceptions.ErrorS3MissingBucketUsage(
                     status_code=_response.status_code,
                     error=_stats['Code'],
                     debug=str(_stats)
@@ -190,14 +193,14 @@ def ceph_admin(storage_share):
                     elif _stats['bucket_quota']['enabled'] is False:
                         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
                         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-                        raise exceptions.DSSCephS3QuotaDisabledWarning(
+                        raise dynafed_storagestats.exceptions.CephS3QuotaDisabledWarning(
                             default_quota=storage_share.stats['quota'],
                         )
 
                     else:
                         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
                         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-                        raise exceptions.DSSQuotaWarning(
+                        raise dynafed_storagestats.exceptions.QuotaWarning(
                             error="NoQuotaGiven",
                             status_code="098",
                             default_quota=storage_share.stats['quota'],
@@ -222,7 +225,7 @@ def cloudwatch(storage_share):
 
     _seconds_in_one_day = 86400
 
-    # Create boto client to query AWS API.
+    # Generate boto client to query AWS API.
     _connection = boto3.client(
         'cloudwatch',
         region_name=storage_share.plugin_settings['s3.region'],
@@ -283,6 +286,7 @@ def cloudwatch(storage_share):
         storage_share.plugin_settings['storagestats.api'].lower(),
     )
 
+    # Requesting the information for each defined metric.
     for _metric in _metrics:
         _logger.info(
             "[%s]Requesting Cloudwatch metric: %s",
@@ -302,35 +306,35 @@ def cloudwatch(storage_share):
             )
 
         except botoExceptions.ClientError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
                 debug=str(ERR),
             )
 
         except botoRequestsExceptions.SSLError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="092",
                 debug=str(ERR),
             )
 
         except botoRequestsExceptions.RequestException as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="400",
                 debug=str(ERR),
             )
 
         except botoExceptions.ParamValidationError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="095",
                 debug=str(ERR),
             )
 
         except botoExceptions.BotoCoreError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="400",
                 debug=str(ERR),
@@ -350,10 +354,10 @@ def cloudwatch(storage_share):
                 ]
 
 
-    # Save time when data was obtained.
-    storage_share.stats['endtime'] = int(time.time())
+    # Save the timestamp when data was obtained.
+    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
-    # Upload metrics to storage_share
+    # Save metrics to storage_share.
     storage_share.stats['bytesused'] = int(_metrics['BucketSizeBytes']['Result'])
     storage_share.stats['filecount'] = int(_metrics['NumberOfObjects']['Result'])
 
@@ -361,7 +365,7 @@ def cloudwatch(storage_share):
     if storage_share.plugin_settings['storagestats.quota'] == 'api':
         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-        raise exceptions.DSSQuotaWarning(
+        raise dynafed_storagestats.exceptions.QuotaWarning(
             error="NoQuotaGiven",
             status_code="098",
             default_quota=storage_share.stats['quota'],
@@ -372,7 +376,10 @@ def cloudwatch(storage_share):
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
-def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt', request='storagestats'):
+def list_objects(storage_share, delta=1, prefix='',
+                 report_file='/tmp/filelist_report.txt',
+                 request='storagestats'
+                 ):
     """Contact S3 endpoint using list_objects API.
 
     Contacts an S3 endpoints and uses the "list_objects" API to recursively
@@ -381,13 +388,14 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
 
     Attributes:
     storage_share -- dynafed_storagestats StorageShare object.
-    prefix -- string
+    prefix -- string.
 
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
     ###############################################
 
+    # Generate the API's URL to contact.
     if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
     or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
 
@@ -402,6 +410,7 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
             domain=storage_share.uri['domain']
         )
 
+    # Generate boto client to query S3 endpoint.
     _connection = boto3.client(
         's3',
         region_name=storage_share.plugin_settings['s3.region'],
@@ -417,23 +426,19 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
         ),
     )
 
+    # Initialize counters.
     _total_bytes = 0
     _total_files = 0
 
     # We define the arguments for the API call. Delimiter is set to *
     # to get all keys. This is necessary for AWS to return the "NextMarker"
     # attribute necessary to iterate when there are > 1,000 objects.
-
     _kwargs = {
         'Bucket': storage_share.uri['bucket'],
         'Delimiter': '*',
         'Prefix': prefix,
     }
 
-    # This loop is needed to obtain all objects as the API can only
-    # server 1,000 objects per request. The 'NextMarker' tells where
-    # to start the next 1,000. If no 'NextMarker' is received, all
-    # objects have been obtained.
     _logger.debug(
         "[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s",
         storage_share.id,
@@ -442,19 +447,23 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
         _kwargs
     )
 
+    # This loop is needed to obtain all objects as the API can only
+    # server 1,000 objects per request. The 'NextMarker' tells where
+    # to start the next 1,000. If no 'NextMarker' is received, all
+    # objects have been obtained.
     while True:
         try:
             _response = _connection.list_objects(**_kwargs)
 
         except botoExceptions.ClientError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
                 debug=str(ERR),
             )
 
         except botoRequestsExceptions.InvalidSchema as ERR:
-            raise exceptions.DSSConnectionErrorInvalidSchema(
+            raise dynafed_storagestats.exceptions.ConnectionErrorInvalidSchema(
                 error='InvalidSchema',
                 schema=storage_share.uri['scheme'],
                 debug=str(ERR),
@@ -483,28 +492,28 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
                 _response = _connection.list_objects(**_kwargs)
 
             except botoRequestsExceptions.SSLError as ERR:
-                raise exceptions.DSSConnectionError(
+                raise dynafed_storagestats.exceptions.ConnectionError(
                     error=ERR.__class__.__name__,
                     status_code="092",
                     debug=str(ERR),
                 )
 
         except botoRequestsExceptions.RequestException as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="400",
                 debug=str(ERR),
             )
 
         except botoExceptions.ParamValidationError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="095",
                 debug=str(ERR),
             )
 
         except botoExceptions.BotoCoreError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="400",
                 debug=str(ERR),
@@ -518,8 +527,10 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
             #     response['Contents']
             # )
 
+            # Check what type of request is asked being used.
             if request == 'storagestats':
                 try:
+                    # Make sure we got a list of objects.
                     _response['Contents']
                 except KeyError:
                     storage_share.stats['bytesused'] = 0
@@ -529,30 +540,27 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
                         _total_bytes += _file['Size']
                         _total_files += 1
 
-                try:
-                    _kwargs['Marker'] = _response['NextMarker']
-                except KeyError:
-                    break
-
             elif request == 'filelist':
                 try:
+                    # Make sure we got a list of objects.
                     _response['Contents']
                 except KeyError:
                     break
                 else:
-                    print ("chale")
-                    with open(report_file, 'w') as output:
-                        for _file in _response['Contents']:
-                            output.write("%s\n" % _file['Key'])
+                    for _file in _response['Contents']:
+                        # Output files older than the specified delta.
+                        if dynafed_storagestats.time.mask_timestamp_by_delta(_file['LastModified'], delta):
+                            report_file.write("%s\n" % _file['Key'])
                             _total_files += 1
 
-                try:
-                    _kwargs['Marker'] = _response['NextMarker']
-                except KeyError:
-                    break
+            # Exit if no "NextMarker" as list is now over.
+            try:
+                _kwargs['Marker'] = _response['NextMarker']
+            except KeyError:
+                break
 
     # Save time when data was obtained.
-    storage_share.stats['endtime'] = int(time.time())
+    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
     storage_share.stats['bytesused'] = _total_bytes
 
     # Obtain or set default quota and calculate freespace.
@@ -560,7 +568,7 @@ def list_objects(storage_share, prefix='', report_file='/tmp/filelist_report.txt
         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
         storage_share.stats['filecount'] = _total_files
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-        raise exceptions.DSSQuotaWarning(
+        raise dynafed_storagestats.exceptions.QuotaWarning(
             error="NoQuotaGiven",
             status_code="098",
             default_quota=storage_share.stats['quota'],

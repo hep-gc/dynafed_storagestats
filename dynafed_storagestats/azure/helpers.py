@@ -5,13 +5,18 @@ import logging
 from azure.storage.blob.baseblobservice import BaseBlobService
 import azure.common
 
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
+import dynafed_storagestats.helpers
+import dynafed_storagestats.time
 
 ###############
 ## Functions ##
 ###############
 
-def list_blobs(storage_share):
+def list_blobs(storage_share, delta=1, prefix='',
+               report_file='/tmp/filelist_report.txt',
+               request='storagestats'
+               ):
     """Contact Azure endpoint using "list_blobs" method.
 
     Contacts an Azure blob and uses the "list_blobs" API to recursively obtain
@@ -31,7 +36,9 @@ def list_blobs(storage_share):
 
     _base_blob_service = BaseBlobService(
         account_name=storage_share.uri['account'],
-        account_key=storage_share.plugin_settings['azure.key']
+        account_key=storage_share.plugin_settings['azure.key'],
+        # Set to true if using Azurite storage emulator for testing.
+        is_emulated=False
     )
 
     _container_name = storage_share.uri['container']
@@ -52,10 +59,11 @@ def list_blobs(storage_share):
                 _container_name,
                 marker=_next_marker,
                 timeout=_timeout,
+                prefix=prefix,
             )
 
         except azure.common.AzureMissingResourceHttpError as ERR:
-            raise exceptions.DSSErrorAzureContainerNotFound(
+            raise dynafed_storagestats.exceptions.ErrorAzureContainerNotFound(
                 error='ContainerNotFound',
                 status_code="404",
                 debug=str(ERR),
@@ -63,7 +71,7 @@ def list_blobs(storage_share):
             )
 
         except azure.common.AzureHttpError as ERR:
-            raise exceptions.DSSConnectionErrorAzureAPI(
+            raise dynafed_storagestats.exceptions.ConnectionErrorAzureAPI(
                 error='ConnectionError',
                 status_code="400",
                 debug=str(ERR),
@@ -71,31 +79,46 @@ def list_blobs(storage_share):
             )
 
         except azure.common.AzureException as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error='ConnectionError',
                 status_code="400",
                 debug=str(ERR),
             )
 
         else:
-            try:
-                _blobs.items
-            except AttributeError:
-                storage_share.stats['bytesused'] = 0
-                break
-            else:
-                _next_marker = _blobs.next_marker
-
-                try:
-                    for _blob in _blobs:
-                        _total_bytes += _blob.properties.content_length
-                        _total_files += 1
-
-                except azure.common.AzureHttpError:
-                    pass
-
-                if not _next_marker:
+            # Check what type of request is asked being used.
+            if request == 'storagestats':
+                try: # Make sure we got a list of objects.
+                    _blobs.items
+                except AttributeError:
+                    storage_share.stats['bytesused'] = 0
                     break
+                else:
+                    try:
+                        for _blob in _blobs:
+                            _total_bytes += _blob.properties.content_length
+                            _total_files += 1
+                    # Investigate
+                    except azure.common.AzureHttpError:
+                        pass
+
+            elif request == 'filelist':
+                try: # Make sure we got a list of objects.
+                    _blobs.items
+                except AttributeError:
+                    break
+                else:
+                    for _blob in _blobs:
+                        # Output files older than the specified delta.
+                        if dynafed_storagestats.time.mask_timestamp_by_delta(_blob.properties.last_modified, delta):
+                            report_file.write("%s\n" % _blob.name)
+                            _total_files += 1
+
+            # Exit if no "NextMarker" as list is now over.
+            if _next_marker:
+                _next_marker = _blobs.next_marker
+            else:
+                break
 
     storage_share.stats['bytesused'] = _total_bytes
     storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']

@@ -1,6 +1,7 @@
 """Defines S3's StorageShare sub-class."""
 
 import logging
+import os
 
 import dynafed_storagestats.base
 import dynafed_storagestats.s3.helpers as s3helpers
@@ -81,31 +82,38 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
         ###############################################
 
-        # Getting the storage Stats CephS3's Admin API
+        # Getting the storage stats CephS3's Admin API
         if self.plugin_settings['storagestats.api'].lower() == 'ceph-admin':
             s3helpers.ceph_admin(self)
 
-        # Getting the storage Stats AWS S3 API
+        # Getting the storage stats AWS S3 API
         #elif self.plugin_settings['storagestats.api'].lower() == 'aws-cloudwatch':
 
-        # Generic list all objects and add sizes using list-objectsv2 AWS-Boto3
-        # API, should work for any compatible S3 endpoint.
+        # Getting the storage stats using AWS-Boto3 list-objects API, should
+        # work for any compatible S3 endpoint.
         elif self.plugin_settings['storagestats.api'].lower() == 'generic' \
         or   self.plugin_settings['storagestats.api'].lower() == 'list-objects':
             s3helpers.list_objects(self)
 
+        # Getting the storage stats using AWS Cloudwatch
         elif self.plugin_settings['storagestats.api'].lower() == 'cloudwatch':
             s3helpers.cloudwatch(self)
 
 
-    def get_filelist(self, prefix='', report_file='/tmp/filelist_report.txt'):
-        """Contanct enpoint and generate a filelist.
+    def get_filelist(self, delta=1, prefix='', report_file='/tmp/filelist_report.txt'):
+        """Contact endpoint and generate a file-list.
 
         Generates a list using the prefix var to select specific keys.
 
         """
-        s3helpers.list_objects(self, prefix, request='filelist')
 
+        s3helpers.list_objects(
+            self,
+            delta,
+            prefix,
+            report_file=report_file,
+            request='filelist'
+        )
 
 
     def validate_schema(self):

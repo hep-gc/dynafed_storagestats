@@ -168,7 +168,31 @@ v1.0.5
          This will skip the file if there are issues decoding and log a warning.
 v1.0.6
   ADDED: __init__.py files to create pypi package.
-
 v1.0.7
   ADDED: Adds support to specify more than one endpoint to check instead of just
          one or all, using the -e flag.
+v1.0.8
+  CHANGE: Import full path to exceptions modules. Removed 'DSS' from class names.
+v1.0.9
+  ADDED: python-dateutil requirement.
+  ADDED: now_in_utc()
+  ADDED: mask_timestamp_by_delta()
+  ADDED: '-p', '--delta', '-o' switches to reports sub-command.
+  ADDED: S3's list-objects function to output a file list instead of storage
+         stats when the 'reports' sub-command is called.
+  CHANGE: All time module imports have been changed to datetime module.
+  CHANGE: enabled 'reports' sub-command.
+v10.0.10
+  ADDED: get_file method to AzureStorageShare to generate file list for reports.
+  ADDED: storagestats.periodicity option validator.
+  CHANGE: Moved time helper functions to time.py file.
+v1.0.11
+  BUGFIX: DAV storage now properly caluclates free space when quota is manually
+          set and RFC4331 is used to get stats.
+  ADDED: Exception handler and logging when file list report is not supported
+         by plugin type using "AttributeError" exception.
+v1.0.12
+  CHANGE: Renamed 'periodicity' to 'frequency'.
+  CHANGE: Moved -v switch to the positional arguments, now it needs to be placed
+          after them instead of in-between.
+  ADDED: Exception handling when unable to create repot files.

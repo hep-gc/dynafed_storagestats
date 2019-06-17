@@ -48,14 +48,6 @@ def add_general_options(parser):
     parser -- Object form argparse.ArgumentParser()
 
     """
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        default=False,
-        dest='verbose',
-        help="Show on stderr events according to loglevel."
-    )
-
 
 def add_reports_subparser(subparser):
     """Add optional arguments for the 'reports' sub-command.
@@ -71,6 +63,9 @@ def add_reports_subparser(subparser):
     )
 
     # Set the sub-command routine to run.
+    parser.set_defaults(cmd='reports')
+
+    # Set the sub-command routine to run.
     # General options
     parser.add_argument(
         '-c', '--config',
@@ -83,6 +78,15 @@ def add_reports_subparser(subparser):
              "Default: '/etc/ugr/conf.d'."
     )
     parser.add_argument(
+        '--delta',
+        action='store',
+        default=1,
+        dest='delta',
+        type=int,
+        help="Mask for Last Modified Date of files. Integer in days. " \
+             "Default: 1"
+    )
+    parser.add_argument(
         '-e', '--endpoint',
         action='store',
         default=['all'],
@@ -91,6 +95,13 @@ def add_reports_subparser(subparser):
         help="Choose endpoint(s) to check. " \
              "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        default=False,
+        dest='verbose',
+        help="Show on stderr events according to loglevel."
     )
 
     # Logging options
@@ -115,47 +126,38 @@ def add_reports_subparser(subparser):
 
     # Output Options
     group_output = parser.add_argument_group("Output options")
-    group_output.add_argument(
-        '--debug',
-        action='store_true',
-        default=False,
-        dest='debug',
-        help="Declare to enable debug output on stdout."
-    )
+    # group_output.add_argument(
+    #     '--debug',
+    #     action='store_true',
+    #     default=False,
+    #     dest='debug',
+    #     help="Declare to enable debug output on stdout."
+    # )
 
-    group_output.add_argument(
-        '-f', '--filename',
-        action='store',
-        default='report.txt',
-        dest='report_filename',
-        help="Set output filename. " \
-             "Default: 'report_filename'"
-    )
+    # group_output.add_argument(
+    #     '-f', '--filename',
+    #     action='store',
+    #     default='report.txt',
+    #     dest='report_filename',
+    #     help="Set output filename. " \
+    #          "Default: 'report_filename'"
+    # )
 
     group_output.add_argument(
         '-o', '--output-dir',
         action='store',
         default='.',
         dest='output_path',
-        help="Set output directory for flags -j, -x and -p. " \
+        help="Set output directory. " \
              "Default: '.'"
     )
     group_output.add_argument(
-        '-p', '--plain',
+        '-p', '--path', '--prefix',
         action='store',
-        const="dynafed_storagestats.txt",
-        default=False,
-        dest='to_plaintext',
-        nargs='?',
-        help="Set to output stats to plain txt file. Add argument to set filename." \
-             "Default: dynafed_storagestats.txt"
-    )
-    group_output.add_argument(
-        '--stdout',
-        action='store_true',
-        default=False,
-        dest='output_stdout',
-        help="Set to output stats on stdout."
+        default='',
+        dest='prefix',
+        help="Set the prefix/path from where to start the recursive list." \
+             "Default: ''"
     )
 
 
@@ -195,6 +197,13 @@ def add_stats_subparser(subparser):
         help="Choose endpoint(s) to check. " \
              "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        default=False,
+        dest='verbose',
+        help="Show on stderr events according to loglevel."
     )
 
     # Logging options

@@ -3,7 +3,7 @@
 import os
 import logging
 
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 from dynafed_storagestats import memcache
 from dynafed_storagestats import json
 from dynafed_storagestats import xml
@@ -197,7 +197,7 @@ def to_stdout(storage_endpoints, args):
                     args.memcached_port
                 )
 
-            except exceptions.DSSMemcachedIndexError as ERR:
+            except dynafed_storagestats.exceptions.MemcachedIndexError as ERR:
                 _memcached_contents = 'No content found or error connecting to memcached service.'
                 _storage_share.debug.append("[ERROR]" + ERR.debug)
 

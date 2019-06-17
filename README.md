@@ -34,22 +34,39 @@ it is not in the repos, run the following command:
 ```bash
 sudo  python3 /usr/lib/python3.4/site-packages/easy_install.py pip
 ```
+## Known issues
+-
 
 ## Usage
+Make sure the user that runs it is able to read UGR's configuration files.
 
-This module is intended to be run periodically as a cron job, make sure the
-user that runs it is able to read UGR's configuration files.
+```bash
+dynafed-storage -h
+usage: dynafed-storage [-h] {reports,stats} ...
 
-It has two sub commands:
--stats: Contacts each storage endpoint, obtains available stats and outputs
-them according settings.
--reports: In development, nothing at the moment but ideally will be used to
-create file lists and stats reports in formats according to experiment's needs.
+positional arguments:
+  {reports,stats}
+    reports        In development
+    stats          Obtain and output storage stats.
+
+optional arguments:
+  -h, --help       show this help message and exit
+
+```
+#### Sub-commands
+##### Stats
+
+This sub-command is intended to be run periodically as a cron job in order to
+upload the stats into memcached so that Dynafed can use it to be aware of the
+storage capacity of the storage endpoints.
+
+It contacts each storage endpoint, obtains available stats and outputs them
+according settings.
 
 First run with the following flags:
 
 ```bash
-dynafed-storage -v stats -c /etc/ugr/conf.d --stdout -m
+dynafed-storage stats -v -c /etc/ugr/conf.d --stdout -m
 ```
 
 This will printout any warnings and errors as they are encountered as well as
@@ -74,32 +91,14 @@ If instead of checking all configured endpoints, specific endpoint ID's can be
 specified with the "-e" flag:
 
 ```bash
-dynafed-storage stats -c /etc/ugr/conf.d -m -e endpoint1 endpoint2 
+dynafed-storage stats -c /etc/ugr/conf.d -m -e endpoint1 endpoint2
 ```
 
-To get help:
-```bash
-dynafed-storage -h
-usage: dynafed-storage [-h] [-v] [--logfile LOGFILE]
-                            [--loglevel {DEBUG,INFO,WARNING,ERROR}]
-                            {stats,reports} ...
-
-positional arguments:
-  {stats,reports}       sub-command help
-    stats               Subcommand to contact StorageEndpoints and output
-                        stats.
-    reports             Subcommand to generate reports.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -v, --verbose         Show on stderr events according to loglevel.
-
-```
-
+**stats help:**
 ```bash
 dynafed-storage stats -h
 usage: dynafed-storage stats [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                             [-e [ENDPOINT [ENDPOINT ...]]]
+                             [-e [ENDPOINT [ENDPOINT ...]]] [-v]
                              [--logfile LOGFILE]
                              [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                              [--memhost MEMCACHED_IP]
@@ -117,6 +116,7 @@ optional arguments:
                         Choose endpoint(s) to check. Accepts any number of
                         arguments. If not present, all endpoints will be
                         checked.
+  -v, --verbose         Show on stderr events according to loglevel.
 
 Logging options:
   --logfile LOGFILE     Set logfile's path. Default:
@@ -151,6 +151,62 @@ Output options:
                         filename.Default: dynafed_storagestats.json!!In
                         development!!
 ```
+##### Reports
+**Note: Only works with Azure and S3 endpoints**
+
+This sub-command is intended to be used to obtain file reports from the storage
+endpoints. At this time, what is being developed is to be able to create
+file dumps with the intention of using the for Rucio's integrity checks for
+cloud based storage such as S3 and Azure since other grid storage solutions like
+dCache and DPM have their own tools.
+
+For more information on this file dumps: [DDMDarkDataAndLostFiles](https://twiki.cern.ch/twiki/bin/view/AtlasComputing/DDMDarkDataAndLostFiles)
+
+Usage example:
+This will create a file at /tmp/ containing a list of files under the 'rucio'
+prefix that are a day older from endpoints 'entpoint1' and 'endpoint2'. The
+filename is the endpoint's ID name in the endpoints.conf file.
+
+```bash
+dynafed-storage reports -c ~/lab/dynafed_storagestats/tests/local/ -o /tmp/delete --delta 1 -p rucio -e endpoint1 endpoint2
+```
+
+**reports help:**
+```bash
+dynafed-storage reports --help
+usage: dynafed-storage reports [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
+                               [--delta DELTA] [-e [ENDPOINT [ENDPOINT ...]]]
+                               [-v] [--logfile LOGFILE]
+                               [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                               [-o OUTPUT_PATH] [-p PREFIX]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
+                        Path to UGR's endpoint .conf files or directories.
+                        Accepts any number of arguments. Default:
+                        '/etc/ugr/conf.d'.
+  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
+                        Default: 1
+  -e [ENDPOINT [ENDPOINT ...]], --endpoint [ENDPOINT [ENDPOINT ...]]
+                        Choose endpoint(s) to check. Accepts any number of
+                        arguments. If not present, all endpoints will be
+                        checked.
+  -v, --verbose         Show on stderr events according to loglevel.
+
+Logging options:
+  --logfile LOGFILE     Set logfile's path. Default:
+                        /tmp/dynafed_storagestats.log
+  --loglevel {DEBUG,INFO,WARNING,ERROR}
+                        Set log output level. Default: WARNING.
+
+Output options:
+  -o OUTPUT_PATH, --output-dir OUTPUT_PATH
+                        Set output directory. Default: '.'
+  -p PREFIX, --path PREFIX, --prefix PREFIX
+                        Set the prefix/path from where to start the recursive
+                        list.Default: ''
+```
 **Important Note: DEBUG level might print an enormous amount of data as it will
 log the contents obtained from requests. In the case of the generic methods this
 will print all the stats for each file being parsed. It is recommended to use
@@ -160,10 +216,6 @@ this level with only the endpoint one wants to troubleshoot.**
 
 In order to use the correct methods for each storage type some settings should
 be added to the endpoints.conf configuration file.
-
-### Known issues
-
-:)
 
 ### General
 
@@ -178,8 +230,14 @@ using the relevant API. Failing this, a default quota of 1TB will used.
 Will try to obtain the quota from the storage endpoint. If that fails a default
 of 1TB will be used.
 
-##### bytes
+##### (bytes)
 The quota can be specify in bytes, megabytes, mebibytes, etc. Lower or uppercase.
+
+```
+locplugin.<ID>.storagestats.frequency: [ 600 ]
+```
+
+This setting tells the script the number of seconds to wait before checking the endpoint again according to the timestamp of the last check stored in memcache. The default is 10 minutes (600 seconds).
 
 ### Azure
 

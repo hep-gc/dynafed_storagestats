@@ -1,12 +1,12 @@
 """Helper functions used to contact DAV based API's."""
 
+import datetime
 import logging
-import time
 
 import requests
 
 from dynafed_storagestats import xml
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 
 ###############
 ## Functions ##
@@ -59,7 +59,7 @@ def list_files(storage_share):
         )
 
     except requests.exceptions.InvalidSchema as ERR:
-        raise exceptions.DSSConnectionErrorInvalidSchema(
+        raise dynafed_storagestats.exceptions.ConnectionErrorInvalidSchema(
             error='InvalidSchema',
             schema=storage_share.uri['scheme'],
             debug=str(ERR),
@@ -78,14 +78,14 @@ def list_files(storage_share):
             )
 
         except requests.exceptions.SSLError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="092",
                 debug=str(ERR),
             )
 
     except requests.ConnectionError as ERR:
-        raise exceptions.DSSConnectionError(
+        raise dynafed_storagestats.exceptions.ConnectionError(
             error=ERR.__class__.__name__,
             status_code="400",
             debug=str(ERR),
@@ -95,7 +95,7 @@ def list_files(storage_share):
         #We do some regex magic to get the file path
         _certfile = str(ERR).split(":")[-1]
         _certfile = _certfile.replace(' ', '')
-        raise exceptions.DSSConnectionErrorDAVCertPath(
+        raise dynafed_storagestats.exceptions.ConnectionErrorDAVCertPath(
             certfile=_certfile,
             debug=str(ERR),
         )
@@ -111,7 +111,7 @@ def list_files(storage_share):
                 storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
             else:
-                raise exceptions.DSSConnectionError(
+                raise dynafed_storagestats.exceptions.ConnectionError(
                     error='ConnectionError',
                     status_code=_response.status_code,
                     debug=_response.text,
@@ -165,7 +165,7 @@ def rfc4331(storage_share):
         )
 
     except requests.exceptions.InvalidSchema as ERR:
-        raise exceptions.DSSConnectionErrorInvalidSchema(
+        raise dynafed_storagestats.exceptions.ConnectionErrorInvalidSchema(
             error='InvalidSchema',
             schema=storage_share.uri['scheme'],
             debug=str(ERR),
@@ -184,14 +184,14 @@ def rfc4331(storage_share):
             )
 
         except requests.exceptions.SSLError as ERR:
-            raise exceptions.DSSConnectionError(
+            raise dynafed_storagestats.exceptions.ConnectionError(
                 error=ERR.__class__.__name__,
                 status_code="092",
                 debug=str(ERR),
             )
 
     except requests.ConnectionError as ERR:
-        raise exceptions.DSSConnectionError(
+        raise dynafed_storagestats.exceptions.ConnectionError(
             error=ERR.__class__.__name__,
             status_code="400",
             debug=str(ERR),
@@ -201,7 +201,7 @@ def rfc4331(storage_share):
         #We do some regex magic to get the filepath
         _certfile = str(ERR).split(":")[-1]
         _certfile = _certfile.replace(' ', '')
-        raise exceptions.DSSConnectionErrorDAVCertPath(
+        raise dynafed_storagestats.exceptions.ConnectionErrorDAVCertPath(
             certfile=_certfile,
             debug=str(ERR),
         )
@@ -213,7 +213,7 @@ def rfc4331(storage_share):
                 xml.process_rfc4331_response(_response, storage_share)
 
             else:
-                raise exceptions.DSSConnectionError(
+                raise dynafed_storagestats.exceptions.ConnectionError(
                     error='ConnectionError',
                     status_code=_response.status_code,
                     debug=_response.text,
@@ -251,7 +251,7 @@ def send_dav_request(storage_share, api_url, headers, data):
         timeout=int(storage_share.plugin_settings['conn_timeout'])
     )
     # Save time when data was obtained.
-    storage_share.stats['endtime'] = int(time.time())
+    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
     #Log contents of response
     _logger.debug(

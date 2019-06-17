@@ -4,7 +4,7 @@
 ## Classes ##
 #############
 
-class DSSBaseException(Exception):
+class BaseException(Exception):
     """
     Base exception class for dynafed_storagestats module. Formats the message
     and debug attibutes with the variables passed from the SubClasses.
@@ -28,7 +28,7 @@ class DSSBaseException(Exception):
 
 ### Defining Error Exception Classes ###
 
-class DSSBaseError(DSSBaseException):
+class BaseError(BaseException):
     """
     Base error exception Subclass.
     """
@@ -44,7 +44,7 @@ class DSSBaseError(DSSBaseException):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConfigFileError(DSSBaseError):
+class ConfigFileError(BaseError):
     """
     Base error exception subclass for anything relating to the config file(s).
     """
@@ -60,7 +60,7 @@ class DSSConfigFileError(DSSBaseError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConfigFileErrorIDMismatch(DSSConfigFileError):
+class ConfigFileErrorIDMismatch(ConfigFileError):
     """
     Exception error when a line in the configuration file under a specific
     endpoint does not match the given endpoint ID. Usually a typo.
@@ -76,7 +76,7 @@ class DSSConfigFileErrorIDMismatch(DSSConfigFileError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConfigFileErrorInvalidSetting(DSSConfigFileError):
+class ConfigFileErrorInvalidSetting(ConfigFileError):
     """
     Exception error when the value given for an setting in the configuration file
     does not match the 'valid' values specified in the 'validators' attribute.
@@ -90,7 +90,7 @@ class DSSConfigFileErrorInvalidSetting(DSSConfigFileError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConfigFileErrorMissingRequiredSetting(DSSConfigFileError):
+class ConfigFileErrorMissingRequiredSetting(ConfigFileError):
     """
     Exception error when a setting required by this module to obtain the Storage
     Stats is missing from the config files for the endpoint being processed.
@@ -104,7 +104,7 @@ class DSSConfigFileErrorMissingRequiredSetting(DSSConfigFileError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConfigFileErrorNoConfigFilesFound(DSSConfigFileError):
+class ConfigFileErrorNoConfigFilesFound(ConfigFileError):
     """
     Exception error when no configuration files have been found.
     """
@@ -116,7 +116,7 @@ class DSSConfigFileErrorNoConfigFilesFound(DSSConfigFileError):
 
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
-class DSSMemcachedError(DSSBaseError):
+class MemcachedError(BaseError):
     """
     Base error exception subclass for issues deailng with memcached
     communication.
@@ -132,7 +132,7 @@ class DSSMemcachedError(DSSBaseError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSMemcachedConnectionError(DSSMemcachedError):
+class MemcachedConnectionError(MemcachedError):
     """
     Exception error when script cannot connect to a memcached instance as
     requested.
@@ -145,7 +145,7 @@ class DSSMemcachedConnectionError(DSSMemcachedError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSMemcachedIndexError(DSSMemcachedError):
+class MemcachedIndexError(MemcachedError):
     """
     Exception error when the requested index in memcached cannot be found.
     """
@@ -157,7 +157,7 @@ class DSSMemcachedIndexError(DSSMemcachedError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSError(DSSBaseError):
+class Error(BaseError):
     """
     Base error exception subclass for issues dealing when failing to obtain
     the endpoint's storage stats.
@@ -174,7 +174,7 @@ class DSSError(DSSBaseError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConnectionError(DSSError):
+class ConnectionError(Error):
     """
     Exception error when there is an issue connecting to the endpoint's URN.
     """
@@ -186,7 +186,7 @@ class DSSConnectionError(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConnectionErrorAzureAPI(DSSError):
+class ConnectionErrorAzureAPI(Error):
     """
     Exception error when there is an issue connecting to Azure's API.
     """
@@ -199,7 +199,7 @@ class DSSConnectionErrorAzureAPI(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConnectionErrorDAVCertPath(DSSError):
+class ConnectionErrorDAVCertPath(Error):
     """
     Exception caused when there is an issue reading a client X509 certificate
     as configured in the config files for the endpoint being processed.
@@ -213,7 +213,7 @@ class DSSConnectionErrorDAVCertPath(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConnectionErrorInvalidSchema(DSSError):
+class ConnectionErrorInvalidSchema(Error):
     """
     Exception error when the URN's schema does not match any valid options.
     """
@@ -226,7 +226,7 @@ class DSSConnectionErrorInvalidSchema(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConnectionErrorS3API(DSSError):
+class ConnectionErrorS3API(Error):
     """
     Exception error when there is an issue connecting to an S3 API.
     """
@@ -239,7 +239,7 @@ class DSSConnectionErrorS3API(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSErrorAzureContainerNotFound(DSSError):
+class ErrorAzureContainerNotFound(Error):
     """
     Exception error when the Azure container requested could not be found.
     """
@@ -252,7 +252,7 @@ class DSSErrorAzureContainerNotFound(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSErrorDAVQuotaMethod(DSSError):
+class ErrorDAVQuotaMethod(Error):
     """
     Exception error when the DAV endpoint does not support the RFC 4331 method.
     """
@@ -264,7 +264,7 @@ class DSSErrorDAVQuotaMethod(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSErrorS3MissingBucketUsage(DSSError):
+class ErrorS3MissingBucketUsage(Error):
     """
     Exception error when no bucket usage stats were returned.
     """
@@ -276,7 +276,7 @@ class DSSErrorS3MissingBucketUsage(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSOfflineEndpointError(DSSError):
+class OfflineEndpointError(Error):
     """
     Exception error when and endpoint is detected to have been flagged as offline.
     """
@@ -288,7 +288,7 @@ class DSSOfflineEndpointError(DSSError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSUnsupportedPluginError(DSSConfigFileError):
+class UnsupportedPluginError(ConfigFileError):
     """
     Exception error when an endpoint of an unsupported type/protocol plugin
     is detected.
@@ -304,7 +304,7 @@ class DSSUnsupportedPluginError(DSSConfigFileError):
 
 ### Defining Warning Exception Classes ###
 
-class DSSBaseWarning(DSSBaseException):
+class BaseWarning(BaseException):
     """
     Base error exception Subclass.
     """
@@ -320,7 +320,7 @@ class DSSBaseWarning(DSSBaseException):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConfigFileWarning(DSSBaseWarning):
+class ConfigFileWarning(BaseWarning):
     """
     Base warning exception subclass for anything relating to the config file(s).
     """
@@ -334,7 +334,7 @@ class DSSConfigFileWarning(DSSBaseWarning):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSConfigFileWarningMissingSetting(DSSConfigFileWarning):
+class ConfigFileWarningMissingSetting(ConfigFileWarning):
     """
     Exception warning when an setting not flagged as required by this module
     to obtain the storage stats is missing from the config file(s). Prints
@@ -350,7 +350,7 @@ class DSSConfigFileWarningMissingSetting(DSSConfigFileWarning):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSWarning(DSSBaseWarning):
+class Warning(BaseWarning):
     """
     Base warning exception subclass for issues dealing when non-critical errors
     are detected when trying to obtain the endpoint's storage stats.
@@ -367,7 +367,7 @@ class DSSWarning(DSSBaseWarning):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSQuotaWarning(DSSWarning):
+class QuotaWarning(Warning):
     """
     Exception warning when no quota has been provided by the endpoint's API
     when requested. Prints out the default being used as specified in the
@@ -382,7 +382,7 @@ class DSSQuotaWarning(DSSWarning):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSCephS3QuotaDisabledWarning(DSSWarning):
+class CephS3QuotaDisabledWarning(Warning):
     """
     Exception warning when contacting a Ceph S3 Admin API and it is detected
     that no quota has been enabled for the bucket.
@@ -396,7 +396,7 @@ class DSSCephS3QuotaDisabledWarning(DSSWarning):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-class DSSDAVZeroQuotaWarning(DSSWarning):
+class DAVZeroQuotaWarning(Warning):
     """
     Exception warning when a DAV based endpoint utilizing RFC4331 returns
     quota-available-bytes as 0. It well could mean there is no more space

@@ -44,7 +44,31 @@ def reports(ARGS):
     ARGS -- argparse object from dynafed_storagestats.args.parse_args()
 
     """
-    print("In development, nothing useful yet.")
+    # Get list of StorageShare objects from the configuration files.
+    storage_shares = configloader.get_storage_shares(
+        ARGS.config_path
+    )
+
+    # Create a list of StorageEndpoint objects with the StorageShares to check,
+    # based on user input or unique URL's.
+    storage_endpoints = configloader.get_storage_endpoints(
+        storage_shares,
+        ARGS.endpoint
+    )
+
+    # This tuple is necessary for the starmap function to send multiple
+    # arguments to the process_storagestats function.
+    storage_endpoints_list_and_args_tuple = [
+        (storage_endpoint, ARGS) for storage_endpoint in storage_endpoints
+    ]
+
+    # Process each storage endpoints' shares using multithreading.
+    # Number of threads to use.
+    pool = ThreadPool(len(storage_endpoints_list_and_args_tuple))
+    pool.starmap(
+        helpers.process_storagereports,
+        storage_endpoints_list_and_args_tuple
+    )
 
 
 def stats(ARGS):
@@ -65,12 +89,19 @@ def stats(ARGS):
         ARGS.config_path
     )
 
-    # Flag storage shares that have been marked offline by Dynafed.
-    helpers.get_connectionstats(
+    # Obtain current stats, if any, from memcached.
+    current_stats = helpers.get_currentstats(
         storage_shares,
         ARGS.memcached_ip,
         ARGS.memcached_port
     )
+
+    if current_stats is not None:
+        # Flag storage shares that have been marked offline by Dynafed.
+        helpers.check_connectionstats(storage_shares, current_stats)
+
+        # Flag storage shares that are under-due their period.
+        helpers.check_frequency(storage_shares, current_stats)
 
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.

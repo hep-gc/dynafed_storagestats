@@ -55,3 +55,19 @@ class AzureStorageShare(dynafed_storagestats.base.StorageShare):
         if self.plugin_settings['storagestats.api'].lower() == 'generic' \
         or self.plugin_settings['storagestats.api'].lower() == 'list-blobs':
             azurehelpers.list_blobs(self)
+
+
+    def get_filelist(self, delta=1, prefix='', report_file='/tmp/filelist_report.txt'):
+        """Contact endpoint and generate a file-list.
+
+        Generates a list using the prefix var to select specific keys.
+
+        """
+
+        azurehelpers.list_blobs(
+            self,
+            delta,
+            prefix,
+            report_file=report_file,
+            request='filelist'
+        )

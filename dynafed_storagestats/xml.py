@@ -1,13 +1,14 @@
 """Functions to deal with the formatting and handling  of XML data."""
 
+import datetime
 import copy
-import time
+
 import uuid
 
 from io import BytesIO
 from lxml import etree
 
-from dynafed_storagestats import exceptions
+import dynafed_storagestats.exceptions
 
 #############
 # Functions #
@@ -95,7 +96,7 @@ def format_StAR(storage_endpoints):
             # update XML
             rec = etree.SubElement(xmlroot, SR+'StorageUsageRecord')
             rid = etree.SubElement(rec, SR+'RecordIdentity')
-            rid.set(SR+"createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time())))
+            rid.set(SR+"createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(datetime.datetime.now().timestamp())))
 
             # StAR StorageShare field (Optional)
             if share.star_fields['storage_share']:
@@ -207,7 +208,7 @@ def process_rfc4331_response(response, storage_share):
     # Check that we got the requested information. If not, then
     # the method is not supported.
     if _node is None:
-        raise exceptions.DSSErrorDAVQuotaMethod(
+        raise dynafed_storagestats.exceptions.ErrorDAVQuotaMethod(
             error="UnsupportedMethod"
         )
 
@@ -217,16 +218,20 @@ def process_rfc4331_response(response, storage_share):
 
     # Determine which value to use for the quota.
     if storage_share.plugin_settings['storagestats.quota'] == 'api':
-        storage_share.stats['quota'] = storage_share.stats['bytesused'] + storage_share.stats['bytesfree']
+        storage_share.stats['quota'] = (storage_share.stats['bytesused']
+                                        + storage_share.stats['bytesfree'])
 
         # If quota-available-bytes is reported as '0' could be
         # because no quota is provided, or the endpoint is
         # actually full. We warn for the operator to make a
         # decision.
         if storage_share.stats['bytesfree'] is 0:
-            raise exceptions.DSSDAVZeroQuotaWarning(
+            raise dynafed_storagestats.exceptions.DAVZeroQuotaWarning(
                 debug=str(response.content)
             )
 
     else:
         storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+        # Calculate free space using pre-set quota.
+        storage_share.stats['bytesfree'] = (storage_share.stats['quota']
+                                            - storage_share.stats['bytesused'])
