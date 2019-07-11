@@ -4,6 +4,7 @@ import os
 import logging
 
 import dynafed_storagestats.exceptions
+from dynafed_storagestats import bdii
 from dynafed_storagestats import memcache
 from dynafed_storagestats import json
 from dynafed_storagestats import xml
@@ -11,6 +12,20 @@ from dynafed_storagestats import xml
 #############
 # Functions #
 #############
+
+def to_bdii(storage_endpoints, filename, path):
+    """Call helper functions to create a BDII file with site information.
+
+    Arguments:
+    storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
+    filename -- Name of the file. If not provided
+    path -- Path to write the file to file to.
+
+    """
+    ############# Creating loggers ################
+
+    ###############################################
+
 
 def to_json(storage_endpoints, filename, path):
     """Call helper functions to create a JSON file with storage stats.
