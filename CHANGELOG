@@ -196,3 +196,5 @@ v1.0.12
   CHANGE: Moved -v switch to the positional arguments, now it needs to be placed
           after them instead of in-between.
   ADDED: Exception handling when unable to create report files.
+v1.0.13
+  ADDED: Added storagestats.frequency error code to README.md
