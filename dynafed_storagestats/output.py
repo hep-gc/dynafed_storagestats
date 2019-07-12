@@ -13,8 +13,8 @@ from dynafed_storagestats import xml
 # Functions #
 #############
 
-def to_bdii(storage_endpoints, filename, path):
-    """Call helper functions to create a BDII file with site information.
+def to_ldif(storage_endpoints, filename, path):
+    """Call helper functions to create an LDIF file with site information.
 
     Arguments:
     storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
