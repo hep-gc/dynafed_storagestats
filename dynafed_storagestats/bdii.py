@@ -127,8 +127,11 @@ def format_bdii(storage_endpoints, hostname="localhost"):
 
     for _storage_endpoint in storage_endpoints:
         for _storage_share in _storage_endpoint.storage_shares:
+
+            _share_mountpoint = _storage_share.plugin_settings['xlatepfx'].split()[0]
+
             _glue_storage_share = {
-                'GLUE2ShareID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + '/' + 'atlas/atlasscratchdisk',
+                'GLUE2ShareID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + _share_mountpoint,
                 'objectClass': ['GLUE2Share', 'GLUE2StorageShare'],
                 'GLUE2StorageShareAccessLatency': 'online',
                 'GLUE2StorageShareExpirationMode': 'neverexpire',
@@ -140,7 +143,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
             _glue_storage_share_dn = 'GLUE2ShareID=' + _glue_storage_share['GLUE2ShareID'] + ',' + _glue_storage_service_dn
 
             _glue_storage_share_capacity = {
-                'GLUE2StorageShareCapacityID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + '/' + 'atlas/atlasscratchdisk' + '/disk',
+                'GLUE2StorageShareCapacityID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + _share_mountpoint + '/disk',
                 'objectClass': 'GLUE2StorageShareCapacity',
                 'GLUE2StorageShareCapacityType': 'online',
                 'GLUE2StorageShareCapacityStorageShareForeignKey': _glue_storage_share['GLUE2ShareID'],
@@ -155,8 +158,8 @@ def format_bdii(storage_endpoints, hostname="localhost"):
             _glue_storage_service_capacity['GLUE2StorageServiceCapacityFreeSize'] += _glue_storage_share_capacity['GLUE2StorageShareCapacityFreeSize']
             _glue_storage_service_capacity['GLUE2StorageServiceCapacityUsedSize'] += _glue_storage_share_capacity['GLUE2StorageShareCapacityUsedSize']
 
-            _glue_storage_shares.append([_glue_storage_share, _glue_storage_share_dn])
-            _glue_storage_share_capacities.append([_glue_storage_share_capacity, _glue_storage_share_capacity_dn])
+            _glue_storage_shares.append([_glue_storage_share_dn, _glue_storage_share])
+            _glue_storage_share_capacities.append([_glue_storage_share_capacity_dn, _glue_storage_share_capacity])
 
     # Let the printing begin
     print_bdii(_glue_organization_dn, _glue_organization)
@@ -175,11 +178,11 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     print("\n")
 
     for _share in _glue_storage_shares:
-        print_bdii(_glue_storage_share_dn, _glue_storage_share)
+        print_bdii(_share[0], _share[1])
         print("\n")
 
     for _capacity in _glue_storage_share_capacities:
-        print_bdii(_glue_storage_share_capacity_dn, _glue_storage_share_capacity)
+        print_bdii(_capacity[0], _capacity[1])
         print("\n")
 
 
