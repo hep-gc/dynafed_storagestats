@@ -142,6 +142,9 @@ def stats(ARGS):
     if ARGS.to_plaintext:
         output.to_plaintext(storage_endpoints, ARGS.to_plaintext, ARGS.output_path)
 
+    if ARGS.to_bdii:
+        output.to_ldif(storage_endpoints, ARGS.to_bdii, ARGS.output_path)
+
 
 #############
 # Self-Test #
