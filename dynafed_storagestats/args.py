@@ -247,6 +247,18 @@ def add_stats_subparser(subparser):
 
     # Output Options
     group_output = parser.add_argument_group("Output options")
+
+    group_output.add_argument(
+        '--bdii',
+        action='store',
+        const="dynafed_storagestats.ldif",
+        default=False,
+        dest='to_bdii',
+        nargs='?',
+        help="Set to output stats to ldif file. Add argument to set filename." \
+             "Default: dynafed_storagestats.ldif"
+             "!!In development!!"
+    )
     group_output.add_argument(
         '--debug',
         action='store_true',
