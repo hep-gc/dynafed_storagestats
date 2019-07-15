@@ -121,26 +121,73 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     }
     _glue_access_policy_dn = 'GLUE2PolicyID=' + _glue_access_policy['GLUE2PolicyID'] + ',' + _glue_storage_endpoint_dn
 
-    _glue_storage_share = {
-        'GLUE2ShareID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + '/' + 'atlas/atlasscratchdisk',
-        'objectClass': ['GLUE2Share', 'GLUE2StorageShare'],
-        'GLUE2StorageShareAccessLatency': 'online',
-        'GLUE2StorageShareExpirationMode': 'neverexpire',
-        'GLUE2StorageShareServingState': 'production',
-        'GLUE2StorageShareSharingID': 'dedicated',
-        'GLUE2StorageShareStorageServiceForeignKey': _glue_storage_service['GLUE2ServiceID'],
-        'GLUE2EntityCreationTime': NOW,
-    }
-    _glue_storage_share_dn = 'GLUE2ShareID=' + _glue_storage_share['GLUE2ShareID'] + ',' + _glue_storage_service_dn
+    # For each storage share
+    _glue_storage_shares = []
+    _glue_storage_share_capacities = []
 
-    _glue_storage_share_capacity = {
-        'GLUE2StorageShareCapacityID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + '/' + 'atlas/atlasscratchdisk' + '/disk',
-        'objectClass': 'GLUE2StorageShareCapacity',
-        'GLUE2StorageShareCapacityType': 'online',
-        'GLUE2StorageShareCapacityStorageShareForeignKey': _glue_storage_share['GLUE2ShareID'],
-        'GLUE2StorageShareCapacityFreeSize': _storage_share.stats['bytesfree'],
-        'GLUE2StorageShareCapacityTotalSize': _storage_share.stats['quota'],
-        'GLUE2StorageShareCapacityUsedSize': _storage_share.stats['bytesused'],
-        'GLUE2EntityCreationTime': NOW,
-    }
-    _glue_storage_share_capacity_dn = 'GLUE2StorageShareCapacityID=' + _glue_storage_share_capacity['GLUE2StorageShareCapacityID'] + ',' + _glue_storage_share_dn
+    for _storage_endpoint in storage_endpoints:
+        for _storage_share in _storage_endpoint.storage_shares:
+            _glue_storage_share = {
+                'GLUE2ShareID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + '/' + 'atlas/atlasscratchdisk',
+                'objectClass': ['GLUE2Share', 'GLUE2StorageShare'],
+                'GLUE2StorageShareAccessLatency': 'online',
+                'GLUE2StorageShareExpirationMode': 'neverexpire',
+                'GLUE2StorageShareServingState': 'production',
+                'GLUE2StorageShareSharingID': 'dedicated',
+                'GLUE2StorageShareStorageServiceForeignKey': _glue_storage_service['GLUE2ServiceID'],
+                'GLUE2EntityCreationTime': NOW,
+            }
+            _glue_storage_share_dn = 'GLUE2ShareID=' + _glue_storage_share['GLUE2ShareID'] + ',' + _glue_storage_service_dn
+
+            _glue_storage_share_capacity = {
+                'GLUE2StorageShareCapacityID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + '/' + 'atlas/atlasscratchdisk' + '/disk',
+                'objectClass': 'GLUE2StorageShareCapacity',
+                'GLUE2StorageShareCapacityType': 'online',
+                'GLUE2StorageShareCapacityStorageShareForeignKey': _glue_storage_share['GLUE2ShareID'],
+                'GLUE2StorageShareCapacityFreeSize': _storage_share.stats['bytesfree'],
+                'GLUE2StorageShareCapacityTotalSize': _storage_share.stats['quota'],
+                'GLUE2StorageShareCapacityUsedSize': _storage_share.stats['bytesused'],
+                'GLUE2EntityCreationTime': NOW,
+            }
+            _glue_storage_share_capacity_dn = 'GLUE2StorageShareCapacityID=' + _glue_storage_share_capacity['GLUE2StorageShareCapacityID'] + ',' + _glue_storage_share_dn
+            # Add the capacities:
+            _glue_storage_service_capacity['GLUE2StorageServiceCapacityTotalSize'] += _glue_storage_share_capacity['GLUE2StorageShareCapacityTotalSize']
+            _glue_storage_service_capacity['GLUE2StorageServiceCapacityFreeSize'] += _glue_storage_share_capacity['GLUE2StorageShareCapacityFreeSize']
+            _glue_storage_service_capacity['GLUE2StorageServiceCapacityUsedSize'] += _glue_storage_share_capacity['GLUE2StorageShareCapacityUsedSize']
+
+            _glue_storage_shares.append([_glue_storage_share, _glue_storage_share_dn])
+            _glue_storage_share_capacities.append([_glue_storage_share_capacity, _glue_storage_share_capacity_dn])
+
+    # Let the printing begin
+    print_bdii(_glue_organization_dn, _glue_organization)
+    print("\n")
+    print_bdii(_glue_group_dn, _glue_group)
+    print("\n")
+    print_bdii(_glue_resource_dn, _glue_resource)
+    print("\n")
+    print_bdii(_glue_storage_service_dn, _glue_storage_service)
+    print("\n")
+    print_bdii(_glue_storage_service_capacity_dn, _glue_storage_service_capacity)
+    print("\n")
+    print_bdii(_glue_storage_endpoint_dn, _glue_storage_endpoint)
+    print("\n")
+    print_bdii(_glue_access_policy_dn, _glue_access_policy)
+    print("\n")
+
+    for _share in _glue_storage_shares:
+        print_bdii(_glue_storage_share_dn, _glue_storage_share)
+        print("\n")
+
+    for _capacity in _glue_storage_share_capacities:
+        print_bdii(_glue_storage_share_capacity_dn, _glue_storage_share_capacity)
+        print("\n")
+
+
+def print_bdii(dn, body):
+    print('dn: %s' % (dn))
+    for key, val in body.items():
+        if type(val) is list:
+            for v in val:
+                print('%s: %s' % (key, v))
+        else:
+            print('%s: %s' % (key, val))
