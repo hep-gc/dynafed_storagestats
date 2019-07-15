@@ -44,7 +44,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
 
 
     """
-    NOW = int(datetime.datetime.now().timestamp())
+    NOW = '{0:%Y-%m-%dT%H:%M:%SZ}'.format(datetime.datetime.utcnow())
 
     _dynafed_mountpoint = 'dynafed'
     _entity_name = 'CA-TRIUMF-DYNAFED'
