@@ -25,7 +25,8 @@ def to_ldif(storage_endpoints, filename, path):
     ############# Creating loggers ################
 
     ###############################################
-
+    _hostname = os.uname()[1]
+    bdii.format_bdii(storage_endpoints, _hostname)
 
 def to_json(storage_endpoints, filename, path):
     """Call helper functions to create a JSON file with storage stats.
