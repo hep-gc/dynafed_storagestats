@@ -97,7 +97,7 @@ def get_conf_files(config_path):
     return _config_files
 
 
-def get_storage_endpoints(storage_share_objects, storage_shares_mask=True):
+def get_storage_endpoints(storage_share_objects, storage_shares_mask=['all']):
     """Return list of StorageEndpoint objects from a list of StorageShares.
 
     Gets a list of StorageShare objects, usually obtained from running
