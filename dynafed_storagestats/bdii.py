@@ -77,7 +77,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
         'GLUE2ServiceAdminDomainForeignKey': _entity_name,
         'GLUE2ServiceCapability': 'data.access.flatfiles',
         'GLUE2ServiceQualityLevel': 'testing',
-        'GLUE2ServiceType': 'org.dynafed.storage',
+        'GLUE2ServiceType': 'dynafed',
         'GLUE2EntityCreationTime': NOW,
     }
     _glue_storage_service_dn = 'GLUE2ServiceID=' + _glue_storage_service['GLUE2ServiceID'] + ',' + _glue_resource_dn
