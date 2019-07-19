@@ -49,6 +49,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     _dynafed_mountpoint = 'dynafed'
     _entity_name = 'CA-TRIUMF-DYNAFED'
     _interface = 'https'
+    _interface_version = '1.1'
     _port = '443'
     _policy_scheme = 'basic'
 
@@ -83,7 +84,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     _glue_storage_service_dn = 'GLUE2ServiceID=' + _glue_storage_service['GLUE2ServiceID'] + ',' + _glue_resource_dn
 
     _glue_storage_service_capacity = {
-        'GLUE2StorageServiceCapacityID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/disk',
+        'GLUE2StorageServiceCapacityID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/ssc/disk',
         'objectClass': 'GLUE2StorageServiceCapacity',
         'GLUE2StorageServiceCapacityType': 'online',
         'GLUE2StorageServiceCapacityTotalSize': 0,
@@ -94,15 +95,25 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     }
     _glue_storage_service_capacity_dn = 'GLUE2StorageServiceCapacityID=' + _glue_storage_service_capacity['GLUE2StorageServiceCapacityID'] + ',' + _glue_storage_service_dn
 
+    _glue_storage_access_protocol = {
+        'GLUE2StorageAccessProtocolID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/ap/' + _interface + '/' + _interface_version,
+        'objectClass': 'GLUE2StorageAccessProtocol',
+        'GLUE2StorageAccessProtocolStorageServiceForeignKey': _glue_storage_service['GLUE2ServiceID'],
+        'GLUE2StorageAccessProtocolType': _interface,
+        'GLUE2StorageAccessProtocolVersion': _interface_version,
+        'GLUE2EntityCreationTime': NOW,
+    }
+    _glue_storage_access_protocol_dn = 'GLUE2StorageAccessProtocolID=' + _glue_storage_access_protocol['GLUE2StorageAccessProtocolID'] + ',' + _glue_storage_service_dn
+
     _glue_storage_endpoint = {
-        'GLUE2EndpointID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface,
+        'GLUE2EndpointID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/ep/' + _interface + '/' + _interface_version,
         'objectClass': ['GLUE2Endpoint', 'GLUE2StorageEndpoint'],
         'GLUE2EndpointCapability': 'data.access.flatfiles',
         'GLUE2EndpointHealthState': 'ok',
         'GLUE2EndpointImplementationName': 'dynafed',
         'GLUE2EndpointImplementationVersion': '1.5.0',
         'GLUE2EndpointInterfaceName': _interface,
-        'GLUE2EndpointInterfaceVersion': 1.1,
+        'GLUE2EndpointInterfaceVersion': _interface_version,
         'GLUE2EndpointQualityLevel': 'testing',
         'GLUE2EndpointServiceForeignKey': _glue_storage_service['GLUE2ServiceID'],
         'GLUE2EndpointServingState': 'production',
@@ -112,7 +123,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     _glue_storage_endpoint_dn = 'GLUE2EndpointID=' + _glue_storage_endpoint['GLUE2EndpointID'] + ',' + _glue_storage_service_dn
 
     _glue_access_policy = {
-        'GLUE2PolicyID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + '/' + _policy_scheme,
+        'GLUE2PolicyID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/ep/ap/' + _policy_scheme,
         'objectClass': ['GLUE2Policy', 'GLUE2AccessPolicy'],
         'GLUE2AccessPolicyEndpointForeignKey': _glue_storage_endpoint['GLUE2EndpointID'],
         'GLUE2PolicyRule': ['vo:atlas', 'vo:ops', 'vo:dteam'],
@@ -131,7 +142,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
             _share_mountpoint = _storage_share.plugin_settings['xlatepfx'].split()[0]
 
             _glue_storage_share = {
-                'GLUE2ShareID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + _share_mountpoint,
+                'GLUE2ShareID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/ss' + _share_mountpoint,
                 'objectClass': ['GLUE2Share', 'GLUE2StorageShare'],
                 'GLUE2StorageShareAccessLatency': 'online',
                 'GLUE2StorageShareExpirationMode': 'neverexpire',
@@ -143,7 +154,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
             _glue_storage_share_dn = 'GLUE2ShareID=' + _glue_storage_share['GLUE2ShareID'] + ',' + _glue_storage_service_dn
 
             _glue_storage_share_capacity = {
-                'GLUE2StorageShareCapacityID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/' + _interface + _share_mountpoint + '/disk',
+                'GLUE2StorageShareCapacityID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/ss' + _share_mountpoint + '/disk',
                 'objectClass': 'GLUE2StorageShareCapacity',
                 'GLUE2StorageShareCapacityType': 'online',
                 'GLUE2StorageShareCapacityStorageShareForeignKey': _glue_storage_share['GLUE2ShareID'],
@@ -171,6 +182,8 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     print_bdii(_glue_storage_service_dn, _glue_storage_service)
     print("\n")
     print_bdii(_glue_storage_service_capacity_dn, _glue_storage_service_capacity)
+    print("\n")
+    print_bdii(_glue_storage_access_protocol_dn, _glue_storage_access_protocol)
     print("\n")
     print_bdii(_glue_storage_endpoint_dn, _glue_storage_endpoint)
     print("\n")
