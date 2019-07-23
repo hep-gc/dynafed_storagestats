@@ -52,6 +52,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     _interface_version = '1.1'
     _port = '443'
     _policy_scheme = 'basic'
+    _retention_policy = 'replica' #http://glue20.web.cern.ch/glue20/#b37
 
     _glue_organization = {
         'objectClass': 'organization',
@@ -140,12 +141,27 @@ def format_bdii(storage_endpoints, hostname="localhost"):
         for _storage_share in _storage_endpoint.storage_shares:
 
             _share_mountpoint = _storage_share.plugin_settings['xlatepfx'].split()[0]
+            # We need to convert the bytes into GB and also if a '-1' is present
+            # indicating error obtaining the data, then it must be transformed
+            # to the Glue2 reference placeholder of 999,999,999,999,999,999
+            # http://glue20.web.cern.ch/glue20/#a8
+
+            _stats = {
+                      'bytesfree': 999999999999999999,
+                      'quota': 999999999999999999,
+                      'bytesused': 999999999999999999,
+            }
+
+            for _stat in ['bytesfree','quota','bytesused']:
+                if _storage_share.stats[_stat] != -1:
+                    _stats[_stat] = int(_storage_share.stats[_stat] * 1e-9)
 
             _glue_storage_share = {
                 'GLUE2ShareID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/ss' + _share_mountpoint,
                 'objectClass': ['GLUE2Share', 'GLUE2StorageShare'],
                 'GLUE2StorageShareAccessLatency': 'online',
                 'GLUE2StorageShareExpirationMode': 'neverexpire',
+                'GLUE2StorageShareRetentionPolicy': _retention_policy,
                 'GLUE2StorageShareServingState': 'production',
                 'GLUE2StorageShareSharingID': 'dedicated',
                 'GLUE2StorageShareStorageServiceForeignKey': _glue_storage_service['GLUE2ServiceID'],
@@ -158,9 +174,10 @@ def format_bdii(storage_endpoints, hostname="localhost"):
                 'objectClass': 'GLUE2StorageShareCapacity',
                 'GLUE2StorageShareCapacityType': 'online',
                 'GLUE2StorageShareCapacityStorageShareForeignKey': _glue_storage_share['GLUE2ShareID'],
-                'GLUE2StorageShareCapacityFreeSize': _storage_share.stats['bytesfree'],
-                'GLUE2StorageShareCapacityTotalSize': _storage_share.stats['quota'],
-                'GLUE2StorageShareCapacityUsedSize': _storage_share.stats['bytesused'],
+                'GLUE2StorageShareCapacityFreeSize': _stats['bytesfree'],
+                'GLUE2StorageShareCapacityTotalSize': _stats['quota'],
+                'GLUE2StorageShareCapacityUsedSize': _stats['bytesused'],
+                'GLUE2StorageShareRetentionPolicy': _retention_policy,
                 'GLUE2EntityCreationTime': NOW,
             }
             _glue_storage_share_capacity_dn = 'GLUE2StorageShareCapacityID=' + _glue_storage_share_capacity['GLUE2StorageShareCapacityID'] + ',' + _glue_storage_share_dn
