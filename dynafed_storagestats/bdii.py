@@ -186,7 +186,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     print("\n")
     print_bdii(_glue_storage_service_capacity_dn, _glue_storage_service_capacity)
     print("\n")
-    # print_bdii(_glue_storage_access_protocol_dn, _glue_storage_access_protocol)
+    print_bdii(_glue_storage_access_protocol_dn, _glue_storage_access_protocol)
     print("\n")
     print_bdii(_glue_storage_endpoint_dn, _glue_storage_endpoint)
     print("\n")
