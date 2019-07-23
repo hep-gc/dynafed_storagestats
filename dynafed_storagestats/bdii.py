@@ -141,6 +141,20 @@ def format_bdii(storage_endpoints, hostname="localhost"):
         for _storage_share in _storage_endpoint.storage_shares:
 
             _share_mountpoint = _storage_share.plugin_settings['xlatepfx'].split()[0]
+            # We need to convert the bytes into GB and also if a '-1' is present
+            # indicating error obtaining the data, then it must be transformed
+            # to the Glue2 reference placeholder of 999,999,999,999,999,999
+            # http://glue20.web.cern.ch/glue20/#a8
+
+            _stats = {
+                      bytesfree = 999,999,999,999,999,999,
+                      quota = 999,999,999,999,999,999,
+                      bytesused = 999,999,999,999,999,999,
+            }
+
+            for _stat in ['bytesfree','quota','bytesused']:
+                if _storage_share.stats[_stat] != -1:
+                    _stats[_stat] = int(_storage_share.stats[_stat] * 1e-9)
 
             _glue_storage_share = {
                 'GLUE2ShareID': 'glue:' + hostname + '/' + _dynafed_mountpoint + '/ss' + _share_mountpoint,
