@@ -174,9 +174,9 @@ def format_bdii(storage_endpoints, hostname="localhost"):
                 'objectClass': 'GLUE2StorageShareCapacity',
                 'GLUE2StorageShareCapacityType': 'online',
                 'GLUE2StorageShareCapacityStorageShareForeignKey': _glue_storage_share['GLUE2ShareID'],
-                'GLUE2StorageShareCapacityFreeSize': _storage_share.stats['bytesfree'],
-                'GLUE2StorageShareCapacityTotalSize': _storage_share.stats['quota'],
-                'GLUE2StorageShareCapacityUsedSize': _storage_share.stats['bytesused'],
+                'GLUE2StorageShareCapacityFreeSize': _stats['bytesfree'],
+                'GLUE2StorageShareCapacityTotalSize': _stats['quota'],
+                'GLUE2StorageShareCapacityUsedSize': _stats['bytesused'],
                 'GLUE2StorageShareRetentionPolicy': _retention_policy,
                 'GLUE2EntityCreationTime': NOW,
             }
