@@ -52,6 +52,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     _interface_version = '1.1'
     _port = '443'
     _policy_scheme = 'basic'
+    _retention_policy = 'replica' #http://glue20.web.cern.ch/glue20/#b37
 
     _glue_organization = {
         'objectClass': 'organization',
@@ -146,6 +147,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
                 'objectClass': ['GLUE2Share', 'GLUE2StorageShare'],
                 'GLUE2StorageShareAccessLatency': 'online',
                 'GLUE2StorageShareExpirationMode': 'neverexpire',
+                'GLUE2StorageShareRetentionPolicy': _retention_policy,
                 'GLUE2StorageShareServingState': 'production',
                 'GLUE2StorageShareSharingID': 'dedicated',
                 'GLUE2StorageShareStorageServiceForeignKey': _glue_storage_service['GLUE2ServiceID'],
@@ -161,6 +163,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
                 'GLUE2StorageShareCapacityFreeSize': _storage_share.stats['bytesfree'],
                 'GLUE2StorageShareCapacityTotalSize': _storage_share.stats['quota'],
                 'GLUE2StorageShareCapacityUsedSize': _storage_share.stats['bytesused'],
+                'GLUE2StorageShareRetentionPolicy': _retention_policy,
                 'GLUE2EntityCreationTime': NOW,
             }
             _glue_storage_share_capacity_dn = 'GLUE2StorageShareCapacityID=' + _glue_storage_share_capacity['GLUE2StorageShareCapacityID'] + ',' + _glue_storage_share_dn
@@ -184,7 +187,7 @@ def format_bdii(storage_endpoints, hostname="localhost"):
     print_bdii(_glue_storage_service_capacity_dn, _glue_storage_service_capacity)
     print("\n")
     # print_bdii(_glue_storage_access_protocol_dn, _glue_storage_access_protocol)
-    # print("\n")
+    print("\n")
     print_bdii(_glue_storage_endpoint_dn, _glue_storage_endpoint)
     print("\n")
     print_bdii(_glue_access_policy_dn, _glue_access_policy)
