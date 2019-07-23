@@ -147,9 +147,9 @@ def format_bdii(storage_endpoints, hostname="localhost"):
             # http://glue20.web.cern.ch/glue20/#a8
 
             _stats = {
-                      bytesfree = 999,999,999,999,999,999,
-                      quota = 999,999,999,999,999,999,
-                      bytesused = 999,999,999,999,999,999,
+                      bytesfree = 999999999999999999,
+                      quota = 999999999999999999,
+                      bytesused = 999999999999999999,
             }
 
             for _stat in ['bytesfree','quota','bytesused']:
