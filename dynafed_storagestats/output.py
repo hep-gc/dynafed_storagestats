@@ -42,13 +42,14 @@ def to_json(storage_endpoints, filename, path):
         output.close()
 
 
-def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'):
+def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211', ttl_multiplier=10):
     """Upload the StorageShare storage stats to a memcached instance.
 
     Arguments:
     storage_share  -- dynafed_storagestats StorageShare object.
     memcached_ip   -- memcached instance IP.
     memcahced_port -- memcached instance Port.
+    ttl_multiplier -- multiplier to calculate memcache data ttl.
 
     Memcache output is a string of the following variables concatenated by '%%':
     storage_share.id
@@ -64,6 +65,12 @@ def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'
     ###############################################
 
     _memcached_index = "Ugrstoragestats_" + storage_share.id
+
+    # Calculate how long to store data in memcached as a multiple of the check
+    # frequency. However the minimum us set to 1 hour.
+    _memcached_ttl = int(storage_share.plugin_settings['storagestats.frequency']) * ttl_multiplier
+    if _memcached_ttl < 3600:
+        _memcached_ttl = 3600
 
     # Join stats to create the string to upload.
     _storagestats = '%%'.join([
@@ -91,12 +98,18 @@ def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'
         storage_share.id,
         _storagestats
     )
+    _logger.debug(
+        "[%s]Time to live for memcached data: %s",
+        storage_share.id,
+        _memcached_ttl
+    )
 
     memcache.set(
         _memcached_index,
         _storagestats,
         memcached_ip,
-        memcached_port
+        memcached_port,
+        _memcached_ttl
     )
 
 
