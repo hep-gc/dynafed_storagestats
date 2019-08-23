@@ -226,19 +226,7 @@ def cloudwatch(storage_share):
     _seconds_in_one_day = 86400
 
     # Generate boto client to query AWS API.
-    _connection = boto3.client(
-        'cloudwatch',
-        region_name=storage_share.plugin_settings['s3.region'],
-        aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
-        aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
-        use_ssl=True,
-        verify=True,
-        config=Config(
-            signature_version=storage_share.plugin_settings['s3.signature_ver'],
-            connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
-            retries=dict(max_attempts=0)
-        ),
-    )
+    _connection = get_cloudwatch_boto_client(storage_share)
 
     # Define cloudwatch metrics to probe. 'Result' key will be used to store the
     # metric. For the other keys, if unsure, try the following in cli to obtain
@@ -376,6 +364,78 @@ def cloudwatch(storage_share):
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
+def get_cloudwatch_boto_client(storage_share):
+        """Return boto client from storage share object.
+
+        Arguments:
+        storage_share -- dynafed_storagestats StorageShare object.
+
+        Returns:
+        botocore.client.cloudwatch
+
+        """
+        # Generate boto client to query AWS API.
+        _connection = boto3.client(
+            'cloudwatch',
+            region_name=storage_share.plugin_settings['s3.region'],
+            aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
+            aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
+            use_ssl=True,
+            verify=True,
+            config=Config(
+                signature_version=storage_share.plugin_settings['s3.signature_ver'],
+                connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
+                retries=dict(max_attempts=0)
+            ),
+        )
+
+        return _connection
+
+
+def get_s3_boto_client(storage_share):
+        """Return boto client from storage share object.
+
+        Arguments:
+        storage_share -- dynafed_storagestats StorageShare object.
+
+        Returns:
+        botocore.client.S3
+
+        """
+        # Generate the API's URL to contact.
+        if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
+        or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
+
+            _api_url = '{scheme}://{netloc}'.format(
+                scheme=storage_share.uri['scheme'],
+                netloc=storage_share.uri['netloc']
+            )
+
+        else:
+            _api_url = '{scheme}://{domain}'.format(
+                scheme=storage_share.uri['scheme'],
+                domain=storage_share.uri['domain']
+            )
+
+        # Generate boto client to query S3 endpoint.
+        _connection = boto3.client(
+            's3',
+            region_name=storage_share.plugin_settings['s3.region'],
+            endpoint_url=_api_url,
+            aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
+            aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
+            use_ssl=True,
+            verify=storage_share.plugin_settings['ssl_check'],
+            config=Config(
+                signature_version=storage_share.plugin_settings['s3.signature_ver'],
+                connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
+                retries=dict(max_attempts=0)
+            ),
+        )
+
+        return _connection
+
+
 def list_objects(storage_share, delta=1, prefix='',
                  report_file='/tmp/filelist_report.txt',
                  request='storagestats'
@@ -395,36 +455,8 @@ def list_objects(storage_share, delta=1, prefix='',
     _logger = logging.getLogger(__name__)
     ###############################################
 
-    # Generate the API's URL to contact.
-    if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
-    or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
-
-        _api_url = '{scheme}://{netloc}'.format(
-            scheme=storage_share.uri['scheme'],
-            netloc=storage_share.uri['netloc']
-        )
-
-    else:
-        _api_url = '{scheme}://{domain}'.format(
-            scheme=storage_share.uri['scheme'],
-            domain=storage_share.uri['domain']
-        )
-
     # Generate boto client to query S3 endpoint.
-    _connection = boto3.client(
-        's3',
-        region_name=storage_share.plugin_settings['s3.region'],
-        endpoint_url=_api_url,
-        aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
-        aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
-        use_ssl=True,
-        verify=storage_share.plugin_settings['ssl_check'],
-        config=Config(
-            signature_version=storage_share.plugin_settings['s3.signature_ver'],
-            connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
-            retries=dict(max_attempts=0)
-        ),
-    )
+    _connection = get_s3_boto_client(storage_share)
 
     # Initialize counters.
     _total_bytes = 0
@@ -442,7 +474,7 @@ def list_objects(storage_share, delta=1, prefix='',
     _logger.debug(
         "[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s",
         storage_share.id,
-        _api_url,
+        _connection._endpoint,
         storage_share.plugin_settings['storagestats.api'].lower(),
         _kwargs
     )
@@ -452,8 +484,96 @@ def list_objects(storage_share, delta=1, prefix='',
     # to start the next 1,000. If no 'NextMarker' is received, all
     # objects have been obtained.
     while True:
+        _logger.info(
+            '[%s]Executing boto client method "%s"',
+            storage_share.id,
+            'list_objects'
+        )
+        _logger.debug(
+            '[%s]Boto client arguments: %s',
+            storage_share.id,
+            _kwargs
+        )
+
+        _response = run_boto_client(_connection, 'list_objects', _kwargs)
+
+        # This outputs a lot of information, might not be necessary.
+        # _logger.debug(
+        #     "[%s]Endpoint reply: %s",
+        #     storage_share.id,
+        #     response['Contents']
+        # )
+
+        # Check what type of request is asked being used.
+        if request == 'storagestats':
+            try:
+                # Make sure we got a list of objects.
+                _response['Contents']
+            except KeyError:
+                storage_share.stats['bytesused'] = 0
+                break
+            else:
+                for _file in _response['Contents']:
+                    _total_bytes += _file['Size']
+                    _total_files += 1
+
+            storage_share.stats['bytesused'] = _total_bytes
+
+            # Obtain or set default quota and calculate freespace.
+            if storage_share.plugin_settings['storagestats.quota'] == 'api':
+                storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
+                storage_share.stats['filecount'] = _total_files
+                storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+                raise dynafed_storagestats.exceptions.QuotaWarning(
+                    error="NoQuotaGiven",
+                    status_code="098",
+                    default_quota=storage_share.stats['quota'],
+                )
+
+            else:
+                storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+                storage_share.stats['filecount'] = _total_files
+                storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+
+        elif request == 'filelist':
+            try:
+                # Make sure we got a list of objects.
+                _response['Contents']
+            except KeyError:
+                break
+            else:
+                for _file in _response['Contents']:
+                    # Output files older than the specified delta.
+                    if dynafed_storagestats.time.mask_timestamp_by_delta(_file['LastModified'], delta):
+                        report_file.write("%s\n" % _file['Key'])
+                        _total_files += 1
+
+        # Exit if no "NextMarker" as list is now over.
         try:
-            _response = _connection.list_objects(**_kwargs)
+            _kwargs['Marker'] = _response['NextMarker']
+        except KeyError:
+            break
+
+    # Save time when data was obtained.
+    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
+
+
+def run_boto_client(boto_client, method, kwargs):
+        """Contact S3 endopint using passed object methods and arguments.
+
+
+        Returns:
+        Dict containing reply from S3 endpoint.
+
+        """
+        ############# Creating loggers ################
+        _logger = logging.getLogger(__name__)
+        ###############################################
+
+        _function = getattr(boto_client, method)
+
+        try:
+            result = _function(**kwargs)
 
         except botoExceptions.ClientError as ERR:
             raise dynafed_storagestats.exceptions.ConnectionError(
@@ -470,33 +590,11 @@ def list_objects(storage_share, delta=1, prefix='',
             )
 
         except botoRequestsExceptions.SSLError as ERR:
-            # If ca_path is custom, try the default in case
-            # a global setting is incorrectly giving the wrong
-            # ca's to check agains.
-            _connection = boto3.client(
-                's3',
-                region_name=storage_share.plugin_settings['s3.region'],
-                endpoint_url=_api_url,
-                aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
-                aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
-                use_ssl=True,
-                verify=True,
-                config=Config(
-                    signature_version=storage_share.plugin_settings['s3.signature_ver'],
-                    connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
-                    retries=dict(max_attempts=0)
-                ),
+            raise dynafed_storagestats.exceptions.ConnectionError(
+                error=ERR.__class__.__name__,
+                status_code="092",
+                debug=str(ERR),
             )
-
-            try:
-                _response = _connection.list_objects(**_kwargs)
-
-            except botoRequestsExceptions.SSLError as ERR:
-                raise dynafed_storagestats.exceptions.ConnectionError(
-                    error=ERR.__class__.__name__,
-                    status_code="092",
-                    debug=str(ERR),
-                )
 
         except botoRequestsExceptions.RequestException as ERR:
             raise dynafed_storagestats.exceptions.ConnectionError(
@@ -520,65 +618,7 @@ def list_objects(storage_share, delta=1, prefix='',
             )
 
         else:
-            # This outputs a lot of information, might not be necessary.
-            # _logger.debug(
-            #     "[%s]Endpoint reply: %s",
-            #     storage_share.id,
-            #     response['Contents']
-            # )
-
-            # Check what type of request is asked being used.
-            if request == 'storagestats':
-                try:
-                    # Make sure we got a list of objects.
-                    _response['Contents']
-                except KeyError:
-                    storage_share.stats['bytesused'] = 0
-                    break
-                else:
-                    for _file in _response['Contents']:
-                        _total_bytes += _file['Size']
-                        _total_files += 1
-
-            elif request == 'filelist':
-                try:
-                    # Make sure we got a list of objects.
-                    _response['Contents']
-                except KeyError:
-                    break
-                else:
-                    for _file in _response['Contents']:
-                        # Output files older than the specified delta.
-                        if dynafed_storagestats.time.mask_timestamp_by_delta(_file['LastModified'], delta):
-                            report_file.write("%s\n" % _file['Key'])
-                            _total_files += 1
-
-            # Exit if no "NextMarker" as list is now over.
-            try:
-                _kwargs['Marker'] = _response['NextMarker']
-            except KeyError:
-                break
-
-    # Save time when data was obtained.
-    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
-    storage_share.stats['bytesused'] = _total_bytes
-
-    # Obtain or set default quota and calculate freespace.
-    if storage_share.plugin_settings['storagestats.quota'] == 'api':
-        storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
-        storage_share.stats['filecount'] = _total_files
-        storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-        raise dynafed_storagestats.exceptions.QuotaWarning(
-            error="NoQuotaGiven",
-            status_code="098",
-            default_quota=storage_share.stats['quota'],
-        )
-
-    else:
-        storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
-        storage_share.stats['filecount'] = _total_files
-        storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-
+            return result
 
 # def ():
 #     """

@@ -345,6 +345,7 @@ s3.signature_ver | 024
 **Storage Stats Scripts Settings** |
 storagestats.api | 070
 storagestats.quota | 071
+storagestats.frequency | 072
 **Memcached Warning/Errors** |
 Unknown | 080
 Memcached Connection | 081
