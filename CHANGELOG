@@ -201,3 +201,6 @@ v1.0.13
 v1.0.14
   ADDED: Memcached ttl for data which is a multiple of 10 of the 'frequency'
          setting, and is set to 1 hour as a minimum.
+v1.0.15
+  ADDED: Added get_object_metadata, get_object_checksum, set_object_checksum
+         methods to S3StorageShare.

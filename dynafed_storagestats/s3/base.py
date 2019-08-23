@@ -1,6 +1,7 @@
 """Defines S3's StorageShare sub-class."""
 
 import logging
+from urllib.parse import urlsplit
 import os
 
 import dynafed_storagestats.base
@@ -22,6 +23,9 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         # First we call the super function to initialize the initial attributes
         # given by the StorageShare class.
         super().__init__(*args, **kwargs)
+
+        # Objects custom Metadata
+        self.metadata = {}
 
         self.storageprotocol = "S3"
 
@@ -76,6 +80,116 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         self.star_fields['storage_share'] = self.uri['bucket']
 
 
+    def get_file_checksum(self, hash_type, object_url):
+        """Check if the metadata contains requested checksum.
+
+        Arguments:
+        hash_type: Type of checksum requested.
+
+        Returns:
+        String Checksum or False if not found.
+
+        """
+        ############# Creating loggers ################
+        _logger = logging.getLogger(__name__)
+        ###############################################
+
+        self.get_file_metadata(object_url)
+
+        try:
+            _logger.info(
+                'Checking if metadata contains checksum: "%s"',
+                hash_type
+            )
+            _logger.debug(
+                'Metadata being checked: "%s"',
+                self.metadata,
+            )
+
+            return self.metadata[hash_type]
+
+        except KeyError:
+            _logger.info(
+                'Metadata does not contain checksum: "%s"',
+                hash_type
+            )
+
+            return False
+
+
+    def get_file_metadata(self, object_url):
+        """Check if the object contains checksum metadata and return it.
+
+        Arguments:
+        object_url -- URL location for requested object.
+
+        """
+        ############# Creating loggers ################
+        _logger = logging.getLogger(__name__)
+        ###############################################
+        # We obtain the path to the object
+        object_path = urlsplit(object_url).path
+
+        # Generate boto client to query S3 endpoint.
+        _connection = s3helpers.get_s3_boto_client(self)
+
+        object_key = object_path.split('/')[1::]
+        if self.uri['bucket'] in object_key:
+            object_key.remove(self.uri['bucket'])
+        object_key = '/'.join(object_key)
+
+        _kwargs = {
+            'Bucket': self.uri['bucket'],
+            'Key': object_key,
+        }
+
+        #Ugly way, find better one to deal with empty result.
+        result = {}
+
+        try:
+            _logger.info(
+                '[%s]Obtaining metadata of object "%s"',
+                self.id,
+                object_path
+            )
+
+            result = s3helpers.run_boto_client(_connection, 'head_object', _kwargs)
+
+        except dynafed_storagestats.exceptions.Warning as WARN:
+            _logger.warning("[%s]%s", self.id, WARN.debug)
+            self.debug.append("[WARNING]" + WARN.debug)
+            self.status.append("[WARNING]" + WARN.error_code)
+
+        except dynafed_storagestats.exceptions.Error as ERR:
+            _logger.error("[%s]%s", self.id, ERR.debug)
+            self.debug.append("[ERROR]" + ERR.debug)
+            self.status.append("[ERROR]" + ERR.error_code)
+
+        else:
+            _logger.info(
+                "[%s]Custom Metadata found for object %s/%s: %s",
+                self.id,
+                self.uri['bucket'],
+                object_key,
+                result['Metadata']
+            )
+            _logger.debug(
+                "[%s]Full HEAD response for object %s/%s: %s",
+                self.id,
+                self.uri['bucket'],
+                object_key,
+                result
+            )
+
+        finally:
+
+            try:
+                self.metadata = result['Metadata']
+
+            except KeyError:
+                self.metadata = {}
+
+
     def get_storagestats(self):
         """Contact endpoint using requested method."""
         ############# Creating loggers ################
@@ -114,6 +228,73 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             report_file=report_file,
             request='filelist'
         )
+
+
+    def set_object_metadata(self, object_url):
+        """Use boto3 copy_object to add checksum metadata to object in S3 storage.
+
+        Arguments:
+        object_url: URL location for requested object.
+
+        Returns:
+        Nothing is returned.
+
+        """
+        ############# Creating loggers ################
+        _logger = logging.getLogger(__name__)
+        ###############################################
+
+        # We obtain the path to the object
+        object_path = urlsplit(object_url).path
+
+        # Generate boto client to query S3 endpoint.
+        _connection = s3helpers.get_s3_boto_client(self)
+
+        object_key = object_path.split('/')[1::]
+        if self.uri['bucket'] in object_key:
+            object_key.remove(self.uri['bucket'])
+        object_key = '/'.join(object_key)
+
+        # Preparing _kwargs
+        _kwargs = {
+            'Bucket': self.uri['bucket'],
+            'CopySource': {
+                'Bucket': self.uri['bucket'],
+                'Key': object_key,
+            },
+            'Key': object_key,
+            'Metadata': self.metadata,
+            'MetadataDirective': 'REPLACE',
+        }
+
+        try:
+            assert len(self.metadata) != 0
+            # We copy the object on itself to update the metadata.
+            _logger.info(
+                '[%s]Updating metadata of object "%s"',
+                self.id,
+                object_path
+            )
+            _logger.debug(
+                '[%s]Metadata being uploaded: "%s"',
+                self.id,
+                self.metadata
+            )
+
+            result = s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
+
+        except AssertError as INFO:
+            _logger.info("[%s]Empty metadata. Skipping API request.")
+
+        except dynafed_storagestats.exceptions.Warning as WARN:
+            _logger.warning("[%s]%s", self.id, WARN.debug)
+            self.debug.append("[WARNING]" + WARN.debug)
+            self.status.append("[WARNING]" + WARN.error_code)
+
+        except dynafed_storagestats.exceptions.Error as ERR:
+            _logger.error("[%s]%s", self.id, ERR.debug)
+            self.debug.append("[ERROR]" + ERR.debug)
+            self.status.append("[ERROR]" + ERR.error_code)
 
 
     def validate_schema(self):
