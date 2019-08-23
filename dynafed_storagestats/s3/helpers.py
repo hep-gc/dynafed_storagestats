@@ -226,19 +226,7 @@ def cloudwatch(storage_share):
     _seconds_in_one_day = 86400
 
     # Generate boto client to query AWS API.
-    _connection = boto3.client(
-        'cloudwatch',
-        region_name=storage_share.plugin_settings['s3.region'],
-        aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
-        aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
-        use_ssl=True,
-        verify=True,
-        config=Config(
-            signature_version=storage_share.plugin_settings['s3.signature_ver'],
-            connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
-            retries=dict(max_attempts=0)
-        ),
-    )
+    _connection = get_cloudwatch_boto_client(storage_share)
 
     # Define cloudwatch metrics to probe. 'Result' key will be used to store the
     # metric. For the other keys, if unsure, try the following in cli to obtain
@@ -376,6 +364,78 @@ def cloudwatch(storage_share):
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
+def get_cloudwatch_boto_client(storage_share):
+        """Return boto client from storage share object.
+
+        Arguments:
+        storage_share -- dynafed_storagestats StorageShare object.
+
+        Returns:
+        botocore.client.cloudwatch
+
+        """
+        # Generate boto client to query AWS API.
+        _connection = boto3.client(
+            'cloudwatch',
+            region_name=storage_share.plugin_settings['s3.region'],
+            aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
+            aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
+            use_ssl=True,
+            verify=True,
+            config=Config(
+                signature_version=storage_share.plugin_settings['s3.signature_ver'],
+                connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
+                retries=dict(max_attempts=0)
+            ),
+        )
+
+        return _connection
+
+
+def get_s3_boto_client(storage_share):
+        """Return boto client from storage share object.
+
+        Arguments:
+        storage_share -- dynafed_storagestats StorageShare object.
+
+        Returns:
+        botocore.client.S3
+
+        """
+        # Generate the API's URL to contact.
+        if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
+        or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
+
+            _api_url = '{scheme}://{netloc}'.format(
+                scheme=storage_share.uri['scheme'],
+                netloc=storage_share.uri['netloc']
+            )
+
+        else:
+            _api_url = '{scheme}://{domain}'.format(
+                scheme=storage_share.uri['scheme'],
+                domain=storage_share.uri['domain']
+            )
+
+        # Generate boto client to query S3 endpoint.
+        _connection = boto3.client(
+            's3',
+            region_name=storage_share.plugin_settings['s3.region'],
+            endpoint_url=_api_url,
+            aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
+            aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
+            use_ssl=True,
+            verify=storage_share.plugin_settings['ssl_check'],
+            config=Config(
+                signature_version=storage_share.plugin_settings['s3.signature_ver'],
+                connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
+                retries=dict(max_attempts=0)
+            ),
+        )
+
+        return _connection
+
+
 def list_objects(storage_share, delta=1, prefix='',
                  report_file='/tmp/filelist_report.txt',
                  request='storagestats'
@@ -496,50 +556,6 @@ def list_objects(storage_share, delta=1, prefix='',
 
     # Save time when data was obtained.
     storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
-
-
-def get_s3_boto_client(storage_share):
-        """Return boto client from storage share object.
-
-        Arguments:
-        storage_share -- dynafed_storagestats StorageShare object.
-
-        Returns:
-        botocore.client.S3
-
-        """
-        # Generate the API's URL to contact.
-        if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
-        or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
-
-            _api_url = '{scheme}://{netloc}'.format(
-                scheme=storage_share.uri['scheme'],
-                netloc=storage_share.uri['netloc']
-            )
-
-        else:
-            _api_url = '{scheme}://{domain}'.format(
-                scheme=storage_share.uri['scheme'],
-                domain=storage_share.uri['domain']
-            )
-
-        # Generate boto client to query S3 endpoint.
-        _connection = boto3.client(
-            's3',
-            region_name=storage_share.plugin_settings['s3.region'],
-            endpoint_url=_api_url,
-            aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
-            aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
-            use_ssl=True,
-            verify=storage_share.plugin_settings['ssl_check'],
-            config=Config(
-                signature_version=storage_share.plugin_settings['s3.signature_ver'],
-                connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
-                retries=dict(max_attempts=0)
-            ),
-        )
-
-        return _connection
 
 
 def run_boto_client(boto_client, method, kwargs):
