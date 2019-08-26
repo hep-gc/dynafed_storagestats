@@ -747,7 +747,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
     return _logger
 
 
-def update_objects_storagestats(storage_share_objects, stats):
+def update_storage_share_storagestats(storage_share_objects, stats):
     """Fill storage_share's stats with the obtained storage stats from memcache.
 
     Update storage_share's stats with information obtained from memcache using

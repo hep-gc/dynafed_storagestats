@@ -105,7 +105,7 @@ def stats(ARGS):
 
     if _storage_stats is not None:
         # Update storage_share objects with information obtaines from memcache.
-        helpers.update_objects_storagestats(storage_shares, _storage_stats)
+        helpers.update_storage_share_storagestats(storage_shares, _storage_stats)
 
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.
