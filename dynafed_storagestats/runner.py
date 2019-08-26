@@ -90,18 +90,22 @@ def stats(ARGS):
     )
 
     # Obtain current stats, if any, from memcached.
-    current_stats = helpers.get_currentstats(
+    _connection_stats, _storage_stats = helpers.get_currentstats(
         storage_shares,
         ARGS.memcached_ip,
         ARGS.memcached_port
     )
 
-    if current_stats is not None:
+    if _connection_stats is not None:
         # Flag storage shares that have been marked offline by Dynafed.
-        helpers.check_connectionstats(storage_shares, current_stats)
+        helpers.check_connectionstats(storage_shares, _connection_stats)
 
         # Flag storage shares that are under-due their period.
-        helpers.check_frequency(storage_shares, current_stats)
+        helpers.check_frequency(storage_shares, _connection_stats)
+
+    if _storage_stats is not None:
+        # Update storage_share objects with information obtaines from memcache.
+        helpers.update_storage_share_storagestats(storage_shares, _storage_stats)
 
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.
