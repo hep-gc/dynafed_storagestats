@@ -139,7 +139,6 @@ def check_frequency(storage_share_objects, stats):
             )
 
 
-
 def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_port='11211'):
     """Obtain StorageShares' status contained in memcached and return as dict.
 
@@ -160,6 +159,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     _logger = logging.getLogger(__name__)
     ###############################################
 
+    # We try to obtain connection stats from memcache.
     try:
         _connection_stats = get_cached_connection_stats(
                               return_as='expanded_dictionary',
@@ -167,19 +167,50 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
                               memcached_port=memcached_port
                             )
 
-        #_storage_stats = get_cached_storage_stats()
-
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
-            "%s Server %s did not return data. All storage_shares will be " \
+            "Memcache %s Server %s did not return data. All storage_shares will be " \
             "assumed 'Online'.",
             ERR.debug,
             memcached_ip + ':' + memcached_port
         )
+        _connection_stats = None
 
-    else:
-        _storage_shares_current_stats = _connection_stats #+ _storage_stats
-        return _storage_shares_current_stats
+    finally:
+        _logger.debug(
+            "Dictionary of connection stats found in memcache: %s.",
+            _connection_stats
+        )
+
+    # Now we try to obtain storage stats from memcache.
+    try:
+        _storage_stats = get_cached_storage_stats(
+                           storage_share_objects,
+                           return_as='expanded_dictionary',
+                           memcached_ip=memcached_ip,
+                           memcached_port=memcached_port
+
+        )
+
+    except dynafed_storagestats.exceptions.MemcachedError as ERR:
+        _logger.error(
+            "Memcache %s Server %s did not return storage status data.",
+            ERR.debug,
+            memcached_ip + ':' + memcached_port
+        )
+        _storage_stats = None
+
+    finally:
+        _logger.debug(
+            "Dictionary of storage stats found in memcache: %s.",
+            _storage_stats
+        )
+
+    # else:
+    #     _storage_shares_current_stats += _storage_stats
+
+
+    return _connection_stats, _storage_stats
 
 
 def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', memcached_port='11211'):
@@ -309,13 +340,13 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
         return _dictonary_of_stats
 
 
-def get_cached_storage_stats(return_as='string', memcached_ip='127.0.0.1', memcached_port='11211'):
-    """Obtain connection status string in memcached and return as requested object.
+def get_cached_storage_stats(storage_share_objects, return_as='string', memcached_ip='127.0.0.1', memcached_port='11211'):
+    """Obtain storage status string in memcached and return as requested object.
 
     Check if memcached has cached storage status for the StorageShares, which
     would have been uploaded by this script previously. Turn the string of
     information into a dictionary of StorageShare ID's and their stats,
-    which is then returned. The returned object can be a sting containing all
+    which is then returned. The returned object can be a string containing all
     StorageShares, or an array of strings separated by StorageShares,  or a
     dictionary whose keys are the StorageShare ID's and the value is a string
     with all the stats, or a dictionary of dictionaries where each stat has
@@ -330,6 +361,7 @@ def get_cached_storage_stats(return_as='string', memcached_ip='127.0.0.1', memca
     under it with it's own value.
 
     Arguments:
+    storage_share_objects -- list of dynafed_storagestats StorageShare objects.
     memcached_ip   -- memcached instance IP.
     memcahced_port -- memcached instance Port.
 
@@ -339,7 +371,76 @@ def get_cached_storage_stats(return_as='string', memcached_ip='127.0.0.1', memca
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
     ###############################################
-    return none
+    _logger.info(
+        "Checking memcached server %s:%s for StorageShares storage stats.",
+        memcached_ip,
+        memcached_port
+    )
+
+    _array_of_stats = []
+
+    for _storage_share in storage_share_objects:
+        # Index in memcache to look for:
+        _idx = 'Ugrstoragestats_' + _storage_share.id
+        # Obtain the latest status uploaded by UGR and typecast to str if needed.
+        # Different versions of memcache module return bytes.
+        _logger.debug(
+            "Using memcached storage stats index: %s",
+            _idx
+        )
+
+        _storage_stats = memcache.get(
+            _idx,
+            memcached_ip,
+            memcached_port
+        )
+
+        # Check if we actually got information
+        if _storage_stats is None:
+            raise dynafed_storagestats.exceptions.MemcachedIndexError()
+
+        # Typecast to str if needed. Different versions of memcache module return
+        # bytes.
+        if isinstance(_storage_stats, bytes):
+            _storage_stats = str(_storage_stats, 'utf-8')
+
+        _array_of_stats.append(_storage_stats)
+
+    _logger.debug(
+        "Storage stats obtained: %s",
+        _array_of_stats
+    )
+
+    # Format and return according to request 'return_as'
+    if return_as == 'string':
+        return '&&'.join(_array_of_stats)
+
+    elif return_as == 'array':
+        return _array_of_stats
+
+    elif return_as == 'dictionary':
+        _dictonary_of_stats = {}
+
+        for _element in _array_of_stats:
+            _storage_share, _stats = _element.split("%%", 1)
+            _dictonary_of_stats[_storage_share] = _stats
+
+        return _dictonary_of_stats
+
+    elif return_as == 'expanded_dictionary':
+        _dictonary_of_stats = {}
+
+        for _element in _array_of_stats:
+            _storage_share, _protocol, _timestamp, _quota, _bytesused, _bytesfree, _status = _element.split("%%")
+
+            _dictonary_of_stats[_storage_share] = {
+                'timestamp': _timestamp,
+                'bytesused': _bytesused,
+                'bytesfree': _bytesfree,
+            }
+
+        return _dictonary_of_stats
+
 
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
@@ -644,3 +745,41 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
         _logger.addHandler(log_handler_stderr)
 
     return _logger
+
+
+def update_storage_share_storagestats(storage_share_objects, stats):
+    """Fill storage_share's stats with the obtained storage stats from memcache.
+
+    Update storage_share's stats with information obtained from memcache using
+    get_cached_storage_stats function.
+
+    Arguments:
+    storage_endpoint -- dynafed_storagestats StorageEndpoint.
+    stats -- dictionary of storage_shares and their status obtained from
+             get_cached_storage_stats with return_as='expanded_dictionary'.
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    for _storage_share in storage_share_objects:
+        try:
+            if stats[_storage_share.id]:
+                _logger.info(
+                    "[%s]Updating storage stats information.",
+                    _storage_share.id
+                )
+                _logger.debug(
+                    "[%s]Stats being updated: %s",
+                    _storage_share.id,
+                    stats[_storage_share.id]
+                )
+                _storage_share.stats['endtime'] = stats[_storage_share.id]['timestamp']
+                _storage_share.stats['bytesused'] = stats[_storage_share.id]['bytesused']
+                _storage_share.stats['bytesfree'] = stats[_storage_share.id]['bytesfree']
+
+        except KeyError:
+            _logger.info(
+                "[%s]Storage stats not found in cache. Skipping.",
+                _storage_share.id
+            )
