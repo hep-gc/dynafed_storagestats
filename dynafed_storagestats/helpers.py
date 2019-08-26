@@ -167,6 +167,19 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
                               memcached_port=memcached_port
                             )
 
+    except dynafed_storagestats.exceptions.MemcachedError as ERR:
+        _logger.error(
+            "Memcache %s Server %s did not return data. All storage_shares will be " \
+            "assumed 'Online'.",
+            ERR.debug,
+            memcached_ip + ':' + memcached_port
+        )
+        _connection_stats = None
+
+    # else:
+    #     _storage_shares_current_stats = _connection_stats
+
+    try:
         _storage_stats = get_cached_storage_stats(
                            storage_share_objects,
                            return_as='expanded_dictionary',
@@ -177,15 +190,17 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
-            "%s Server %s did not return data. All storage_shares will be " \
-            "assumed 'Online'.",
+            "Memcache %s Server %s did not return storage status data.",
             ERR.debug,
             memcached_ip + ':' + memcached_port
         )
+        _storage_stats = None
 
-    else:
-        _storage_shares_current_stats = _connection_stats #+ _storage_stats
-        return _storage_shares_current_stats
+    # else:
+    #     _storage_shares_current_stats += _storage_stats
+
+
+    return _connection_stats, _storage_stats
 
 
 def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', memcached_port='11211'):
@@ -413,7 +428,7 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
                 'bytesused': _bytesused,
                 'bytesfree': _bytesfree,
             }
-
+        
         return _dictonary_of_stats
 
 def process_storagereports(storage_endpoint, args):
