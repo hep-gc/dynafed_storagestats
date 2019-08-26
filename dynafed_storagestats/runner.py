@@ -103,6 +103,10 @@ def stats(ARGS):
         # Flag storage shares that are under-due their period.
         helpers.check_frequency(storage_shares, _connection_stats)
 
+    if _storage_stats is not None:
+        # Update storage_share objects with information obtaines from memcache.
+        helpers.update_objects_storagestats(storage_shares, _storage_stats)
+
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.
     storage_endpoints = configloader.get_storage_endpoints(

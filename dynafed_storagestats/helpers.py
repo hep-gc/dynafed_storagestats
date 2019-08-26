@@ -159,6 +159,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     _logger = logging.getLogger(__name__)
     ###############################################
 
+    # We try to obtain connection stats from memcache.
     try:
         _connection_stats = get_cached_connection_stats(
                               return_as='expanded_dictionary',
@@ -175,9 +176,13 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
         )
         _connection_stats = None
 
-    # else:
-    #     _storage_shares_current_stats = _connection_stats
+    finally:
+        _logger.debug(
+            "Dictionary of connection stats found in memcache: %s.",
+            _connection_stats
+        )
 
+    # Now we try to obtain storage stats from memcache.
     try:
         _storage_stats = get_cached_storage_stats(
                            storage_share_objects,
@@ -194,6 +199,12 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
             memcached_ip + ':' + memcached_port
         )
         _storage_stats = None
+
+    finally:
+        _logger.debug(
+            "Dictionary of storage stats found in memcache: %s.",
+            _storage_stats
+        )
 
     # else:
     #     _storage_shares_current_stats += _storage_stats
@@ -734,3 +745,41 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
         _logger.addHandler(log_handler_stderr)
 
     return _logger
+
+
+def update_objects_storagestats(storage_share_objects, stats):
+    """Fill storage_share's stats with the obtained storage stats from memcache.
+
+    Update storage_share's stats with information obtained from memcache using
+    get_cached_storage_stats function.
+
+    Arguments:
+    storage_endpoint -- dynafed_storagestats StorageEndpoint.
+    stats -- dictionary of storage_shares and their status obtained from
+             get_cached_storage_stats with return_as='expanded_dictionary'.
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    for _storage_share in storage_share_objects:
+        try:
+            if stats[_storage_share.id]:
+                _logger.info(
+                    "[%s]Updating storage stats information.",
+                    _storage_share.id
+                )
+                _logger.debug(
+                    "[%s]Stats being updated: %s",
+                    _storage_share.id,
+                    stats[_storage_share.id]
+                )
+                _storage_share.stats['endtime'] = stats[_storage_share.id]['timestamp']
+                _storage_share.stats['bytesused'] = stats[_storage_share.id]['bytesused']
+                _storage_share.stats['bytesfree'] = stats[_storage_share.id]['bytesfree']
+
+        except KeyError:
+            _logger.info(
+                "[%s]Storage stats not found in cache. Skipping.",
+                _storage_share.id
+            )
