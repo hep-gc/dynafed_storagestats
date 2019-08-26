@@ -204,5 +204,11 @@ v1.0.14
 v1.0.15
   ADDED: Added get_object_metadata, get_object_checksum, set_object_metadata
          methods to S3StorageShare.
-v1.0.16:
+v1.0.16
   REMOVED: get_object_checksum from s3. This method does not belong here.
+v1.0.17
+  ADDED: get_cached_storage_stats function.
+  ADDED: update_storage_share_storagestats.
+  CHANGE: Workflow now tries to obtain storage stats from memcache and update
+          objects accordingly. This way we still get the available
+          information even if the frequency time has not been surpassed.
