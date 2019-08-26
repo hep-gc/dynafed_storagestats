@@ -139,7 +139,6 @@ def check_frequency(storage_share_objects, stats):
             )
 
 
-
 def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_port='11211'):
     """Obtain StorageShares' status contained in memcached and return as dict.
 
@@ -428,8 +427,9 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
                 'bytesused': _bytesused,
                 'bytesfree': _bytesfree,
             }
-        
+
         return _dictonary_of_stats
+
 
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
