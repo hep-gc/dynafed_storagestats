@@ -1,6 +1,7 @@
 """Helper functions used by the other modules."""
 
 import logging, logging.handlers
+import re
 import os
 
 import dynafed_storagestats.exceptions
@@ -783,3 +784,60 @@ def update_storage_share_storagestats(storage_share_objects, stats):
                 "[%s]Storage stats not found in cache. Skipping.",
                 _storage_share.id
             )
+
+
+def validate_checksum(checksum, hash_type):
+    """Check that the checksum script matches the format of the requested hash.
+
+    Arguments:
+    hash_type: Type of checksum requested.
+
+    Returns:
+    Either string checksum or 'Error'
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    _validators = {
+        'adler32': {
+            'length': 8,
+            'pattern': '([a-fA-F\d]{8})'
+        },
+        'md5': {
+            'length': 32,
+            'pattern': '([a-fA-F\d]{32})'
+        }
+    }
+
+    try:
+        if re.findall(_validators[hash_type]['pattern'], checksum):
+            _logger.info(
+                'Validating %s checksum: "%s"',
+                hash_type,
+                checksum
+            )
+            _logger.debug(
+                'Validating checksum against pattern: "%s"',
+                _validators[hash_type]['pattern'],
+            )
+
+            return checksum
+
+        else:
+            _logger.error(
+                'Failed to validate %s checksum: "%s"',
+                hash_type,
+                checksum
+            )
+
+            return 'Error'
+
+    except KeyError:
+        _logger.error(
+            'Unsupported checksum type: "%s"',
+            hash_type
+        )
+
+        return 'Error'
