@@ -214,12 +214,20 @@ def add_checkusms_set_subparser(subparser):
     # Checksum options
     group_checksum = parser.add_argument_group("Checksum options")
     group_checksum.add_argument(
+        '--checksum',
+        action='store',
+        default=False,
+        dest='checksum',
+        help="String with checksum to set. ['adler32', md5] " \
+             "Required"
+    )
+    group_checksum.add_argument(
         '-t', '--hash_type',
         action='store',
-        default='adler32',
+        default=False,
         dest='hash_type',
         help="Type of checksum hash. ['adler32', md5] " \
-             "Default: adler32."
+             "Required."
     )
     group_checksum.add_argument(
         '-u', '--url',
