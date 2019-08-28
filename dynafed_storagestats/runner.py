@@ -2,6 +2,8 @@
 
 """Runner to gather storage share information."""
 
+import logging
+
 from multiprocessing.dummy import Pool as ThreadPool
 
 from dynafed_storagestats import args
@@ -46,6 +48,10 @@ def checksums(ARGS):
     ARGS -- argparse object from dynafed_storagestats.args.parse_args()
 
     """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
     # Get list of StorageShare objects from the configuration files.
     _storage_shares = configloader.get_storage_shares(
         ARGS.config_path
@@ -61,10 +67,27 @@ def checksums(ARGS):
 
         # Extract the requested storage_share.
         _storage_share = _storage_endpoints[0].storage_shares[0]
+
         if ARGS.url:
-            _metadata = _storage_share.get_object_metadata(ARGS.url)
-            _checksum = helpers.extract_object_checksum_from_metadata(ARGS.hash_type, _metadata)
-            print(_checksum)
+            if ARGS.sub_cmd == 'get':
+                _metadata = _storage_share.get_object_metadata(ARGS.url)
+                _checksum = helpers.extract_object_checksum_from_metadata(ARGS.hash_type, _metadata)
+                print(_checksum)
+
+            elif ARGS.sub_cmd == 'set':
+                _metadata = _storage_share.get_object_metadata(ARGS.url)
+
+                # Only run set_checksum if the object don't already contain that hash.
+                if ARGS.hash_type not in _metadata:
+                    _storage_share.set_object_metadata(_metadata, ARGS.url)
+                else:
+                    _logger.info(
+                        "[%s]No new metadata detected, no need to call API.",
+                        _storage_share.id
+                    )
+
+                print(_metadata)
+
         else:
             print("[CRITICAL]No file/object URL provided.")
 
