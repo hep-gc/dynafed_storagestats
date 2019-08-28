@@ -392,6 +392,42 @@ def get_cloudwatch_boto_client(storage_share):
         return _connection
 
 
+def extract_object_checksum_from_metadata(hash_type, metadata):
+    """Check if the metadata contains requested checksum.
+
+    Arguments:
+    hash_type -- Type of checksum requested.
+    metadata -- Dict with S3 object metadata.
+
+    Returns:
+    String Checksum or False if not found.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    try:
+        _logger.info(
+            'Checking if metadata contains checksum: "%s"',
+            hash_type
+        )
+        _logger.debug(
+            'Metadata being checked: "%s"',
+            metadata,
+        )
+
+        return metadata[hash_type]
+
+    except KeyError:
+        _logger.info(
+            'Metadata does not contain checksum: "%s"',
+            hash_type
+        )
+
+        return False
+
+
 def get_s3_boto_client(storage_share):
         """Return boto client from storage share object.
 
