@@ -52,7 +52,7 @@ def add_general_options(parser):
 
 
 def add_checksums_subparser(subparser):
-    """Add optional arguments for the 'stats' sub-command.
+    """Add optional arguments for the 'checksums' sub-command.
 
     Arguments:
     subparser -- Object form argparse.ArgumentParser().add_subparsers()
@@ -69,9 +69,11 @@ def add_checksums_subparser(subparser):
     parser.set_defaults(cmd='checksums')
 
     add_checkusms_get_subparser(subparser)
+    add_checkusms_set_subparser(subparser)
+
 
 def add_checkusms_get_subparser(subparser):
-    """Add optional arguments for the 'stats' sub-command.
+    """Add optional arguments for the 'checksums get' sub-command.
 
     Arguments:
     subparser -- Object form argparse.ArgumentParser().add_subparsers()
@@ -82,6 +84,104 @@ def add_checkusms_get_subparser(subparser):
         'get',
         help="Get object/file checksums.."
     )
+
+    # Set the sub-command routine to run.
+    parser.set_defaults(sub_cmd='get')
+
+    # General options
+    parser.add_argument(
+        '-c', '--config',
+        action='store',
+        default=['/etc/ugr/conf.d'],
+        dest='config_path',
+        nargs='*',
+        help="Path to UGR's endpoint .conf files or directories. " \
+             "Accepts any number of arguments. " \
+             "Default: '/etc/ugr/conf.d'."
+    )
+    parser.add_argument(
+        '-e', '--endpoint',
+        action='store',
+        default=False,
+        dest='endpoint',
+        nargs='*',
+        help="Choose endpoint containing desired object. " \
+             "Required."
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        default=False,
+        dest='verbose',
+        help="Show on stderr events according to loglevel."
+    )
+
+    # Checksum options
+    group_checksum = parser.add_argument_group("Checksum options")
+    group_checksum.add_argument(
+        '-t', '--hash_type',
+        action='store',
+        default='adler32',
+        dest='hash_type',
+        help="Type of checksum hash. ['adler32', md5] " \
+             "Default: adler32."
+    )
+    group_checksum.add_argument(
+        '-u', '--url',
+        action='store',
+        default=False,
+        dest='url',
+        help="URL of object/file to request checksum of. " \
+             "Required."
+    )
+
+    # Logging options
+    group_logging = parser.add_argument_group("Logging options")
+    group_logging.add_argument(
+        '--logfile',
+        action='store',
+        default='/tmp/dynafed_storagestats.log',
+        dest='logfile',
+        help="Set logfile's path. " \
+             "Default: /tmp/dynafed_storagestats.log"
+    )
+    group_logging.add_argument(
+        '--loglevel',
+        action='store',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+        default='WARNING',
+        dest='loglevel',
+        help="Set log output level. " \
+        "Default: WARNING."
+    )
+
+    # Output Options
+    group_output = parser.add_argument_group("Output options")
+
+    group_output.add_argument(
+        '--stdout',
+        action='store_true',
+        default=False,
+        dest='output_stdout',
+        help="Set to output stats on stdout."
+    )
+
+
+def add_checkusms_set_subparser(subparser):
+    """Add optional arguments for the 'checksums set' sub-command.
+
+    Arguments:
+    subparser -- Object form argparse.ArgumentParser().add_subparsers()
+
+    """
+    # Initiate parser.
+    parser = subparser.add_parser(
+        'set',
+        help="Set object/file checksums.."
+    )
+
+    # Set the sub-command routine to run.
+    parser.set_defaults(sub_cmd='set')
 
     # General options
     parser.add_argument(
