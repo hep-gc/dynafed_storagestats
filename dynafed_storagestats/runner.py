@@ -30,10 +30,47 @@ def main():
         reports(ARGS)
     elif ARGS.cmd == 'stats':
         stats(ARGS)
+    elif ARGS.cmd == 'checksums':
+        checksums(ARGS)
+
 
 ################
 # Sub-Commands #
 ################
+def checksums(ARGS):
+    """Execute the 'checksums' sub-command.
+
+    Run the main() function with 'checksums -h' arguments to see help.
+
+    Arguments:
+    ARGS -- argparse object from dynafed_storagestats.args.parse_args()
+
+    """
+    # Get list of StorageShare objects from the configuration files.
+    _storage_shares = configloader.get_storage_shares(
+        ARGS.config_path
+    )
+
+    if ARGS.endpoint:
+        # Create a list of StorageEndpoint objects with the StorageShares and
+        # select the one chosen from CLI.
+        _storage_endpoints = configloader.get_storage_endpoints(
+            _storage_shares,
+            ARGS.endpoint
+        )
+
+        # Extract the requested storage_share.
+        _storage_share = _storage_endpoints[0].storage_shares[0]
+        if ARGS.url:
+            _metadata = _storage_share.get_object_metadata(ARGS.url)
+            _checksum = helpers.extract_object_checksum_from_metadata(ARGS.hash_type, _metadata)
+            print(_checksum)
+        else:
+            print("[CRITICAL]No file/object URL provided.")
+
+    else:
+        print ("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'")
+
 
 def reports(ARGS):
     """Execute the 'reports' sub-command.
