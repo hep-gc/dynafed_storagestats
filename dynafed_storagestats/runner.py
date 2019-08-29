@@ -79,7 +79,17 @@ def checksums(ARGS):
 
                 # Only run set_checksum if the object don't already contain that hash.
                 if ARGS.hash_type not in _metadata:
+
+                    _metadata.setdefault(ARGS.hash_type, ARGS.checksum)
+
+                    _logger.info(
+                        "[%s]New metadata detected, calling API to upload: %s",
+                        _storage_share.id,
+                        _metadata
+                    )
+
                     _storage_share.set_object_metadata(_metadata, ARGS.url)
+
                 else:
                     _logger.info(
                         "[%s]No new metadata detected, no need to call API.",
