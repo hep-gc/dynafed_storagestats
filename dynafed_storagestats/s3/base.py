@@ -123,8 +123,23 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             return {}
 
         except dynafed_storagestats.exceptions.Error as ERR:
-            _logger.error("[%s]%s", self.id, ERR.debug)
-            print("[ERROR][%s]%s" % (self.id, ERR.debug))
+            if "Not Found" and "HeadObject" in ERR.debug:
+                _logger.error(
+                    "[%s]%s. Object: %s",
+                    self.id,
+                    ERR.debug,
+                    _object_key
+                )
+                print(
+                    "[ERROR][%s]%s. Object: %s" % (
+                        self.id,
+                        ERR.debug,
+                        _object_key
+                    )
+                )
+            else:
+                _logger.error("[%s]%s", self.id, ERR.debug)
+                print("[ERROR][%s]%s" % (self.id, ERR.debug))
             # We exit because in this case if there is an error in connection,
             # there is nothing else to do be done.
             sys.exit(1)
@@ -256,7 +271,23 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             self.status.append("[WARNING]" + WARN.error_code)
 
         except dynafed_storagestats.exceptions.Error as ERR:
-            print("[ERROR][%s]%s" % (self.id, ERR.debug))
+            if "Not Found" and "HeadObject" in ERR.debug:
+                _logger.error(
+                    "[%s]%s. Object: %s",
+                    self.id,
+                    ERR.debug,
+                    _object_key
+                )
+                print(
+                    "[ERROR][%s]%s. Object: %s" % (
+                        self.id,
+                        ERR.debug,
+                        _object_key
+                    )
+                )
+            else:
+                _logger.error("[%s]%s", self.id, ERR.debug)
+                print("[ERROR][%s]%s" % (self.id, ERR.debug))
             # We exit because in this case if there is an error in connection,
             # there is nothing else to do be done.
             sys.exit(1)
