@@ -52,57 +52,57 @@ def checksums(ARGS):
     _logger = logging.getLogger(__name__)
     ###############################################
 
+    # Check that all required arguments were given.
+    helpers.check_required_checksum_args(ARGS)
+
     # Get list of StorageShare objects from the configuration files.
     _storage_shares = configloader.get_storage_shares(
         ARGS.config_path
     )
 
-    if ARGS.endpoint:
-        # Create a list of StorageEndpoint objects with the StorageShares and
-        # select the one chosen from CLI.
-        _storage_endpoints = configloader.get_storage_endpoints(
-            _storage_shares,
-            ARGS.endpoint
-        )
+    # Create a list of StorageEndpoint objects with the StorageShares and
+    # select the one chosen from CLI.
+    _storage_endpoints = configloader.get_storage_endpoints(
+        _storage_shares,
+        ARGS.endpoint
+    )
 
-        # Extract the requested storage_share.
-        _storage_share = _storage_endpoints[0].storage_shares[0]
+    # Extract the requested storage_share.
+    _storage_share = _storage_endpoints[0].storage_shares[0]
 
-        if ARGS.url:
-            if ARGS.sub_cmd == 'get':
-                _metadata = _storage_share.get_object_metadata(ARGS.url)
-                _checksum = helpers.extract_object_checksum_from_metadata(ARGS.hash_type, _metadata)
-                print(_checksum)
+    # Run the positional sub-command.
+    if ARGS.sub_cmd == 'get':
+        _metadata = _storage_share.get_object_metadata(ARGS.url)
+        _checksum = helpers.extract_object_checksum_from_metadata(ARGS.hash_type, _metadata)
+        print(_checksum)
 
-            elif ARGS.sub_cmd == 'set':
-                _metadata = _storage_share.get_object_metadata(ARGS.url)
+    elif ARGS.sub_cmd == 'set':
+        _metadata = _storage_share.get_object_metadata(ARGS.url)
 
-                # Only run set_checksum if the object don't already contain that hash.
-                if ARGS.hash_type not in _metadata:
+        # Only run set_checksum if the object don't already contain that hash.
+        if ARGS.hash_type not in _metadata:
 
-                    _metadata.setdefault(ARGS.hash_type, ARGS.checksum)
+            _metadata.setdefault(ARGS.hash_type, ARGS.checksum)
 
-                    _logger.info(
-                        "[%s]New metadata detected, calling API to upload: %s",
-                        _storage_share.id,
-                        _metadata
-                    )
+            _logger.info(
+                "[%s]New metadata detected, calling API to upload: %s",
+                _storage_share.id,
+                _metadata
+            )
 
-                    _storage_share.set_object_metadata(_metadata, ARGS.url)
-
-                else:
-                    _logger.info(
-                        "[%s]No new metadata detected, no need to call API.",
-                        _storage_share.id
-                    )
-
-                print(_metadata)
+            _storage_share.set_object_metadata(_metadata, ARGS.url)
 
         else:
-            print("[CRITICAL]No file/object URL provided.")
+            _logger.info(
+                "[%s]No new metadata detected, no need to call API.",
+                _storage_share.id
+            )
+            _logger.debug(
+                "[%s]Metadata: %s",
+                _storage_share.id,
+                _metadata
+            )
 
-    else:
-        print ("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'")
 
 
 def reports(ARGS):
