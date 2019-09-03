@@ -3,6 +3,7 @@
 import logging
 from urllib.parse import urlsplit
 import os
+import sys
 
 import dynafed_storagestats.base
 import dynafed_storagestats.s3.helpers as s3helpers
@@ -83,6 +84,9 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         Arguments:
         object_url -- URL location for requested object.
 
+        Returns:
+        Dict containing metadata from S3 object API call result.
+
         """
         ############# Creating loggers ################
         _logger = logging.getLogger(__name__)
@@ -103,9 +107,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             'Key': _object_key,
         }
 
-        #Ugly way, find better one to deal with empty result.
-        ## _result = {}
-
         try:
             _logger.info(
                 '[%s]Obtaining metadata of object "%s"',
@@ -123,9 +124,10 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
         except dynafed_storagestats.exceptions.Error as ERR:
             _logger.error("[%s]%s", self.id, ERR.debug)
-            self.debug.append("[ERROR]" + ERR.debug)
-            self.status.append("[ERROR]" + ERR.error_code)
-            return {}
+            print("[ERROR][%s]%s" % (self.id, ERR.debug))
+            # We exit because in this case if there is an error in connection,
+            # there is nothing else to do be done.
+            sys.exit(1)
 
         else:
             _logger.info(
@@ -254,9 +256,10 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             self.status.append("[WARNING]" + WARN.error_code)
 
         except dynafed_storagestats.exceptions.Error as ERR:
-            _logger.error("[%s]%s", self.id, ERR.debug)
-            self.debug.append("[ERROR]" + ERR.debug)
-            self.status.append("[ERROR]" + ERR.error_code)
+            print("[ERROR][%s]%s" % (self.id, ERR.debug))
+            # We exit because in this case if there is an error in connection,
+            # there is nothing else to do be done.
+            sys.exit(1)
 
 
     def validate_schema(self):
