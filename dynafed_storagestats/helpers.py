@@ -1,8 +1,10 @@
 """Helper functions used by the other modules."""
 
 import logging, logging.handlers
-import re
 import os
+import re
+import sys
+
 
 import dynafed_storagestats.exceptions
 from dynafed_storagestats import memcache
@@ -139,6 +141,39 @@ def check_frequency(storage_share_objects, stats):
                 _storage_share.id
             )
 
+
+def check_required_checksum_args(args):
+    """Check that the client included required arguments
+
+    Arguments:
+    args -- args -- argparse object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    _exit = False
+
+    if not args.endpoint:
+        _logger.critical("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'")
+        print("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'")
+        _exit = True
+
+    if not args.hash_type:
+        _logger.critical("[CRITICAL]No checksum has type selected. Please use " \
+            "'-t [hash type]'")
+        print("[CRITICAL]No checksum has type selected. Please use " \
+            "'-t [hash type]'")
+        _exit = True
+
+    if not args.url:
+        _logger.critical("[CRITICAL]No file/object URL provided. Please use '-u [url]'")
+        print("[CRITICAL]No file/object URL provided. Please use '-u [url]'")
+        _exit = True
+
+    if _exit:
+        sys.exit(1)
 
 def extract_object_checksum_from_metadata(hash_type, metadata):
     """Check if the metadata contains requested checksum.
