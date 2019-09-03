@@ -175,6 +175,7 @@ def check_required_checksum_args(args):
     if _exit:
         sys.exit(1)
 
+
 def extract_object_checksum_from_metadata(hash_type, metadata):
     """Check if the metadata contains requested checksum.
 
