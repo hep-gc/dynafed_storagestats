@@ -121,10 +121,10 @@ def add_checkusms_get_subparser(subparser):
     group_checksum.add_argument(
         '-t', '--hash_type',
         action='store',
-        default='adler32',
+        default=False,
         dest='hash_type',
         help="Type of checksum hash. ['adler32', md5] " \
-             "Default: adler32."
+             "Required."
     )
     group_checksum.add_argument(
         '-u', '--url',
