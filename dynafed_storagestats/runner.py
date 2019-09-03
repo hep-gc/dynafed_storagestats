@@ -90,7 +90,7 @@ def checksums(ARGS):
                 _metadata
             )
 
-            _storage_share.set_object_metadata(_metadata, ARGS.url)
+            _storage_share.put_object_metadata(_metadata, ARGS.url)
 
         else:
             _logger.info(

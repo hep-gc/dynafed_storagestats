@@ -192,7 +192,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         )
 
 
-    def set_object_metadata(self, metadata, object_url):
+    def put_object_metadata(self, metadata, object_url):
         """Use boto3 copy_object to add checksum metadata to object in S3 storage.
 
         Arguments:
