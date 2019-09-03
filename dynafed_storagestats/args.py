@@ -69,7 +69,7 @@ def add_checksums_subparser(subparser):
     parser.set_defaults(cmd='checksums')
 
     add_checkusms_get_subparser(subparser)
-    add_checkusms_set_subparser(subparser)
+    add_checkusms_put_subparser(subparser)
 
 
 def add_checkusms_get_subparser(subparser):
@@ -167,8 +167,8 @@ def add_checkusms_get_subparser(subparser):
     )
 
 
-def add_checkusms_set_subparser(subparser):
-    """Add optional arguments for the 'checksums set' sub-command.
+def add_checkusms_put_subparser(subparser):
+    """Add optional arguments for the 'checksums put' sub-command.
 
     Arguments:
     subparser -- Object form argparse.ArgumentParser().add_subparsers()
@@ -176,12 +176,12 @@ def add_checkusms_set_subparser(subparser):
     """
     # Initiate parser.
     parser = subparser.add_parser(
-        'set',
+        'put',
         help="Set object/file checksums.."
     )
 
     # Set the sub-command routine to run.
-    parser.set_defaults(sub_cmd='set')
+    parser.set_defaults(sub_cmd='put')
 
     # General options
     parser.add_argument(

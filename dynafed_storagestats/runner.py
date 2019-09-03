@@ -76,7 +76,7 @@ def checksums(ARGS):
         _checksum = helpers.extract_object_checksum_from_metadata(ARGS.hash_type, _metadata)
         print(_checksum)
 
-    elif ARGS.sub_cmd == 'set':
+    elif ARGS.sub_cmd == 'put':
         _metadata = _storage_share.get_object_metadata(ARGS.url)
 
         # Only run set_checksum if the object don't already contain that hash.
