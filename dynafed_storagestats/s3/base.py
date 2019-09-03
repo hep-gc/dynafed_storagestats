@@ -88,32 +88,32 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         _logger = logging.getLogger(__name__)
         ###############################################
         # We obtain the path to the object
-        object_path = urlsplit(object_url).path
+        _object_path = urlsplit(object_url).path
 
         # Generate boto client to query S3 endpoint.
         _connection = s3helpers.get_s3_boto_client(self)
 
-        object_key = object_path.split('/')[1::]
-        if self.uri['bucket'] in object_key:
-            object_key.remove(self.uri['bucket'])
-        object_key = '/'.join(object_key)
+        _object_key = _object_path.split('/')[1::]
+        if self.uri['bucket'] in _object_key:
+            _object_key.remove(self.uri['bucket'])
+        _object_key = '/'.join(_object_key)
 
         _kwargs = {
             'Bucket': self.uri['bucket'],
-            'Key': object_key,
+            'Key': _object_key,
         }
 
         #Ugly way, find better one to deal with empty result.
-        ## result = {}
+        ## _result = {}
 
         try:
             _logger.info(
                 '[%s]Obtaining metadata of object "%s"',
                 self.id,
-                object_path
+                _object_path
             )
 
-            result = s3helpers.run_boto_client(_connection, 'head_object', _kwargs)
+            _result = s3helpers.run_boto_client(_connection, 'head_object', _kwargs)
 
         except dynafed_storagestats.exceptions.Warning as WARN:
             _logger.warning("[%s]%s", self.id, WARN.debug)
@@ -132,21 +132,21 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 "[%s]Custom Metadata found for object %s/%s: %s",
                 self.id,
                 self.uri['bucket'],
-                object_key,
-                result['Metadata']
+                _object_key,
+                _result['Metadata']
             )
             _logger.debug(
                 "[%s]Full HEAD response for object %s/%s: %s",
                 self.id,
                 self.uri['bucket'],
-                object_key,
-                result
+                _object_key,
+                _result
             )
 
         ##finally:
 
             try:
-                return result['Metadata']
+                return _result['Metadata']
 
             except KeyError:
                 return {}
@@ -207,24 +207,24 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         ###############################################
 
         # We obtain the path to the object
-        object_path = urlsplit(object_url).path
+        _object_path = urlsplit(object_url).path
 
         # Generate boto client to query S3 endpoint.
         _connection = s3helpers.get_s3_boto_client(self)
 
-        object_key = object_path.split('/')[1::]
-        if self.uri['bucket'] in object_key:
-            object_key.remove(self.uri['bucket'])
-        object_key = '/'.join(object_key)
+        _object_key = _object_path.split('/')[1::]
+        if self.uri['bucket'] in _object_key:
+            _object_key.remove(self.uri['bucket'])
+        _object_key = '/'.join(_object_key)
 
         # Preparing _kwargs
         _kwargs = {
             'Bucket': self.uri['bucket'],
             'CopySource': {
                 'Bucket': self.uri['bucket'],
-                'Key': object_key,
+                'Key': _object_key,
             },
-            'Key': object_key,
+            'Key': _object_key,
             'Metadata': metadata,
             'MetadataDirective': 'REPLACE',
         }
@@ -235,7 +235,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             _logger.info(
                 '[%s]Updating metadata of object "%s"',
                 self.id,
-                object_path
+                _object_path
             )
             _logger.debug(
                 '[%s]Metadata being uploaded: "%s"',
@@ -243,7 +243,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 metadata
             )
 
-            result = s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
+            _result = s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
 
         except AssertError as INFO:
             _logger.info("[%s]Empty metadata. Skipping API request.")
