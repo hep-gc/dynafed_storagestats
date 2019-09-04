@@ -48,10 +48,6 @@ def checksums(ARGS):
     ARGS -- argparse object from dynafed_storagestats.args.parse_args()
 
     """
-    ############# Creating loggers ################
-    _logger = logging.getLogger(__name__)
-    ###############################################
-
     # Check that all required arguments were given.
     helpers.check_required_checksum_args(ARGS)
 
@@ -70,39 +66,13 @@ def checksums(ARGS):
     # Extract the requested storage_share.
     _storage_share = _storage_endpoints[0].storage_shares[0]
 
-    # Run the positional sub-command.
+    # Process the requested checksum action for file/object.
     if ARGS.sub_cmd == 'get':
-        _metadata = _storage_share.get_object_metadata(ARGS.url)
-        _checksum = helpers.extract_object_checksum_from_metadata(ARGS.hash_type, _metadata)
+        _checksum = helpers.process_checksums_get(_storage_share, ARGS)
         print(_checksum)
 
     elif ARGS.sub_cmd == 'put':
-        _metadata = _storage_share.get_object_metadata(ARGS.url)
-
-        # Only run set_checksum if the object don't already contain that hash.
-        if ARGS.hash_type not in _metadata:
-
-            _metadata.setdefault(ARGS.hash_type, ARGS.checksum)
-
-            _logger.info(
-                "[%s]New metadata detected, calling API to upload: %s",
-                _storage_share.id,
-                _metadata
-            )
-
-            _storage_share.put_object_metadata(_metadata, ARGS.url)
-
-        else:
-            _logger.info(
-                "[%s]No new metadata detected, no need to call API.",
-                _storage_share.id
-            )
-            _logger.debug(
-                "[%s]Metadata: %s",
-                _storage_share.id,
-                _metadata
-            )
-
+        helpers.process_checksums_put(_storage_share, ARGS)
 
 
 def reports(ARGS):

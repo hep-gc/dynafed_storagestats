@@ -515,15 +515,93 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
         return _dictonary_of_stats
 
 
+def process_checksums_get(storage_share, args):
+    """Run StorageShare methods to get checksum information for file/object.
+
+    Checks if the StorageShare is cloud based or not and run different methods
+    necessary to get or put checksums for the requested file or object.
+
+    Not all StorageShare types are supported and user will get an error when
+    this is the case and execution will exit.
+
+    Arguments:
+    storage_share -- dynafed_storagestats StorageShare object.
+    args -- args -- argparse object.
+
+    Returns:
+    String containing checksum or error when get sub-command is requeted.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    # For cloud based storage_share.
+    if isinstance(storage_share, dynafed_storagestats.azure.base.AzureStorageShare) \
+    or isinstance(storage_share, dynafed_storagestats.s3.base.S3StorageShare):
+
+        _metadata = storage_share.get_object_metadata(args.url)
+        _checksum = extract_object_checksum_from_metadata(args.hash_type, _metadata)
+
+    return _checksum
+
+
+def process_checksums_put(storage_share, args):
+    """Run StorageShare methods to set checksum information for file/object.
+
+    Checks if the StorageShare is cloud based or not and run different methods
+    necessary to put checksums for the requested file or object.
+
+    Not all StorageShare types are supported and user will get an error when
+    this is the case and execution will exit.
+
+    Arguments:
+    storage_share -- dynafed_storagestats StorageShare object.
+    args -- args -- argparse object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    # For cloud based storage_share.
+    if isinstance(storage_share, dynafed_storagestats.azure.base.AzureStorageShare) \
+    or isinstance(storage_share, dynafed_storagestats.s3.base.S3StorageShare):
+
+        _metadata = storage_share.get_object_metadata(args.url)
+        # Only run set_checksum if the object don't already contain that hash.
+        if args.hash_type not in _metadata:
+
+            _metadata.setdefault(args.hash_type, args.checksum)
+
+            _logger.info(
+                "[%s]New metadata detected, calling API to upload: %s",
+                storage_share.id,
+                _metadata
+            )
+
+            storage_share.put_object_metadata(_metadata, args.url)
+
+        else:
+            _logger.info(
+                "[%s]No new metadata detected, no need to call API.",
+                storage_share.id
+            )
+            _logger.debug(
+                "[%s]Metadata: %s",
+                storage_share.id,
+                _metadata
+            )
+
+
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
 
     Runs get_filelist() method for the first StorageShare in the list of the
     StorageEndpoint as long as it has not been flagged as offline.
 
-    #It then calls
-    #process_endpoint_list_results() to copy the results if there are multiple
-    #StorageShares. Then if requested upload the stats to memcached.
+    It then calls process_endpoint_list_results() to copy the results if there
+    are multiple StorageShares. Then if requested upload the stats to memcached.
     Also handles the exceptions to failures in creating the report file,
     deleting it in case of error.
 
