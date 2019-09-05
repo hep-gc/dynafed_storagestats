@@ -2,6 +2,8 @@
 
 """Runner to gather storage share information."""
 
+import logging
+
 from multiprocessing.dummy import Pool as ThreadPool
 
 from dynafed_storagestats import args
@@ -30,10 +32,48 @@ def main():
         reports(ARGS)
     elif ARGS.cmd == 'stats':
         stats(ARGS)
+    elif ARGS.cmd == 'checksums':
+        checksums(ARGS)
+
 
 ################
 # Sub-Commands #
 ################
+def checksums(ARGS):
+    """Execute the 'checksums' sub-command.
+
+    Run the main() function with 'checksums -h' arguments to see help.
+
+    Arguments:
+    ARGS -- argparse object from dynafed_storagestats.args.parse_args()
+
+    """
+    # Check that all required arguments were given.
+    helpers.check_required_checksum_args(ARGS)
+
+    # Get list of StorageShare objects from the configuration files.
+    _storage_shares = configloader.get_storage_shares(
+        ARGS.config_path
+    )
+
+    # Create a list of StorageEndpoint objects with the StorageShares and
+    # select the one chosen from CLI.
+    _storage_endpoints = configloader.get_storage_endpoints(
+        _storage_shares,
+        ARGS.endpoint
+    )
+
+    # Extract the requested storage_share.
+    _storage_share = _storage_endpoints[0].storage_shares[0]
+
+    # Process the requested checksum action for file/object.
+    if ARGS.sub_cmd == 'get':
+        _checksum = helpers.process_checksums_get(_storage_share, ARGS)
+        print(_checksum)
+
+    elif ARGS.sub_cmd == 'put':
+        helpers.process_checksums_put(_storage_share, ARGS)
+
 
 def reports(ARGS):
     """Execute the 'reports' sub-command.

@@ -7,7 +7,7 @@
 class BaseException(Exception):
     """
     Base exception class for dynafed_storagestats module. Formats the message
-    and debug attibutes with the variables passed from the SubClasses.
+    and debug attributes with the variables passed from the SubClasses.
     """
     def __init__(self, error="ERROR", status_code="000", message=None, debug=None):
 
@@ -18,6 +18,7 @@ class BaseException(Exception):
             self.message = self.error_code + "An unknown exception occurred processing"
         else:
             self.message = self.error_code + message
+
         if debug is None:
             self.debug = self.message
         else:
@@ -39,6 +40,37 @@ class BaseError(BaseException):
             self.message = "A unknown error occurred."
         else:
             self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class ChecksumError(BaseError):
+    """
+    Base error exception subclass for anything relating to the file/object checksums.
+    """
+    def __init__(self, error="ChecksumError", status_code="001", message=None, debug=None):
+
+        if message is None:
+            # Set some default useful error message
+            self.message = "An unknown error occurred dealing with file/object checksum."
+        else:
+            self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class ChecksumErrorMissingEndpoint(ChecksumError):
+    """
+    Exception error when the endpoint ID is missing form the request.
+    """
+    def __init__(self, storage_share, error="ChecksumErrorMissingEndpoint", status_code="00?", debug=None):
+
+        self.storage_share = storage_share
+
+        self.message = 'Missing ndpoint ID. Check your request.'
+
         self.debug = debug
 
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
@@ -320,6 +352,37 @@ class BaseWarning(BaseException):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
+class ChecksumWarning(BaseWarning):
+    """
+    Base error exception subclass for anything relating to the file/object checksums.
+    """
+    def __init__(self, error="ChecksumError", status_code="001", message=None, debug=None):
+
+        if message is None:
+            # Set some default useful error message
+            self.message = "An unknown error occurred dealing with file/object checksum."
+        else:
+            self.message = message
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class ChecksumWarningMissingChecksum(ChecksumWarning):
+    """
+    Exception error when the endpoint ID is missing form the request.
+    """
+    def __init__(self, storage_share, error="ChecksumWarningMissingChecksum", status_code="00?", debug=None):
+
+        self.storage_share = storage_share
+
+        self.message = 'No checksum found.'
+
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
 class ConfigFileWarning(BaseWarning):
     """
     Base warning exception subclass for anything relating to the config file(s).
@@ -328,7 +391,7 @@ class ConfigFileWarning(BaseWarning):
 
         if message is None:
             # Set some default useful error message
-            self.message = 'An unknown error occurred reading a configuration file.'
+            self.message = 'An unknown warning occurred reading a configuration file.'
         self.debug = debug
 
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
