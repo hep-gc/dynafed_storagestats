@@ -256,6 +256,49 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         )
 
 
+    def put_object_checksum(self, checksum, hash_type, object_url):
+        """Run process to add checksum from object's metadata if it is missing.
+
+        Arguments:
+        checksum -- String containing checksum.
+        hash_type -- String with type of checksum.
+        object_url -- String with URL location for requested object.
+
+        Returns:
+        Nothing is returned.
+
+        """
+        ############# Creating loggers ################
+        _logger = logging.getLogger(__name__)
+        ###############################################
+
+        _metadata = self.get_object_metadata(object_url)
+
+        # Only run set_checksum if the object don't already contain that hash.
+        if hash_type not in _metadata:
+
+            _metadata.setdefault(hash_type, checksum)
+
+            _logger.info(
+                "[%s]New metadata detected, calling API to upload: %s",
+                self.id,
+                _metadata
+            )
+
+            self.put_object_metadata(_metadata, object_url)
+
+        else:
+            _logger.info(
+                "[%s]No new metadata detected, no need to call API.",
+                self.id
+            )
+            _logger.debug(
+                "[%s]Metadata: %s",
+                self.id,
+                _metadata
+            )
+
+
     def put_object_metadata(self, metadata, object_url):
         """Use boto3 copy_object to add checksum metadata to object in S3 storage.
 

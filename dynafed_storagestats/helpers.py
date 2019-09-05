@@ -506,13 +506,13 @@ def process_checksums_get(storage_share, args):
 
     except AttributeError as ERR:
         _logger.error(
-            "[%s]Checksum operations not supported for %s. %s",
+            "[%s]Checksum GET operation not supported for %s. %s",
             storage_share.id,
             storage_share.storageprotocol,
             ERR
         )
         print(
-            "[ERROR][%s]Checksum operations not supported %s. %s" % (
+            "[ERROR][%s]Checksum GET operation not supported %s. %s" % (
                 storage_share.id,
                 storage_share.storageprotocol,
                 ERR
@@ -525,7 +525,7 @@ def process_checksums_get(storage_share, args):
 
 
 def process_checksums_put(storage_share, args):
-    """Run StorageShare methods to set checksum information for file/object.
+    """Run StorageShare methods to put checksum information for file/object.
 
     Checks if the StorageShare is cloud based or not and run different methods
     necessary to put checksums for the requested file or object.
@@ -542,34 +542,25 @@ def process_checksums_put(storage_share, args):
     _logger = logging.getLogger(__name__)
     ###############################################
 
-    # For cloud based storage_share.
-    if isinstance(storage_share, dynafed_storagestats.azure.base.AzureStorageShare) \
-    or isinstance(storage_share, dynafed_storagestats.s3.base.S3StorageShare):
+    try:
 
-        _metadata = storage_share.get_object_metadata(args.url)
-        # Only run set_checksum if the object don't already contain that hash.
-        if args.hash_type not in _metadata:
+        storage_share.put_object_checksum(args.checksum, args.hash_type, args.url)
 
-            _metadata.setdefault(args.hash_type, args.checksum)
-
-            _logger.info(
-                "[%s]New metadata detected, calling API to upload: %s",
+    except AttributeError as ERR:
+        _logger.error(
+            "[%s]Checksum PUT operation not supported for %s. %s",
+            storage_share.id,
+            storage_share.storageprotocol,
+            ERR
+        )
+        print(
+            "[ERROR][%s]Checksum PUT operation not supported %s. %s" % (
                 storage_share.id,
-                _metadata
+                storage_share.storageprotocol,
+                ERR
             )
-
-            storage_share.put_object_metadata(_metadata, args.url)
-
-        else:
-            _logger.info(
-                "[%s]No new metadata detected, no need to call API.",
-                storage_share.id
-            )
-            _logger.debug(
-                "[%s]Metadata: %s",
-                storage_share.id,
-                _metadata
-            )
+        )
+        sys.exit(1)
 
 
 def process_storagereports(storage_endpoint, args):
