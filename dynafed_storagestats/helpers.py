@@ -176,42 +176,6 @@ def check_required_checksum_args(args):
         sys.exit(1)
 
 
-def extract_object_checksum_from_metadata(hash_type, metadata):
-    """Check if the metadata contains requested checksum.
-
-    Arguments:
-    hash_type -- Type of checksum requested.
-    metadata -- Dict with S3 object metadata.
-
-    Returns:
-    String Checksum or False if not found.
-
-    """
-    ############# Creating loggers ################
-    _logger = logging.getLogger(__name__)
-    ###############################################
-
-    try:
-        _logger.info(
-            'Checking if metadata contains checksum: "%s"',
-            hash_type
-        )
-        _logger.debug(
-            'Metadata being checked: "%s"',
-            metadata,
-        )
-
-        return metadata[hash_type]
-
-    except KeyError:
-        _logger.info(
-            'Metadata does not contain checksum: "%s"',
-            hash_type
-        )
-
-        return False
-
-
 def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_port='11211'):
     """Obtain StorageShares' status contained in memcached and return as dict.
 
@@ -536,14 +500,28 @@ def process_checksums_get(storage_share, args):
     _logger = logging.getLogger(__name__)
     ###############################################
 
-    # For cloud based storage_share.
-    if isinstance(storage_share, dynafed_storagestats.azure.base.AzureStorageShare) \
-    or isinstance(storage_share, dynafed_storagestats.s3.base.S3StorageShare):
+    try:
 
-        _metadata = storage_share.get_object_metadata(args.url)
-        _checksum = extract_object_checksum_from_metadata(args.hash_type, _metadata)
+        _checksum = storage_share.get_object_checksum(args.hash_type, args.url)
 
-    return _checksum
+    except AttributeError as ERR:
+        _logger.error(
+            "[%s]Checksum operations not supported for %s. %s",
+            storage_share.id,
+            storage_share.storageprotocol,
+            ERR
+        )
+        print(
+            "[ERROR][%s]Checksum operations not supported %s. %s" % (
+                storage_share.id,
+                storage_share.storageprotocol,
+                ERR
+            )
+        )
+        sys.exit(1)
+
+    else:
+        return _checksum
 
 
 def process_checksums_put(storage_share, args):

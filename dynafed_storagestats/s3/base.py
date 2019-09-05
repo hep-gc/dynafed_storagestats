@@ -78,6 +78,53 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         self.star_fields['storage_share'] = self.uri['bucket']
 
 
+    def get_object_checksum(self, hash_type, object_url):
+        """Run process to obtain checksum from object's metadata if it exists.
+
+        Arguments:
+        hash_type -- String with type of checksum requested.
+        object_url -- String with URL location for requested object.
+
+        Returns:
+        String Checksum or False if not found from extract_object_checksum_from_metadata
+
+        """
+        ############# Creating loggers ################
+        _logger = logging.getLogger(__name__)
+        ###############################################
+
+        _logger.info(
+            '[%s]Obtaining object metadata: "%s"',
+            self.id,
+            hash_type
+        )
+
+        _metadata = self.get_object_metadata(object_url)
+
+        try:
+            _logger.info(
+                '[%s]Checking if metadata contains checksum: "%s"',
+                self.id,
+                hash_type
+            )
+            _logger.debug(
+                '[%s]Metadata being checked: "%s"',
+                self.id,
+                _metadata
+            )
+
+            return _metadata[hash_type]
+
+        except KeyError:
+            _logger.info(
+                '[%s]Metadata does not contain checksum: "%s"',
+                self.id,
+                hash_type
+            )
+
+            return False
+
+
     def get_object_metadata(self, object_url):
         """Check if the object contains checksum metadata and return it.
 
