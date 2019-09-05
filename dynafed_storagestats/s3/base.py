@@ -115,14 +115,13 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
             return _metadata[hash_type]
 
-        except KeyError:
-            _logger.info(
-                '[%s]Metadata does not contain checksum: "%s"',
-                self.id,
-                hash_type
+        except KeyError as ERR:
+            raise dynafed_storagestats.exceptions.ChecksumWarningMissingChecksum(
+                error='MissingChecksum',
+                status_code='999',
+                debug=str(ERR),
+                storage_share=self
             )
-
-            return False
 
 
     def get_object_metadata(self, object_url):

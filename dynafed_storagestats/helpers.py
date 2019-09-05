@@ -492,7 +492,7 @@ def process_checksums_get(storage_share, args):
     args -- argparse object.
 
     Returns:
-    String containing checksum or error when get sub-command is requeted.
+    String containing checksum or None.
 
     """
     ############# Creating loggers ################
@@ -502,6 +502,10 @@ def process_checksums_get(storage_share, args):
     try:
 
         _checksum = storage_share.get_object_checksum(args.hash_type, args.url)
+
+    except dynafed_storagestats.exceptions.ChecksumWarningMissingChecksum as WARN:
+        _logger.warning("[%s]%s", storage_share.id, WARN.debug)
+        return None
 
     except AttributeError as ERR:
         _logger.error(
