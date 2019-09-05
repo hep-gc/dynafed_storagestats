@@ -489,7 +489,7 @@ def process_checksums_get(storage_share, args):
 
     Arguments:
     storage_share -- dynafed_storagestats StorageShare object.
-    args -- args -- argparse object.
+    args -- argparse object.
 
     Returns:
     String containing checksum or error when get sub-command is requeted.
