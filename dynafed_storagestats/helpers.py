@@ -15,50 +15,6 @@ from dynafed_storagestats import time
 # Functions #
 #############
 
-def convert_size_to_bytes(size):
-    """Convert given size to bytes.
-
-    Arguments:
-    size - string containing number and optionally storage space unit.
-           Examples: 1000, 1KiB, 10tb.
-
-    Returns:
-    Bytes as integer.
-
-    """
-    ############# Creating loggers ################
-
-    ###############################################
-
-    _multipliers = {
-        'kib': 1024,
-        'mib': 1024**2,
-        'gib': 1024**3,
-        'tib': 1024**4,
-        'pib': 1024**5,
-        'kb': 1000,
-        'mb': 1000**2,
-        'gb': 1000**3,
-        'tb': 1000**4,
-        'pb': 1000**5,
-    }
-
-    for _suffix in _multipliers:
-        if size.lower().endswith(_suffix):
-            return int(size[0:-len(_suffix)]) * _multipliers[_suffix]
-
-    else:
-        if size.lower().endswith('b'):
-            return int(size[0:-1])
-
-    try:
-        return int(size)
-
-    except ValueError: # for example "1024x"
-        print('Malformed input for setting: "storagestats.quota"')
-        exit()
-
-
 def check_connectionstats(storage_share_objects, stats):
     """Check each storage share's offline/online status and flag accordingly.
 
@@ -174,6 +130,50 @@ def check_required_checksum_args(args):
 
     if _exit:
         sys.exit(1)
+
+
+def convert_size_to_bytes(size):
+    """Convert given size to bytes.
+
+    Arguments:
+    size - string containing number and optionally storage space unit.
+           Examples: 1000, 1KiB, 10tb.
+
+    Returns:
+    Bytes as integer.
+
+    """
+    ############# Creating loggers ################
+
+    ###############################################
+
+    _multipliers = {
+        'kib': 1024,
+        'mib': 1024**2,
+        'gib': 1024**3,
+        'tib': 1024**4,
+        'pib': 1024**5,
+        'kb': 1000,
+        'mb': 1000**2,
+        'gb': 1000**3,
+        'tb': 1000**4,
+        'pb': 1000**5,
+    }
+
+    for _suffix in _multipliers:
+        if size.lower().endswith(_suffix):
+            return int(size[0:-len(_suffix)]) * _multipliers[_suffix]
+
+    else:
+        if size.lower().endswith('b'):
+            return int(size[0:-1])
+
+    try:
+        return int(size)
+
+    except ValueError: # for example "1024x"
+        print('Malformed input for setting: "storagestats.quota"')
+        exit()
 
 
 def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_port='11211'):
@@ -563,6 +563,65 @@ def process_checksums_put(storage_share, args):
         sys.exit(1)
 
 
+def process_endpoint_list_results(storage_share_objects):
+    """Copy the storage stats from the first StorageShare to the rest in list.
+
+    Copies the results from the first StorageShare in the list whose storagestats
+    have been obtained by process_storagestats() to the rest of a StorageEndpoint
+    that has multiple StorageShares. Non "api" quotas will NOT be overwritten.
+
+    Arguments:
+    storage_share_objects -- list of dynafed_storagestats StorageShare objects.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    # If there is only one storage_share, there is nothing to do!
+    if len(storage_share_objects) >= 1:
+        for _storage_share in list(range(1, len(storage_share_objects))):
+            _logger.info(
+                '[%s] Same storage endpoint as "%s". Copying stats.',
+                storage_share_objects[_storage_share].id,
+                storage_share_objects[0].id
+            )
+
+            storage_share_objects[_storage_share].stats['filecount'] = (
+                storage_share_objects[0].stats['filecount']
+            )
+            storage_share_objects[_storage_share].stats['bytesused'] = (
+                storage_share_objects[0].stats['bytesused']
+            )
+
+            # Check if the plugin settings requests the quota from API. If so,
+            # copy it, else use the default or manually setup quota.
+            if storage_share_objects[_storage_share].plugin_settings['storagestats.quota'] == 'api':
+                storage_share_objects[_storage_share].stats['quota'] = (
+                    storage_share_objects[0].stats['quota']
+                )
+                storage_share_objects[_storage_share].stats['bytesfree'] = (
+                    storage_share_objects[0].stats['bytesfree']
+                )
+
+            else:
+                storage_share_objects[_storage_share].stats['quota'] = (
+                    storage_share_objects[_storage_share].plugin_settings['storagestats.quota']
+                )
+                storage_share_objects[_storage_share].stats['bytesfree'] = (
+                    storage_share_objects[_storage_share].stats['quota']
+                    - storage_share_objects[_storage_share].stats['bytesused']
+                )
+
+            # Might need to append any issues with the configuration settings
+            storage_share_objects[_storage_share].status = (
+                storage_share_objects[0].status
+            )
+            storage_share_objects[_storage_share].debug = (
+                storage_share_objects[0].debug
+            )
+
+
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
 
@@ -757,65 +816,6 @@ def process_storagestats(storage_endpoint, args):
                     _logger.error("[%s]%s", storage_share.id, ERR.debug)
                     storage_share.debug.append("[ERROR]" + ERR.debug)
                     storage_share.status = storage_share.status + "," + "[ERROR]" + ERR.error_code
-
-
-def process_endpoint_list_results(storage_share_objects):
-    """Copy the storage stats from the first StorageShare to the rest in list.
-
-    Copies the results from the first StorageShare in the list whose storagestats
-    have been obtained by process_storagestats() to the rest of a StorageEndpoint
-    that has multiple StorageShares. Non "api" quotas will NOT be overwritten.
-
-    Arguments:
-    storage_share_objects -- list of dynafed_storagestats StorageShare objects.
-
-    """
-    ############# Creating loggers ################
-    _logger = logging.getLogger(__name__)
-    ###############################################
-
-    # If there is only one storage_share, there is nothing to do!
-    if len(storage_share_objects) >= 1:
-        for _storage_share in list(range(1, len(storage_share_objects))):
-            _logger.info(
-                '[%s] Same storage endpoint as "%s". Copying stats.',
-                storage_share_objects[_storage_share].id,
-                storage_share_objects[0].id
-            )
-
-            storage_share_objects[_storage_share].stats['filecount'] = (
-                storage_share_objects[0].stats['filecount']
-            )
-            storage_share_objects[_storage_share].stats['bytesused'] = (
-                storage_share_objects[0].stats['bytesused']
-            )
-
-            # Check if the plugin settings requests the quota from API. If so,
-            # copy it, else use the default or manually setup quota.
-            if storage_share_objects[_storage_share].plugin_settings['storagestats.quota'] == 'api':
-                storage_share_objects[_storage_share].stats['quota'] = (
-                    storage_share_objects[0].stats['quota']
-                )
-                storage_share_objects[_storage_share].stats['bytesfree'] = (
-                    storage_share_objects[0].stats['bytesfree']
-                )
-
-            else:
-                storage_share_objects[_storage_share].stats['quota'] = (
-                    storage_share_objects[_storage_share].plugin_settings['storagestats.quota']
-                )
-                storage_share_objects[_storage_share].stats['bytesfree'] = (
-                    storage_share_objects[_storage_share].stats['quota']
-                    - storage_share_objects[_storage_share].stats['bytesused']
-                )
-
-            # Might need to append any issues with the configuration settings
-            storage_share_objects[_storage_share].status = (
-                storage_share_objects[0].status
-            )
-            storage_share_objects[_storage_share].debug = (
-                storage_share_objects[0].debug
-            )
 
 
 def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
