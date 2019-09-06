@@ -69,7 +69,22 @@ class ChecksumErrorMissingEndpoint(ChecksumError):
 
         self.storage_share = storage_share
 
-        self.message = 'Missing ndpoint ID. Check your request.'
+        self.message = 'Missing endpoint ID. Check your request.'
+
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
+
+class ChecksumErrorMissingArgument(ChecksumError):
+    """
+    Exception error when required arguments are missing.
+    """
+    def __init__(self, storage_share, error="ChecksumErrorMissingEndpoint", status_code="00?", debug=None):
+
+        self.storage_share = storage_share
+
+        self.message = 'Missing required argument.'
 
         self.debug = debug
 

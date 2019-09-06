@@ -100,12 +100,12 @@ def check_frequency(storage_share_objects, stats):
 def check_required_checksum_args(args):
     """Check that the client included required arguments for the checksums command.
 
-    Since there are certain arguments that are required for the checksusm command
+    Since there are certain arguments that are required for the checksums command
     to work, we make sure here they are located. If not, the client will get an
     error message and the process will exit.
 
     Arguments:
-    args -- args -- argparse object.
+    args -- argparse object.
 
     """
     ############# Creating loggers ################
@@ -120,7 +120,7 @@ def check_required_checksum_args(args):
         _exit = True
 
     if not args.hash_type:
-        _logger.critical("[CRITICAL]No checksum has type selected. Please use " \
+        _logger.critical("[CRITICAL]No checksum hash type selected. Please use " \
             "'-t [hash type]'")
         print("[CRITICAL]No checksum has type selected. Please use " \
             "'-t [hash type]'")
@@ -193,7 +193,8 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     memcahced_port -- memcached instance Port.
 
     Returns:
-    dictionary
+    Dictionary
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -279,6 +280,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
 
     Returns:
     array OR dictionary OR string
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -407,6 +409,7 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
 
     Returns:
     array OR dictionary OR string
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -891,6 +894,7 @@ def update_storage_share_storagestats(storage_share_objects, stats):
     storage_endpoint -- dynafed_storagestats StorageEndpoint.
     stats -- dictionary of storage_shares and their status obtained from
              get_cached_storage_stats with return_as='expanded_dictionary'.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
