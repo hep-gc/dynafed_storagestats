@@ -212,3 +212,10 @@ v1.0.17
   CHANGE: Workflow now tries to obtain storage stats from memcache and update
           objects accordingly. This way we still get the available
           information even if the frequency time has not been surpassed.
+v1.0.18
+  ADDED: 'checksums' positional command with 'get' and 'put' sub-commands.
+  ADDED: base exceptions for checksum error and warnings.
+  ADDED: self contained get_object_checksum method for S3StorageShare.
+  ADDED: self contained put_object_checksum method for S3StorageShare.
+  CHANGE: Renamed set_object_metadata to put_object_metadata.
+  REMOVED: validate_checksum and deps, does note belong here.
