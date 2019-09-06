@@ -104,7 +104,6 @@ def add_checkusms_get_subparser(subparser):
         action='store',
         default=False,
         dest='endpoint',
-        nargs='*',
         help="Choose endpoint containing desired object. " \
              "Required."
     )
@@ -199,7 +198,6 @@ def add_checkusms_put_subparser(subparser):
         action='store',
         default=False,
         dest='endpoint',
-        nargs='*',
         help="Choose endpoint containing desired object. " \
              "Required."
     )
