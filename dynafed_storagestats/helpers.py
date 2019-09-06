@@ -2,6 +2,8 @@
 
 import logging, logging.handlers
 import os
+import sys
+
 
 import dynafed_storagestats.exceptions
 from dynafed_storagestats import memcache
@@ -11,50 +13,6 @@ from dynafed_storagestats import time
 #############
 # Functions #
 #############
-
-def convert_size_to_bytes(size):
-    """Convert given size to bytes.
-
-    Arguments:
-    size - string containing number and optionally storage space unit.
-           Examples: 1000, 1KiB, 10tb.
-
-    Returns:
-    Bytes as integer.
-
-    """
-    ############# Creating loggers ################
-
-    ###############################################
-
-    _multipliers = {
-        'kib': 1024,
-        'mib': 1024**2,
-        'gib': 1024**3,
-        'tib': 1024**4,
-        'pib': 1024**5,
-        'kb': 1000,
-        'mb': 1000**2,
-        'gb': 1000**3,
-        'tb': 1000**4,
-        'pb': 1000**5,
-    }
-
-    for _suffix in _multipliers:
-        if size.lower().endswith(_suffix):
-            return int(size[0:-len(_suffix)]) * _multipliers[_suffix]
-
-    else:
-        if size.lower().endswith('b'):
-            return int(size[0:-1])
-
-    try:
-        return int(size)
-
-    except ValueError: # for example "1024x"
-        print('Malformed input for setting: "storagestats.quota"')
-        exit()
-
 
 def check_connectionstats(storage_share_objects, stats):
     """Check each storage share's offline/online status and flag accordingly.
@@ -139,6 +97,88 @@ def check_frequency(storage_share_objects, stats):
             )
 
 
+def check_required_checksum_args(args):
+    """Check that the client included required arguments for the checksums command.
+
+    Since there are certain arguments that are required for the checksums command
+    to work, we make sure here they are located. If not, the client will get an
+    error message and the process will exit.
+
+    Arguments:
+    args -- argparse object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    _exit = False
+
+    if not args.endpoint:
+        _logger.critical("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'")
+        print("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'")
+        _exit = True
+
+    if not args.hash_type:
+        _logger.critical("[CRITICAL]No checksum hash type selected. Please use " \
+            "'-t [hash type]'")
+        print("[CRITICAL]No checksum has type selected. Please use " \
+            "'-t [hash type]'")
+        _exit = True
+
+    if not args.url:
+        _logger.critical("[CRITICAL]No file/object URL provided. Please use '-u [url]'")
+        print("[CRITICAL]No file/object URL provided. Please use '-u [url]'")
+        _exit = True
+
+    if _exit:
+        sys.exit(1)
+
+
+def convert_size_to_bytes(size):
+    """Convert given size to bytes.
+
+    Arguments:
+    size - string containing number and optionally storage space unit.
+           Examples: 1000, 1KiB, 10tb.
+
+    Returns:
+    Bytes as integer.
+
+    """
+    ############# Creating loggers ################
+
+    ###############################################
+
+    _multipliers = {
+        'kib': 1024,
+        'mib': 1024**2,
+        'gib': 1024**3,
+        'tib': 1024**4,
+        'pib': 1024**5,
+        'kb': 1000,
+        'mb': 1000**2,
+        'gb': 1000**3,
+        'tb': 1000**4,
+        'pb': 1000**5,
+    }
+
+    for _suffix in _multipliers:
+        if size.lower().endswith(_suffix):
+            return int(size[0:-len(_suffix)]) * _multipliers[_suffix]
+
+    else:
+        if size.lower().endswith('b'):
+            return int(size[0:-1])
+
+    try:
+        return int(size)
+
+    except ValueError: # for example "1024x"
+        print('Malformed input for setting: "storagestats.quota"')
+        exit()
+
+
 def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_port='11211'):
     """Obtain StorageShares' status contained in memcached and return as dict.
 
@@ -153,7 +193,8 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     memcahced_port -- memcached instance Port.
 
     Returns:
-    dictionary
+    Dictionary
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -239,6 +280,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
 
     Returns:
     array OR dictionary OR string
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -367,6 +409,7 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
 
     Returns:
     array OR dictionary OR string
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)
@@ -442,15 +485,168 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
         return _dictonary_of_stats
 
 
+def process_checksums_get(storage_share, hash_type, url):
+    """Run StorageShare get_object_checksum() method to get checksum of file/object.
+
+    Run StorageShare get_object_checksum() method to get the requested type of
+    checksum for file/object whose URL is given.
+
+    The client also needs to sp
+
+    If the StorageShare does not support the method, the client will get an
+    error message and the process will exit.
+
+    Arguments:
+    storage_share -- dynafed_storagestats StorageShare object.
+    hash_type -- string that indicates the type of has requested.
+    url -- string containing url to the desired file/object.
+
+    Returns:
+    String containing checksum or 'None'.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    try:
+        _checksum = storage_share.get_object_checksum(hash_type, url)
+
+    except dynafed_storagestats.exceptions.ChecksumWarningMissingChecksum as WARN:
+        _logger.warning("[%s]%s", storage_share.id, WARN.debug)
+
+        return None
+
+    except AttributeError as ERR:
+        _logger.error(
+            "[%s]Checksum GET operation not supported for %s. %s",
+            storage_share.id,
+            storage_share.storageprotocol,
+            ERR
+        )
+
+        print(
+            "[ERROR][%s]Checksum GET operation not supported %s. %s" % (
+                storage_share.id,
+                storage_share.storageprotocol,
+                ERR
+            )
+        )
+
+        sys.exit(1)
+
+    else:
+        return _checksum
+
+
+def process_checksums_put(storage_share, checksum, hash_type, url):
+    """Run StorageShare put_object_checksum() methods to put checksum for file/object.
+
+    Run StorageShare put_object_checksum() method to put checksum on file/object,
+    whose URL is given. Both the checksum and the type of hash needs to be given.
+
+    If the StorageShare does not support the method, the client will get an
+    error message and the process will exit.
+
+    Arguments:
+    storage_share -- dynafed_storagestats StorageShare object.
+    checksum -- string containing checksum to put.
+    hash_type -- string that indicates the type of has requested.
+    url -- string containing url to the desired file/object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    try:
+
+        storage_share.put_object_checksum(checksum, hash_type, url)
+
+    except AttributeError as ERR:
+        _logger.error(
+            "[%s]Checksum PUT operation not supported for %s. %s",
+            storage_share.id,
+            storage_share.storageprotocol,
+            ERR
+        )
+        print(
+            "[ERROR][%s]Checksum PUT operation not supported %s. %s" % (
+                storage_share.id,
+                storage_share.storageprotocol,
+                ERR
+            )
+        )
+        sys.exit(1)
+
+
+def process_endpoint_list_results(storage_share_objects):
+    """Copy the storage stats from the first StorageShare to the rest in list.
+
+    Copies the results from the first StorageShare in the list whose storagestats
+    have been obtained by process_storagestats() to the rest of a StorageEndpoint
+    that has multiple StorageShares. Non "api" quotas will NOT be overwritten.
+
+    Arguments:
+    storage_share_objects -- list of dynafed_storagestats StorageShare objects.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    # If there is only one storage_share, there is nothing to do!
+    if len(storage_share_objects) >= 1:
+        for _storage_share in list(range(1, len(storage_share_objects))):
+            _logger.info(
+                '[%s] Same storage endpoint as "%s". Copying stats.',
+                storage_share_objects[_storage_share].id,
+                storage_share_objects[0].id
+            )
+
+            storage_share_objects[_storage_share].stats['filecount'] = (
+                storage_share_objects[0].stats['filecount']
+            )
+            storage_share_objects[_storage_share].stats['bytesused'] = (
+                storage_share_objects[0].stats['bytesused']
+            )
+
+            # Check if the plugin settings requests the quota from API. If so,
+            # copy it, else use the default or manually setup quota.
+            if storage_share_objects[_storage_share].plugin_settings['storagestats.quota'] == 'api':
+                storage_share_objects[_storage_share].stats['quota'] = (
+                    storage_share_objects[0].stats['quota']
+                )
+                storage_share_objects[_storage_share].stats['bytesfree'] = (
+                    storage_share_objects[0].stats['bytesfree']
+                )
+
+            else:
+                storage_share_objects[_storage_share].stats['quota'] = (
+                    storage_share_objects[_storage_share].plugin_settings['storagestats.quota']
+                )
+                storage_share_objects[_storage_share].stats['bytesfree'] = (
+                    storage_share_objects[_storage_share].stats['quota']
+                    - storage_share_objects[_storage_share].stats['bytesused']
+                )
+
+            # Might need to append any issues with the configuration settings
+            storage_share_objects[_storage_share].status = (
+                storage_share_objects[0].status
+            )
+            storage_share_objects[_storage_share].debug = (
+                storage_share_objects[0].debug
+            )
+
+
 def process_storagereports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
 
     Runs get_filelist() method for the first StorageShare in the list of the
     StorageEndpoint as long as it has not been flagged as offline.
 
-    #It then calls
-    #process_endpoint_list_results() to copy the results if there are multiple
-    #StorageShares. Then if requested upload the stats to memcached.
+    It then calls process_endpoint_list_results() to copy the results if there
+    are multiple StorageShares. Then if requested upload the stats to memcached.
     Also handles the exceptions to failures in creating the report file,
     deleting it in case of error.
 
@@ -639,65 +835,6 @@ def process_storagestats(storage_endpoint, args):
                     storage_share.status = storage_share.status + "," + "[ERROR]" + ERR.error_code
 
 
-def process_endpoint_list_results(storage_share_objects):
-    """Copy the storage stats from the first StorageShare to the rest in list.
-
-    Copies the results from the first StorageShare in the list whose storagestats
-    have been obtained by process_storagestats() to the rest of a StorageEndpoint
-    that has multiple StorageShares. Non "api" quotas will NOT be overwritten.
-
-    Arguments:
-    storage_share_objects -- list of dynafed_storagestats StorageShare objects.
-
-    """
-    ############# Creating loggers ################
-    _logger = logging.getLogger(__name__)
-    ###############################################
-
-    # If there is only one storage_share, there is nothing to do!
-    if len(storage_share_objects) >= 1:
-        for _storage_share in list(range(1, len(storage_share_objects))):
-            _logger.info(
-                '[%s] Same storage endpoint as "%s". Copying stats.',
-                storage_share_objects[_storage_share].id,
-                storage_share_objects[0].id
-            )
-
-            storage_share_objects[_storage_share].stats['filecount'] = (
-                storage_share_objects[0].stats['filecount']
-            )
-            storage_share_objects[_storage_share].stats['bytesused'] = (
-                storage_share_objects[0].stats['bytesused']
-            )
-
-            # Check if the plugin settings requests the quota from API. If so,
-            # copy it, else use the default or manually setup quota.
-            if storage_share_objects[_storage_share].plugin_settings['storagestats.quota'] == 'api':
-                storage_share_objects[_storage_share].stats['quota'] = (
-                    storage_share_objects[0].stats['quota']
-                )
-                storage_share_objects[_storage_share].stats['bytesfree'] = (
-                    storage_share_objects[0].stats['bytesfree']
-                )
-
-            else:
-                storage_share_objects[_storage_share].stats['quota'] = (
-                    storage_share_objects[_storage_share].plugin_settings['storagestats.quota']
-                )
-                storage_share_objects[_storage_share].stats['bytesfree'] = (
-                    storage_share_objects[_storage_share].stats['quota']
-                    - storage_share_objects[_storage_share].stats['bytesused']
-                )
-
-            # Might need to append any issues with the configuration settings
-            storage_share_objects[_storage_share].status = (
-                storage_share_objects[0].status
-            )
-            storage_share_objects[_storage_share].debug = (
-                storage_share_objects[0].debug
-            )
-
-
 def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
     """Setup the logger format to be used throughout the script.
 
@@ -757,6 +894,7 @@ def update_storage_share_storagestats(storage_share_objects, stats):
     storage_endpoint -- dynafed_storagestats StorageEndpoint.
     stats -- dictionary of storage_shares and their status obtained from
              get_cached_storage_stats with return_as='expanded_dictionary'.
+
     """
     ############# Creating loggers ################
     _logger = logging.getLogger(__name__)

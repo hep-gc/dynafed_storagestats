@@ -3,6 +3,7 @@
 import logging
 from urllib.parse import urlsplit
 import os
+import sys
 
 import dynafed_storagestats.base
 import dynafed_storagestats.s3.helpers as s3helpers
@@ -77,76 +78,147 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         self.star_fields['storage_share'] = self.uri['bucket']
 
 
-    def get_object_metadata(self, object_url):
-        """Check if the object contains checksum metadata and return it.
+    def get_object_checksum(self, hash_type, object_url):
+        """Run process to obtain checksum from object's metadata if it exists.
 
         Arguments:
-        object_url -- URL location for requested object.
+        hash_type -- String with type of checksum requested.
+        object_url -- String with URL location for requested object.
+
+        Returns:
+        String Checksum if found, an exception is raised otherwise.
 
         """
         ############# Creating loggers ################
         _logger = logging.getLogger(__name__)
         ###############################################
-        # We obtain the path to the object
-        object_path = urlsplit(object_url).path
+
+        _logger.info(
+            '[%s]Obtaining object metadata: "%s"',
+            self.id,
+            hash_type
+        )
+
+        _metadata = self.get_object_metadata(object_url)
+
+        try:
+            _logger.info(
+                '[%s]Checking if metadata contains checksum: "%s"',
+                self.id,
+                hash_type
+            )
+            _logger.debug(
+                '[%s]Metadata being checked: "%s"',
+                self.id,
+                _metadata
+            )
+
+            return _metadata[hash_type]
+
+        except KeyError as ERR:
+            raise dynafed_storagestats.exceptions.ChecksumWarningMissingChecksum(
+                error='MissingChecksum',
+                status_code='999',
+                debug=str(ERR),
+                storage_share=self
+            )
+
+
+    def get_object_metadata(self, object_url):
+        """Check if the object contains checksum metadata and return it.
+
+        Uses boto s3 client method "head_object" to obtain the metadata dict
+        of the given object form the provided URL. A connectoin error will cause
+        the process to exit, while a warning or a failure to find any metadata
+        will return and empty dict.
+
+        Arguments:
+        object_url -- URL location for requested object.
+
+        Returns:
+        Dict containing metadata from S3 object API call result.
+
+        """
+        ############# Creating loggers ################
+        _logger = logging.getLogger(__name__)
+        ###############################################
+        # We obtain the object's path.
+        _object_path = urlsplit(object_url).path
+
+        # We obtain the object's key.
+        _object_key = _object_path.split('/')[1::]
+        if self.uri['bucket'] in _object_key:
+            _object_key.remove(self.uri['bucket'])
+        _object_key = '/'.join(_object_key)
 
         # Generate boto client to query S3 endpoint.
         _connection = s3helpers.get_s3_boto_client(self)
 
-        object_key = object_path.split('/')[1::]
-        if self.uri['bucket'] in object_key:
-            object_key.remove(self.uri['bucket'])
-        object_key = '/'.join(object_key)
-
+        # Generate Key Arguments needed for the boto client method request.
         _kwargs = {
             'Bucket': self.uri['bucket'],
-            'Key': object_key,
+            'Key': _object_key,
         }
-
-        #Ugly way, find better one to deal with empty result.
-        ## result = {}
 
         try:
             _logger.info(
                 '[%s]Obtaining metadata of object "%s"',
                 self.id,
-                object_path
+                _object_path
             )
 
-            result = s3helpers.run_boto_client(_connection, 'head_object', _kwargs)
+            _result = s3helpers.run_boto_client(_connection, 'head_object', _kwargs)
 
         except dynafed_storagestats.exceptions.Warning as WARN:
             _logger.warning("[%s]%s", self.id, WARN.debug)
             self.debug.append("[WARNING]" + WARN.debug)
             self.status.append("[WARNING]" + WARN.error_code)
+
             return {}
 
         except dynafed_storagestats.exceptions.Error as ERR:
-            _logger.error("[%s]%s", self.id, ERR.debug)
-            self.debug.append("[ERROR]" + ERR.debug)
-            self.status.append("[ERROR]" + ERR.error_code)
-            return {}
+            if "Not Found" and "HeadObject" in ERR.debug:
+                _logger.error(
+                    "[%s]%s. Object: %s",
+                    self.id,
+                    ERR.debug,
+                    _object_key
+                )
+
+                print(
+                    "[ERROR][%s]%s. Object: %s" % (
+                        self.id,
+                        ERR.debug,
+                        _object_key
+                    )
+                )
+
+            else:
+                _logger.error("[%s]%s", self.id, ERR.debug)
+                print("[ERROR][%s]%s" % (self.id, ERR.debug))
+
+            # We exit because in this case if there is an error in connection,
+            # there is nothing else to do.
+            sys.exit(1)
 
         else:
             _logger.info(
                 "[%s]Custom Metadata found for object %s/%s: %s",
                 self.id,
                 self.uri['bucket'],
-                object_key,
-                result['Metadata']
+                _object_key,
+                _result['Metadata']
             )
             _logger.debug(
                 "[%s]Full HEAD response for object %s/%s: %s",
                 self.id,
                 self.uri['bucket'],
-                object_key,
-                result
+                _object_key,
+                _result
             )
 
-        ##finally:
-
             try:
-                return result['Metadata']
+                return _result['Metadata']
 
             except KeyError:
                 return {}
@@ -154,9 +226,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
     def get_storagestats(self):
         """Contact endpoint using requested method."""
-        ############# Creating loggers ################
-
-        ###############################################
 
         # Getting the storage stats CephS3's Admin API
         if self.plugin_settings['storagestats.api'].lower() == 'ceph-admin':
@@ -192,50 +261,104 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         )
 
 
-    def set_object_metadata(self, metadata, object_url):
-        """Use boto3 copy_object to add checksum metadata to object in S3 storage.
+    def put_object_checksum(self, checksum, hash_type, object_url):
+        """Run process to add checksum from object's metadata if it is missing.
+
+        This method will first obtain the metadata (if it exists) using the
+        the get_object_metadata() method. The reason for that is not only to
+        check if the checksum we are trying to put already exists thus saving
+        an extra API call, but also to preserve any existing metadata as the S3
+        endpoints don't allow to simply add new keys here. The whole object is
+        overwritten with any new metadata we set here so all information needs
+        to be aggregated.
+
+        If there is new checksum information to be uploaded then it runs the
+        put_object_metadata() method.
 
         Arguments:
-        object_url: URL location for requested object.
-
-        Returns:
-        Nothing is returned.
+        checksum -- String containing checksum.
+        hash_type -- String with type of checksum.
+        object_url -- String with URL location for requested object.
 
         """
         ############# Creating loggers ################
         _logger = logging.getLogger(__name__)
         ###############################################
 
-        # We obtain the path to the object
-        object_path = urlsplit(object_url).path
+        _metadata = self.get_object_metadata(object_url)
+
+        # Only run set_checksum if the object don't already contain that hash.
+        if hash_type not in _metadata:
+
+            # Add a new key-value to _metdatata dict:
+            # hash_type: checksum
+            _metadata.setdefault(hash_type, checksum)
+
+            _logger.info(
+                "[%s]New metadata detected, calling API to upload: %s",
+                self.id,
+                _metadata
+            )
+
+            self.put_object_metadata(_metadata, object_url)
+
+        else:
+            _logger.info(
+                "[%s]No new metadata detected, no need to call API.",
+                self.id
+            )
+            _logger.debug(
+                "[%s]Metadata: %s",
+                self.id,
+                _metadata
+            )
+
+
+    def put_object_metadata(self, metadata, object_url):
+        """Use boto3 copy_object to add metadata to object in S3 storage.
+
+        Arguments:
+        metadata -- Dictionary of data to put..
+        object_url -- URL location for requested object.
+
+        """
+        ############# Creating loggers ################
+        _logger = logging.getLogger(__name__)
+        ###############################################
+
+        # We obtain the object's path.
+        _object_path = urlsplit(object_url).path
+
+        # We obtain the object's key.
+        _object_key = _object_path.split('/')[1::]
+        if self.uri['bucket'] in _object_key:
+            _object_key.remove(self.uri['bucket'])
+        _object_key = '/'.join(_object_key)
 
         # Generate boto client to query S3 endpoint.
         _connection = s3helpers.get_s3_boto_client(self)
 
-        object_key = object_path.split('/')[1::]
-        if self.uri['bucket'] in object_key:
-            object_key.remove(self.uri['bucket'])
-        object_key = '/'.join(object_key)
-
-        # Preparing _kwargs
+        # Generate Key Arguments needed for the boto client method request.
+        # We need copy the object on itself to update the metadata so we use
+        # the 'REPLACE' MetadataDirective.
         _kwargs = {
             'Bucket': self.uri['bucket'],
             'CopySource': {
                 'Bucket': self.uri['bucket'],
-                'Key': object_key,
+                'Key': _object_key,
             },
-            'Key': object_key,
+            'Key': _object_key,
             'Metadata': metadata,
             'MetadataDirective': 'REPLACE',
         }
 
         try:
             assert len(metadata) != 0
-            # We copy the object on itself to update the metadata.
+
             _logger.info(
                 '[%s]Updating metadata of object "%s"',
                 self.id,
-                object_path
+                _object_path
             )
             _logger.debug(
                 '[%s]Metadata being uploaded: "%s"',
@@ -243,7 +366,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 metadata
             )
 
-            result = s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
+            _result = s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
 
         except AssertError as INFO:
             _logger.info("[%s]Empty metadata. Skipping API request.")
@@ -254,9 +377,27 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             self.status.append("[WARNING]" + WARN.error_code)
 
         except dynafed_storagestats.exceptions.Error as ERR:
-            _logger.error("[%s]%s", self.id, ERR.debug)
-            self.debug.append("[ERROR]" + ERR.debug)
-            self.status.append("[ERROR]" + ERR.error_code)
+            if "Not Found" and "HeadObject" in ERR.debug:
+                _logger.error(
+                    "[%s]%s. Object: %s",
+                    self.id,
+                    ERR.debug,
+                    _object_key
+                )
+                print(
+                    "[ERROR][%s]%s. Object: %s" % (
+                        self.id,
+                        ERR.debug,
+                        _object_key
+                    )
+                )
+            else:
+                _logger.error("[%s]%s", self.id, ERR.debug)
+                print("[ERROR][%s]%s" % (self.id, ERR.debug))
+
+            # We exit because in this case if there is an error in connection,
+            # there is nothing else to do.
+            sys.exit(1)
 
 
     def validate_schema(self):
