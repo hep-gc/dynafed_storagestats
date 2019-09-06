@@ -68,11 +68,21 @@ def checksums(ARGS):
 
     # Process the requested checksum action for file/object.
     if ARGS.sub_cmd == 'get':
-        _checksum = helpers.process_checksums_get(_storage_share, ARGS)
+        _checksum = helpers.process_checksums_get(
+            _storage_share,
+            ARGS.hash_type,
+            ARGS.url
+        )
+
         print(_checksum)
 
     elif ARGS.sub_cmd == 'put':
-        helpers.process_checksums_put(_storage_share, ARGS)
+        helpers.process_checksums_put(
+            _storage_share,
+            ARGS.checksum,
+            ARGS.hash_type,
+            ARGS.url
+        )
 
 
 def reports(ARGS):

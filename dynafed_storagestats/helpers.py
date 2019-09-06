@@ -98,7 +98,11 @@ def check_frequency(storage_share_objects, stats):
 
 
 def check_required_checksum_args(args):
-    """Check that the client included required arguments
+    """Check that the client included required arguments for the checksums command.
+
+    Since there are certain arguments that are required for the checksusm command
+    to work, we make sure here they are located. If not, the client will get an
+    error message and the process will exit.
 
     Arguments:
     args -- args -- argparse object.
@@ -478,21 +482,24 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
         return _dictonary_of_stats
 
 
-def process_checksums_get(storage_share, args):
-    """Run StorageShare methods to get checksum information for file/object.
+def process_checksums_get(storage_share, hash_type, url):
+    """Run StorageShare get_object_checksum() method to get checksum of file/object.
 
-    Checks if the StorageShare is cloud based or not and run different methods
-    necessary to get or put checksums for the requested file or object.
+    Run StorageShare get_object_checksum() method to get the requested type of
+    checksum for file/object whose URL is given.
 
-    Not all StorageShare types are supported and user will get an error when
-    this is the case and execution will exit.
+    The client also needs to sp
+
+    If the StorageShare does not support the method, the client will get an
+    error message and the process will exit.
 
     Arguments:
     storage_share -- dynafed_storagestats StorageShare object.
-    args -- argparse object.
+    hash_type -- string that indicates the type of has requested.
+    url -- string containing url to the desired file/object.
 
     Returns:
-    String containing checksum or None.
+    String containing checksum or 'None'.
 
     """
     ############# Creating loggers ################
@@ -500,11 +507,11 @@ def process_checksums_get(storage_share, args):
     ###############################################
 
     try:
-
-        _checksum = storage_share.get_object_checksum(args.hash_type, args.url)
+        _checksum = storage_share.get_object_checksum(hash_type, url)
 
     except dynafed_storagestats.exceptions.ChecksumWarningMissingChecksum as WARN:
         _logger.warning("[%s]%s", storage_share.id, WARN.debug)
+
         return None
 
     except AttributeError as ERR:
@@ -514,6 +521,7 @@ def process_checksums_get(storage_share, args):
             storage_share.storageprotocol,
             ERR
         )
+
         print(
             "[ERROR][%s]Checksum GET operation not supported %s. %s" % (
                 storage_share.id,
@@ -521,24 +529,27 @@ def process_checksums_get(storage_share, args):
                 ERR
             )
         )
+
         sys.exit(1)
 
     else:
         return _checksum
 
 
-def process_checksums_put(storage_share, args):
-    """Run StorageShare methods to put checksum information for file/object.
+def process_checksums_put(storage_share, checksum, hash_type, url):
+    """Run StorageShare put_object_checksum() methods to put checksum for file/object.
 
-    Checks if the StorageShare is cloud based or not and run different methods
-    necessary to put checksums for the requested file or object.
+    Run StorageShare put_object_checksum() method to put checksum on file/object,
+    whose URL is given. Both the checksum and the type of hash needs to be given.
 
-    Not all StorageShare types are supported and user will get an error when
-    this is the case and execution will exit.
+    If the StorageShare does not support the method, the client will get an
+    error message and the process will exit.
 
     Arguments:
     storage_share -- dynafed_storagestats StorageShare object.
-    args -- args -- argparse object.
+    checksum -- string containing checksum to put.
+    hash_type -- string that indicates the type of has requested.
+    url -- string containing url to the desired file/object.
 
     """
     ############# Creating loggers ################
@@ -547,7 +558,7 @@ def process_checksums_put(storage_share, args):
 
     try:
 
-        storage_share.put_object_checksum(args.checksum, args.hash_type, args.url)
+        storage_share.put_object_checksum(checksum, hash_type, url)
 
     except AttributeError as ERR:
         _logger.error(
