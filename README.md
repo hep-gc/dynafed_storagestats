@@ -54,6 +54,191 @@ optional arguments:
 
 ```
 #### Sub-commands
+##### Checksums
+This sub-command is intended to be called by Dynafed's external scripts as
+specified in the option 'checksumcalc' to obtain and add checksum information
+files or objects checksum information, specially for cloud based storage
+endpoints that do not support the usual grid tool requests.
+
+The checksums sub-command has two sub-commands itself:
+
+###### *get*
+**Currently only S3 endpoints are supported.**
+
+A client gives the URL of the object (not the Dynafed URL, but the actual SE
+URL) and the type of checksum hash to obtain. If this information is
+found, it will be printed out to stdout, if not, 'None' will be printed out.
+
+In its simplest form it is called with all three required arguments:
+
+```bash
+dynafed-storage checksums get -e [ENDPOINT_ID] -u [URL] -t [HASH_TYPE]
+```
+
+A more complex example specifying configuration file path, logging file and level,
+and verbosity:
+
+```bash
+dynafed-storage checksums get -v -c /etc/ugr/conf.d --loglevel=WARNING --logfile='/var/log/dynafed_storagestats/dynafed_storagestats.log' -e [Endpoint ID] -u [URL] -t [HASH_TYPE]
+```
+
+Help:
+
+```bash
+dynafed-storage checksums get -h
+usage: dynafed-storage checksums get [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
+                                     [-e ENDPOINT] [-v] [-t HASH_TYPE]
+                                     [-u URL] [--logfile LOGFILE]
+                                     [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                                     [--stdout]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
+                        Path to UGR's endpoint .conf files or directories.
+                        Accepts any number of arguments. Default:
+                        '/etc/ugr/conf.d'.
+  -e ENDPOINT, --endpoint ENDPOINT
+                        Choose endpoint containing desired object. Required.
+  -v, --verbose         Show on stderr events according to loglevel.
+
+Checksum options:
+  -t HASH_TYPE, --hash_type HASH_TYPE
+                        Type of checksum hash. ['adler32', md5] Required.
+  -u URL, --url URL     URL of object/file to request checksum of. Required.
+
+Logging options:
+  --logfile LOGFILE     Set logfile's path. Default:
+                        /tmp/dynafed_storagestats.log
+  --loglevel {DEBUG,INFO,WARNING,ERROR}
+                        Set log output level. Default: WARNING.
+
+Output options:
+  --stdout              Set to output stats on stdout.
+```
+
+###### *put*
+**Currently only S3 endpoints are supported.**
+
+A client gives the URL of the object (not the Dynafed URL, but the actual SE
+URL), the checksum, and the type of checksum hash to add this information
+to the object. Nothing is returned unless the process encounters errors.
+
+In its simplest form it is called with all four required arguments:
+
+```bash
+dynafed-storage checksums put -e [ENDPOINT_ID] -u [URL] -t [HASH_TYPE] --checksum [CHECKSUM]
+```
+
+A more complex example specifying configuration file path, logging file and level,
+and verbosity:
+
+```bash
+dynafed-storage checksums put -v -c /etc/ugr/conf.d --loglevel=WARNING --logfile='/var/log/dynafed_storagestats/dynafed_storagestats.log' -e [ENDPOINT_ID] -u [URL] -t [HASH_TYPE] --checksum [CHECKSUM]
+```
+
+Help:
+
+```bash
+dynafed-storage checksums put -h
+uusage: dynafed-storage checksums put [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
+                                     [-e ENDPOINT] [-v] [--checksum CHECKSUM]
+                                     [-t HASH_TYPE] [-u URL]
+                                     [--logfile LOGFILE]
+                                     [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                                     [--stdout]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
+                        Path to UGR's endpoint .conf files or directories.
+                        Accepts any number of arguments. Default:
+                        '/etc/ugr/conf.d'.
+  -e ENDPOINT, --endpoint ENDPOINT
+                        Choose endpoint containing desired object. Required.
+  -v, --verbose         Show on stderr events according to loglevel.
+
+Checksum options:
+  --checksum CHECKSUM   String with checksum to set. ['adler32', md5] Required
+  -t HASH_TYPE, --hash_type HASH_TYPE
+                        Type of checksum hash. ['adler32', md5] Required.
+  -u URL, --url URL     URL of object/file to request checksum of. Required.
+
+Logging options:
+  --logfile LOGFILE     Set logfile's path. Default:
+                        /tmp/dynafed_storagestats.log
+  --loglevel {DEBUG,INFO,WARNING,ERROR}
+                        Set log output level. Default: WARNING.
+
+Output options:
+  --stdout              Set to output stats on stdout.
+```
+
+---
+
+##### Reports
+**Note: Only works with Azure and S3 endpoints**
+
+This sub-command is intended to be used to obtain file reports from the storage
+endpoints. At this time, what is being developed is to be able to create
+file dumps with the intention of using the for Rucio's integrity checks for
+cloud based storage such as S3 and Azure since other grid storage solutions like
+dCache and DPM have their own tools.
+
+For more information on this file dumps: [DDMDarkDataAndLostFiles](https://twiki.cern.ch/twiki/bin/view/AtlasComputing/DDMDarkDataAndLostFiles)
+
+Usage example:
+This will create a file at /tmp/ containing a list of files under the 'rucio'
+prefix that are a day older from endpoints 'entpoint1' and 'endpoint2'. The
+filename is the endpoint's ID name in the endpoints.conf file.
+
+```bash
+dynafed-storage reports -c ~/lab/dynafed_storagestats/tests/local/ -o /tmp/delete --delta 1 -p rucio -e endpoint1 endpoint2
+```
+
+**reports help:**
+```bash
+dynafed-storage reports --help
+usage: dynafed-storage reports [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
+                               [--delta DELTA] [-e [ENDPOINT [ENDPOINT ...]]]
+                               [-v] [--logfile LOGFILE]
+                               [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                               [-o OUTPUT_PATH] [-p PREFIX]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
+                        Path to UGR's endpoint .conf files or directories.
+                        Accepts any number of arguments. Default:
+                        '/etc/ugr/conf.d'.
+  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
+                        Default: 1
+  -e [ENDPOINT [ENDPOINT ...]], --endpoint [ENDPOINT [ENDPOINT ...]]
+                        Choose endpoint(s) to check. Accepts any number of
+                        arguments. If not present, all endpoints will be
+                        checked.
+  -v, --verbose         Show on stderr events according to loglevel.
+
+Logging options:
+  --logfile LOGFILE     Set logfile's path. Default:
+                        /tmp/dynafed_storagestats.log
+  --loglevel {DEBUG,INFO,WARNING,ERROR}
+                        Set log output level. Default: WARNING.
+
+Output options:
+  -o OUTPUT_PATH, --output-dir OUTPUT_PATH
+                        Set output directory. Default: '.'
+  -p PREFIX, --path PREFIX, --prefix PREFIX
+                        Set the prefix/path from where to start the recursive
+                        list.Default: ''
+```
+**Important Note: DEBUG level might print an enormous amount of data as it will
+log the contents obtained from requests. In the case of the generic methods this
+will print all the stats for each file being parsed. It is recommended to use
+this level with only the endpoint one wants to troubleshoot.**
+
+---
+
 ##### Stats
 
 This sub-command is intended to be run periodically as a cron job in order to
@@ -151,66 +336,6 @@ Output options:
                         filename.Default: dynafed_storagestats.json!!In
                         development!!
 ```
-##### Reports
-**Note: Only works with Azure and S3 endpoints**
-
-This sub-command is intended to be used to obtain file reports from the storage
-endpoints. At this time, what is being developed is to be able to create
-file dumps with the intention of using the for Rucio's integrity checks for
-cloud based storage such as S3 and Azure since other grid storage solutions like
-dCache and DPM have their own tools.
-
-For more information on this file dumps: [DDMDarkDataAndLostFiles](https://twiki.cern.ch/twiki/bin/view/AtlasComputing/DDMDarkDataAndLostFiles)
-
-Usage example:
-This will create a file at /tmp/ containing a list of files under the 'rucio'
-prefix that are a day older from endpoints 'entpoint1' and 'endpoint2'. The
-filename is the endpoint's ID name in the endpoints.conf file.
-
-```bash
-dynafed-storage reports -c ~/lab/dynafed_storagestats/tests/local/ -o /tmp/delete --delta 1 -p rucio -e endpoint1 endpoint2
-```
-
-**reports help:**
-```bash
-dynafed-storage reports --help
-usage: dynafed-storage reports [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                               [--delta DELTA] [-e [ENDPOINT [ENDPOINT ...]]]
-                               [-v] [--logfile LOGFILE]
-                               [--loglevel {DEBUG,INFO,WARNING,ERROR}]
-                               [-o OUTPUT_PATH] [-p PREFIX]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
-                        Path to UGR's endpoint .conf files or directories.
-                        Accepts any number of arguments. Default:
-                        '/etc/ugr/conf.d'.
-  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
-                        Default: 1
-  -e [ENDPOINT [ENDPOINT ...]], --endpoint [ENDPOINT [ENDPOINT ...]]
-                        Choose endpoint(s) to check. Accepts any number of
-                        arguments. If not present, all endpoints will be
-                        checked.
-  -v, --verbose         Show on stderr events according to loglevel.
-
-Logging options:
-  --logfile LOGFILE     Set logfile's path. Default:
-                        /tmp/dynafed_storagestats.log
-  --loglevel {DEBUG,INFO,WARNING,ERROR}
-                        Set log output level. Default: WARNING.
-
-Output options:
-  -o OUTPUT_PATH, --output-dir OUTPUT_PATH
-                        Set output directory. Default: '.'
-  -p PREFIX, --path PREFIX, --prefix PREFIX
-                        Set the prefix/path from where to start the recursive
-                        list.Default: ''
-```
-**Important Note: DEBUG level might print an enormous amount of data as it will
-log the contents obtained from requests. In the case of the generic methods this
-will print all the stats for each file being parsed. It is recommended to use
-this level with only the endpoint one wants to troubleshoot.**
 
 ## Endpoints Configuration
 
