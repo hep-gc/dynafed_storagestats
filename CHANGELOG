@@ -219,3 +219,5 @@ v1.0.18
   ADDED: self contained put_object_checksum method for S3StorageShare.
   CHANGE: Renamed set_object_metadata to put_object_metadata.
   REMOVED: validate_checksum and deps, does note belong here.
+v1.0.19
+  ADDED: '-f, --force' flag to checksums put to force checksum metadata update.
