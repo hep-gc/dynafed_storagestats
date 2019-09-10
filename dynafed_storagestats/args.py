@@ -202,6 +202,14 @@ def add_checkusms_put_subparser(subparser):
              "Required."
     )
     parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        default=False,
+        dest='force',
+        help="Force checksum to be put. " \
+             "Default: 'False'."
+    )
+    parser.add_argument(
         '-v', '--verbose',
         action='store_true',
         default=False,

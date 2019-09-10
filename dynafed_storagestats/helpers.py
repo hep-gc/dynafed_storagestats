@@ -539,7 +539,7 @@ def process_checksums_get(storage_share, hash_type, url):
         return _checksum
 
 
-def process_checksums_put(storage_share, checksum, hash_type, url):
+def process_checksums_put(storage_share, checksum, hash_type, url, force=False):
     """Run StorageShare put_object_checksum() methods to put checksum for file/object.
 
     Run StorageShare put_object_checksum() method to put checksum on file/object,
@@ -551,6 +551,7 @@ def process_checksums_put(storage_share, checksum, hash_type, url):
     Arguments:
     storage_share -- dynafed_storagestats StorageShare object.
     checksum -- string containing checksum to put.
+    force -- boolean
     hash_type -- string that indicates the type of has requested.
     url -- string containing url to the desired file/object.
 
@@ -561,7 +562,7 @@ def process_checksums_put(storage_share, checksum, hash_type, url):
 
     try:
 
-        storage_share.put_object_checksum(checksum, hash_type, url)
+        storage_share.put_object_checksum(checksum, hash_type, url, force=force)
 
     except AttributeError as ERR:
         _logger.error(

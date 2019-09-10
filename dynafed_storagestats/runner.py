@@ -81,7 +81,8 @@ def checksums(ARGS):
             _storage_share,
             ARGS.checksum,
             ARGS.hash_type,
-            ARGS.url
+            ARGS.url,
+            force=ARGS.force
         )
 
 
