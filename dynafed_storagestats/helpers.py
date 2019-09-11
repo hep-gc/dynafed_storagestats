@@ -210,7 +210,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
-            "Memcache %s Server %s did not return data. All storage_shares will be " \
+            "%s Memcache Server %s did not return data. All storage_shares will be " \
             "assumed 'Online'.",
             ERR.debug,
             memcached_ip + ':' + memcached_port
@@ -235,7 +235,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
-            "Memcache %s Server %s did not return storage status data.",
+            "%s Memcache Server %s did not return storage status data.",
             ERR.debug,
             memcached_ip + ':' + memcached_port
         )
