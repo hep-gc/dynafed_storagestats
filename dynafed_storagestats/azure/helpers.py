@@ -1,5 +1,6 @@
 """Helper functions used to contact Azure based API's."""
 
+import datetime
 import logging
 
 from azure.storage.blob.baseblobservice import BaseBlobService
@@ -120,11 +121,29 @@ def list_blobs(storage_share, delta=1, prefix='',
             else:
                 break
 
-    storage_share.stats['bytesused'] = _total_bytes
-    storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
-    storage_share.stats['bytesfree'] = storage_share.stats['quota'] - _total_bytes
-    # Not required, but is useful for reporting/accounting:
-    storage_share.stats['filecount'] = _total_files
+    # Save time when data was obtained.
+    storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
+
+    # Process the result for the storage stats.
+    if request == 'storagestats':
+        storage_share.stats['bytesused'] = _total_bytes
+
+        # Obtain or set default quota and calculate freespace.
+        if storage_share.plugin_settings['storagestats.quota'] == 'api':
+            storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
+            storage_share.stats['filecount'] = _total_files
+            storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+            raise dynafed_storagestats.exceptions.QuotaWarning(
+                error="NoQuotaGiven",
+                status_code="098",
+                default_quota=storage_share.stats['quota'],
+            )
+
+        else:
+            storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+            storage_share.stats['filecount'] = _total_files
+            storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+
 
 
 # def ():
