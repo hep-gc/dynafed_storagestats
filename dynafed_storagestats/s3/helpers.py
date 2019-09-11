@@ -550,6 +550,7 @@ def list_objects(storage_share, delta=1, prefix='',
 
         # Exit if no "NextMarker" as list is now over.
         try:
+            print(_kwargs)
             _kwargs['Marker'] = _response['NextMarker']
         except KeyError:
             break

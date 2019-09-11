@@ -300,9 +300,6 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
         memcached_port
     )
 
-    if _idx is None:
-        raise dynafed_storagestats.exceptions.MemcachedConnectionError()
-
     if isinstance(_idx, bytes):
         _idx = str(_idx, 'utf-8')
 
@@ -318,10 +315,6 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
         memcached_ip,
         memcached_port
     )
-
-    # Check if we actually got information
-    if _connection_stats is None:
-        raise dynafed_storagestats.exceptions.MemcachedIndexError()
 
     # Typecast to str if needed. Different versions of memcache module return
     # bytes.
@@ -437,10 +430,6 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
             memcached_ip,
             memcached_port
         )
-
-        # Check if we actually got information
-        if _storage_stats is None:
-            raise dynafed_storagestats.exceptions.MemcachedIndexError()
 
         # Typecast to str if needed. Different versions of memcache module return
         # bytes.
