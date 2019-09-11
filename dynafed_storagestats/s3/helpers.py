@@ -517,24 +517,6 @@ def list_objects(storage_share, delta=1, prefix='',
                     _total_bytes += _file['Size']
                     _total_files += 1
 
-            storage_share.stats['bytesused'] = _total_bytes
-
-            # Obtain or set default quota and calculate freespace.
-            if storage_share.plugin_settings['storagestats.quota'] == 'api':
-                storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
-                storage_share.stats['filecount'] = _total_files
-                storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-                raise dynafed_storagestats.exceptions.QuotaWarning(
-                    error="NoQuotaGiven",
-                    status_code="098",
-                    default_quota=storage_share.stats['quota'],
-                )
-
-            else:
-                storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
-                storage_share.stats['filecount'] = _total_files
-                storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
-
         elif request == 'filelist':
             try:
                 # Make sure we got a list of objects.
@@ -550,13 +532,32 @@ def list_objects(storage_share, delta=1, prefix='',
 
         # Exit if no "NextMarker" as list is now over.
         try:
-            print(_kwargs)
             _kwargs['Marker'] = _response['NextMarker']
         except KeyError:
             break
 
     # Save time when data was obtained.
     storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
+
+    # Process the result for the storage stats.
+    if request == 'storagestats':
+        storage_share.stats['bytesused'] = _total_bytes
+
+        # Obtain or set default quota and calculate freespace.
+        if storage_share.plugin_settings['storagestats.quota'] == 'api':
+            storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
+            storage_share.stats['filecount'] = _total_files
+            storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+            raise dynafed_storagestats.exceptions.QuotaWarning(
+                error="NoQuotaGiven",
+                status_code="098",
+                default_quota=storage_share.stats['quota'],
+            )
+
+        else:
+            storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+            storage_share.stats['filecount'] = _total_files
+            storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
 def run_boto_client(boto_client, method, kwargs):
