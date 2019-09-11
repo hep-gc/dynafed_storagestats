@@ -221,3 +221,7 @@ v1.0.18
   REMOVED: validate_checksum and deps, does note belong here.
 v1.0.19
   ADDED: '-f, --force' flag to checksums put to force checksum metadata update.
+  FIXED: Issue when requesting storagestats with the list-objects API only 1000
+         objects would be returned for S3 and Azure classes.
+  FIXED: Typo on memcahced missing index log line.
+  REMOVED: Redundant memcahce empty checks.
