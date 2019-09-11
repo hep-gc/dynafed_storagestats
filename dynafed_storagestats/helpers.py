@@ -210,7 +210,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
-            "Memcache %s Server %s did not return data. All storage_shares will be " \
+            "%s Memcache Server %s did not return data. All storage_shares will be " \
             "assumed 'Online'.",
             ERR.debug,
             memcached_ip + ':' + memcached_port
@@ -235,7 +235,7 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
-            "Memcache %s Server %s did not return storage status data.",
+            "%s Memcache Server %s did not return storage status data.",
             ERR.debug,
             memcached_ip + ':' + memcached_port
         )
@@ -300,9 +300,6 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
         memcached_port
     )
 
-    if _idx is None:
-        raise dynafed_storagestats.exceptions.MemcachedConnectionError()
-
     if isinstance(_idx, bytes):
         _idx = str(_idx, 'utf-8')
 
@@ -318,10 +315,6 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
         memcached_ip,
         memcached_port
     )
-
-    # Check if we actually got information
-    if _connection_stats is None:
-        raise dynafed_storagestats.exceptions.MemcachedIndexError()
 
     # Typecast to str if needed. Different versions of memcache module return
     # bytes.
@@ -438,10 +431,6 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
             memcached_port
         )
 
-        # Check if we actually got information
-        if _storage_stats is None:
-            raise dynafed_storagestats.exceptions.MemcachedIndexError()
-
         # Typecast to str if needed. Different versions of memcache module return
         # bytes.
         if isinstance(_storage_stats, bytes):
@@ -539,7 +528,7 @@ def process_checksums_get(storage_share, hash_type, url):
         return _checksum
 
 
-def process_checksums_put(storage_share, checksum, hash_type, url):
+def process_checksums_put(storage_share, checksum, hash_type, url, force=False):
     """Run StorageShare put_object_checksum() methods to put checksum for file/object.
 
     Run StorageShare put_object_checksum() method to put checksum on file/object,
@@ -551,6 +540,7 @@ def process_checksums_put(storage_share, checksum, hash_type, url):
     Arguments:
     storage_share -- dynafed_storagestats StorageShare object.
     checksum -- string containing checksum to put.
+    force -- boolean
     hash_type -- string that indicates the type of has requested.
     url -- string containing url to the desired file/object.
 
@@ -561,7 +551,7 @@ def process_checksums_put(storage_share, checksum, hash_type, url):
 
     try:
 
-        storage_share.put_object_checksum(checksum, hash_type, url)
+        storage_share.put_object_checksum(checksum, hash_type, url, force=force)
 
     except AttributeError as ERR:
         _logger.error(

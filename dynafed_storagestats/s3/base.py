@@ -261,7 +261,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         )
 
 
-    def put_object_checksum(self, checksum, hash_type, object_url):
+    def put_object_checksum(self, checksum, hash_type, object_url, force=False):
         """Run process to add checksum from object's metadata if it is missing.
 
         This method will first obtain the metadata (if it exists) using the
@@ -296,6 +296,20 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
             _logger.info(
                 "[%s]New metadata detected, calling API to upload: %s",
+                self.id,
+                _metadata
+            )
+
+            self.put_object_metadata(_metadata, object_url)
+
+        # Unless the 'force' flag is given
+        elif force:
+            # Update checksum key's value.
+            _metadata[hash_type] = checksum
+            print(_metadata)
+
+            _logger.info(
+                "[%s]Force flag detected, calling API to upload: %s",
                 self.id,
                 _metadata
             )
