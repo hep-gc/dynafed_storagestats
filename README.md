@@ -424,6 +424,19 @@ locplugin.<ID>.s3.signature_ver: [s3, s3v4]
 Most S3 endpoints should use the s3v4 signature auth version, and is used as
 default, but use s3 in case is needed.
 
+##### minio_prometheus
+
+Minio endpoints can expose metrics with a Prometheus client. The URL's path
+is assumed to be "/minio/prometheus/metrics". This replaces any existing path
+in the endpoint's configuration URL.
+
+These are the metrics extracted:
+  - minio_disk_storage_available_bytes
+  - minio_disk_storage_total_bytes
+  - minio_disk_storage_used_bytes
+
+The quota/total_bytes can be overridden in the configuration file.
+
 ## How it works
 
 [Simple Flowchart](doc/diagrams/dynafed_storagestats_flowchart.pdf)

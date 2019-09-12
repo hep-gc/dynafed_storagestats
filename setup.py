@@ -13,7 +13,7 @@ with open(path.join(PWD, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='dynafed_storagestats',
-    version='1.0.19',
+    version='1.0.21',
     description='Dynafed Storage Stats Module',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -32,6 +32,7 @@ setup(
         'azure-storage',
         'boto3',
         'lxml',
+        'prometheus_client',
         'python-memcached',
         'requests',
         'requests_aws4auth'
