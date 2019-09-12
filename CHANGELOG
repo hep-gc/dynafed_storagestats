@@ -225,3 +225,5 @@ v1.0.19
          objects would be returned for S3 and Azure classes.
   FIXED: Typo on memcahced missing index log line.
   REMOVED: Redundant memcahce empty checks.
+v1.0.20
+  ADDED: 'minio_prometheus' api for S3 endpoints.
