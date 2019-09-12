@@ -8,6 +8,8 @@ import botocore.vendored.requests.exceptions as botoRequestsExceptions
 import botocore.exceptions as botoExceptions
 from botocore.client import Config
 
+from prometheus_client.parser import text_string_to_metric_families
+
 import requests
 from requests_aws4auth import AWS4Auth
 
@@ -558,6 +560,57 @@ def list_objects(storage_share, delta=1, prefix='',
             storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
             storage_share.stats['filecount'] = _total_files
             storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+
+
+def minio_prometheus(storage_share):
+    """Contact Minio's Prometheus URL to obtain storage information.
+
+    Obtains storage stats from Minio's Prometheus URL by extracting these
+    metrics:
+    minio_disk_storage_available_bytes
+    minio_disk_storage_total_bytes
+    minio_disk_storage_used_bytes
+
+    Attributes:
+    storage_share -- dynafed_storagestats StorageShare object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    # Generate the URL to contact
+    _api_url = '{scheme}://{netloc}/minio/prometheus/metrics'.format(
+        scheme=storage_share.uri['scheme'],
+        netloc=storage_share.uri['netloc']
+    )
+
+    # We need to initialize "response" to check if it was successful in the
+    # finally statement.
+    _response = False
+
+    _response = requests.request(
+        method="GET",
+        url=_api_url,
+        verify=storage_share.plugin_settings['ssl_check'],
+        timeout=int(storage_share.plugin_settings['conn_timeout'])
+    )
+
+    _metrics = _response.text
+
+    # Extract the metrics.
+    for family in text_string_to_metric_families(_metrics):
+        for sample in family.samples:
+            if sample.name == 'minio_disk_storage_available_bytes':
+                print('{0} {2}'.format(*sample))
+                storage_share.stats['bytesfree'] = int(sample.value)
+            elif sample.name == 'minio_disk_storage_used_bytes':
+                print('{0} {2}'.format(*sample))
+                storage_share.stats['bytesused'] = int(sample.value)
+            elif sample.name == 'minio_disk_storage_total_bytes':
+                print('{0} {2}'.format(*sample))
+                storage_share.stats['quota'] = int(sample.value)
+
 
 
 def run_boto_client(boto_client, method, kwargs):
