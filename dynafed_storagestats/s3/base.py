@@ -38,7 +38,7 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 'default': 'generic',
                 'required': False,
                 'status_code': '070',
-                'valid': ['ceph-admin', 'cloudwatch', 'generic', 'list-objects'],
+                'valid': ['ceph-admin', 'cloudwatch', 'generic', 'list-objects', 'minio_prometheus'],
             },
             's3.priv_key': {
                 'required': True,
@@ -243,6 +243,10 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         # Getting the storage stats using AWS Cloudwatch
         elif self.plugin_settings['storagestats.api'].lower() == 'cloudwatch':
             s3helpers.cloudwatch(self)
+
+        # Getting the storage stats from Minio's Prometheus URL
+        elif self.plugin_settings['storagestats.api'].lower() == 'minio_prometheus':
+            s3helpers.minio_prometheus(self)
 
 
     def get_filelist(self, delta=1, prefix='', report_file='/tmp/filelist_report.txt'):
