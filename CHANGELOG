@@ -227,3 +227,5 @@ v1.0.19
   REMOVED: Redundant memcahce empty checks.
 v1.0.20
   ADDED: 'minio_prometheus' api for S3 endpoints.
+v1.0.21
+  ADDED: requirement of module 'prometheus_client'
