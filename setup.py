@@ -32,7 +32,7 @@ setup(
         'azure-storage',
         'boto3',
         'lxml',
-        'install prometheus_client',
+        'prometheus_client',
         'python-memcached',
         'requests',
         'requests_aws4auth'
