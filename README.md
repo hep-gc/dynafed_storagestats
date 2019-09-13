@@ -87,7 +87,7 @@ Help:
 ```bash
 dynafed-storage checksums get -h
 usage: dynafed-storage checksums get [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                                     [-e ENDPOINT] [-v] [-t HASH_TYPE]
+                                     [-f] [-v] [-e ENDPOINT] [-t HASH_TYPE]
                                      [-u URL] [--logfile LOGFILE]
                                      [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                      [--stdout]
@@ -95,20 +95,21 @@ usage: dynafed-storage checksums get [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
 optional arguments:
   -h, --help            show this help message and exit
   -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
-                        Path to UGR's endpoint .conf files or directories.
+                        Path to UGRs endpoint .conf files or directories.
                         Accepts any number of arguments. Default:
                         '/etc/ugr/conf.d'.
-  -e ENDPOINT, --endpoint ENDPOINT
-                        Choose endpoint containing desired object. Required.
+  -f, --force           Force command execution.
   -v, --verbose         Show on stderr events according to loglevel.
 
-Checksum options:
+Checksum options. Required!:
+  -e ENDPOINT, --endpoint ENDPOINT
+                        Choose endpoint containing desired object. Required.
   -t HASH_TYPE, --hash_type HASH_TYPE
                         Type of checksum hash. ['adler32', md5] Required.
   -u URL, --url URL     URL of object/file to request checksum of. Required.
 
 Logging options:
-  --logfile LOGFILE     Set logfile's path. Default:
+  --logfile LOGFILE     Set logfile path. Default:
                         /tmp/dynafed_storagestats.log
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
@@ -141,9 +142,9 @@ Help:
 
 ```bash
 dynafed-storage checksums put -h
-uusage: dynafed-storage checksums put [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                                     [-e ENDPOINT] [-v] [--checksum CHECKSUM]
-                                     [-t HASH_TYPE] [-u URL]
+usage: dynafed-storage checksums put [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
+                                     [-f] [-v] [--checksum CHECKSUM]
+                                     [-e ENDPOINT] [-t HASH_TYPE] [-u URL]
                                      [--logfile LOGFILE]
                                      [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                      [--stdout]
@@ -151,27 +152,29 @@ uusage: dynafed-storage checksums put [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
 optional arguments:
   -h, --help            show this help message and exit
   -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
-                        Path to UGR's endpoint .conf files or directories.
+                        Path to UGRs endpoint .conf files or directories.
                         Accepts any number of arguments. Default:
                         '/etc/ugr/conf.d'.
-  -e ENDPOINT, --endpoint ENDPOINT
-                        Choose endpoint containing desired object. Required.
+  -f, --force           Force command execution.
   -v, --verbose         Show on stderr events according to loglevel.
 
-Checksum options:
+Checksum options. Required!:
   --checksum CHECKSUM   String with checksum to set. ['adler32', md5] Required
+  -e ENDPOINT, --endpoint ENDPOINT
+                        Choose endpoint containing desired object. Required.
   -t HASH_TYPE, --hash_type HASH_TYPE
                         Type of checksum hash. ['adler32', md5] Required.
   -u URL, --url URL     URL of object/file to request checksum of. Required.
 
 Logging options:
-  --logfile LOGFILE     Set logfile's path. Default:
+  --logfile LOGFILE     Set logfiles path. Default:
                         /tmp/dynafed_storagestats.log
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
 
 Output options:
   --stdout              Set to output stats on stdout.
+fernando@ffgalindo:/tmp/dd»                            
 ```
 
 ---
@@ -199,28 +202,31 @@ dynafed-storage reports -c ~/lab/dynafed_storagestats/tests/local/ -o /tmp/delet
 **reports help:**
 ```bash
 dynafed-storage reports --help
-usage: dynafed-storage reports [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                               [--delta DELTA] [-e [ENDPOINT [ENDPOINT ...]]]
-                               [-v] [--logfile LOGFILE]
+usage: dynafed-storage reports [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]] [-f]
+                               [-v] [-e [ENDPOINT [ENDPOINT ...]]]
+                               [--delta DELTA] [--logfile LOGFILE]
                                [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                [-o OUTPUT_PATH] [-p PREFIX]
 
 optional arguments:
   -h, --help            show this help message and exit
   -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
-                        Path to UGR's endpoint .conf files or directories.
+                        Path to UGRs endpoint .conf files or directories.
                         Accepts any number of arguments. Default:
                         '/etc/ugr/conf.d'.
-  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
-                        Default: 1
+  -f, --force           Force command execution.
+  -v, --verbose         Show on stderr events according to loglevel.
   -e [ENDPOINT [ENDPOINT ...]], --endpoint [ENDPOINT [ENDPOINT ...]]
                         Choose endpoint(s) to check. Accepts any number of
                         arguments. If not present, all endpoints will be
                         checked.
-  -v, --verbose         Show on stderr events according to loglevel.
+
+Reports options:
+  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
+                        Default: 1
 
 Logging options:
-  --logfile LOGFILE     Set logfile's path. Default:
+  --logfile LOGFILE     Set logfiles path. Default:
                         /tmp/dynafed_storagestats.log
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
@@ -231,6 +237,7 @@ Output options:
   -p PREFIX, --path PREFIX, --prefix PREFIX
                         Set the prefix/path from where to start the recursive
                         list.Default: ''
+
 ```
 **Important Note: DEBUG level might print an enormous amount of data as it will
 log the contents obtained from requests. In the case of the generic methods this
@@ -282,14 +289,14 @@ dynafed-storage stats -c /etc/ugr/conf.d -m -e endpoint1 endpoint2
 **stats help:**
 ```bash
 dynafed-storage stats -h
-usage: dynafed-storage stats [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
-                             [-e [ENDPOINT [ENDPOINT ...]]] [-v]
+usage: dynafed-storage stats [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]] [-f]
+                             [-v] [-e [ENDPOINT [ENDPOINT ...]]]
                              [--logfile LOGFILE]
                              [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                              [--memhost MEMCACHED_IP]
                              [--memport MEMCACHED_PORT] [--debug] [-m]
                              [-j [TO_JSON]] [-o OUTPUT_PATH]
-                             [-p [TO_PLAINTEXT]] [--stdout] [-x [OUTPUT_XML]]
+                             [-p [TO_PLAINTEXT]] [--stdout]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -297,11 +304,12 @@ optional arguments:
                         Path to UGR's endpoint .conf files or directories.
                         Accepts any number of arguments. Default:
                         '/etc/ugr/conf.d'.
+  -f, --force           Force command execution.
+  -v, --verbose         Show on stderr events according to loglevel.
   -e [ENDPOINT [ENDPOINT ...]], --endpoint [ENDPOINT [ENDPOINT ...]]
                         Choose endpoint(s) to check. Accepts any number of
                         arguments. If not present, all endpoints will be
                         checked.
-  -v, --verbose         Show on stderr events according to loglevel.
 
 Logging options:
   --logfile LOGFILE     Set logfile's path. Default:
@@ -331,10 +339,7 @@ Output options:
                         Set to output stats to plain txt file. Add argument to
                         set filename.Default: dynafed_storagestats.txt
   --stdout              Set to output stats on stdout.
-  -x [OUTPUT_XML], --xml [OUTPUT_XML]
-                        Set to output stats to json file. Add argument to set
-                        filename.Default: dynafed_storagestats.json!!In
-                        development!!
+
 ```
 
 ## Endpoints Configuration
