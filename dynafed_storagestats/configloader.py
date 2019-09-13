@@ -97,7 +97,7 @@ def get_conf_files(config_path):
     return _config_files
 
 
-def get_storage_endpoints(storage_share_objects, storage_shares_mask=True):
+def get_storage_endpoints(storage_share_objects):
     """Return list of StorageEndpoint objects from a list of StorageShares.
 
     Gets a list of StorageShare objects, usually obtained from running
@@ -122,10 +122,10 @@ def get_storage_endpoints(storage_share_objects, storage_shares_mask=True):
 
     # Populate _urls_dict using storage_share_objects URL's as the keys
     # and each StorageShare as a list under these keys.
+
     for _storage_share_object in storage_share_objects:
-        if _storage_share_object.id in storage_shares_mask or storage_shares_mask[0] == 'all':
-            _urls_dict.setdefault(_storage_share_object.uri['url'], [])
-            _urls_dict[_storage_share_object.uri['url']].append(_storage_share_object)
+        _urls_dict.setdefault(_storage_share_object.uri['url'], [])
+        _urls_dict[_storage_share_object.uri['url']].append(_storage_share_object)
 
     if _urls_dict:
         _logger.debug(
@@ -150,7 +150,7 @@ def get_storage_endpoints(storage_share_objects, storage_shares_mask=True):
     return _storage_endpoints
 
 
-def get_storage_shares(config_path):
+def get_storage_shares(config_path, storage_shares_mask=[]):
     """Return list of StorageShare objects from UGR's configuration files.
 
     Arguments:
@@ -181,15 +181,27 @@ def get_storage_shares(config_path):
 
     # Parse the files for Storage Shares, exit if any issues are detected.
     try:
-        _storage_shares = parse_conf_files(_config_files)
+        _storage_shares = parse_conf_files(_config_files, storage_shares_mask)
 
     except dynafed_storagestats.exceptions.ConfigFileErrorIDMismatch as ERR:
         _logger.critical("[%s]%s", ERR.storage_share, ERR.debug)
         print("[CRITICAL][%s]%s" % (ERR.storage_share, ERR.debug))
         sys.exit(1)
 
-    # Storage Shares found.
-    return get_storage_share_objects(_storage_shares)
+    # Check that Storage Shares were found, mark error and exit if not.
+    try:
+        if len(_storage_shares) == 0:
+            raise dynafed_storagestats.exceptions.ConfigFileErrorNoEndpointsFound(
+                config_path=config_path,
+            )
+
+    except dynafed_storagestats.exceptions.ConfigFileErrorNoEndpointsFound as ERR:
+        _logger.critical("%s", ERR.debug)
+        print("[CRITICAL]%s" % (ERR.debug))
+        sys.exit(1)
+
+    else:
+        return get_storage_share_objects(_storage_shares)
 
 
 def get_storage_share_objects(storage_shares):
@@ -239,7 +251,7 @@ def get_storage_share_objects(storage_shares):
     return _storage_share_objects
 
 
-def parse_conf_files(config_files):
+def parse_conf_files(config_files, storage_shares_mask=[]):
     """Return dict for each storage share in passed configuration files.
 
     Extract storage shares/endpoints and their plugin_settings from the given
@@ -278,6 +290,10 @@ def parse_conf_files(config_files):
     for _config_file in config_files:
         try:
             _logger.info("Reading file '%s'", os.path.realpath(_config_file))
+            _logger.debug(
+                "Endpoint mask: %s", \
+                storage_shares_mask,
+                )
 
             with open(_config_file, "r") as _file:
                 for _line_number, _line in enumerate(_file):
@@ -286,16 +302,17 @@ def parse_conf_files(config_files):
                     if not _line.startswith("#"):
                         if "glb.locplugin[]" in _line:
                             _plugin, _id, _concurrency, _url = _line.split()[1::]
-                            _storage_shares.setdefault(_id, {})
-                            _storage_shares[_id].update({'id':_id.strip()})
-                            _storage_shares[_id].update({'url':_url.strip()})
-                            _storage_shares[_id].update({'plugin':_plugin.split("/")[-1]})
+                            if _id in storage_shares_mask or len(storage_shares_mask) == 0:
+                                _storage_shares.setdefault(_id, {})
+                                _storage_shares[_id].update({'id':_id.strip()})
+                                _storage_shares[_id].update({'url':_url.strip()})
+                                _storage_shares[_id].update({'plugin':_plugin.split("/")[-1]})
 
-                            _logger.info(
-                                "Found storage share '%s' using plugin '%s'. " \
-                                "Reading configuration.", \
-                                _storage_shares[_id]['id'], _storage_shares[_id]['plugin']
-                            )
+                                _logger.info(
+                                    "Found storage share '%s' using plugin '%s'. " \
+                                    "Reading configuration.", \
+                                    _storage_shares[_id]['id'], _storage_shares[_id]['plugin']
+                                )
 
                         elif "locplugin" in _line:
                             _key, _value = _line.partition(":")[::2]
@@ -313,14 +330,16 @@ def parse_conf_files(config_files):
                                 )
 
                             elif _id == _locid:
-                                _setting = _key.split(_id+'.')[-1]
-                                _storage_shares.setdefault(_id, {})
-                                _storage_shares[_id].setdefault('plugin_settings', {})
-                                _storage_shares[_id]['plugin_settings'].update({_setting:_value.strip()})
-                                _logger.debug(
-                                    "Found local ID setting '%s'",
-                                    _key.split(_id+'.')[-1],
-                                )
+                                if _id in storage_shares_mask or len(storage_shares_mask) == 0:
+                                    _setting = _key.split(_id+'.')[-1]
+                                    _storage_shares.setdefault(_id, {})
+                                    _storage_shares[_id].setdefault('plugin_settings', {})
+                                    _storage_shares[_id]['plugin_settings'].update({_setting:_value.strip()})
+                                    _logger.debug(
+                                        "[%s]Found local ID setting '%s'",
+                                        _locid,
+                                        _key.split(_id+'.')[-1],
+                                    )
 
                             else:
                                 raise dynafed_storagestats.exceptions.ConfigFileErrorIDMismatch(
@@ -352,5 +371,7 @@ def parse_conf_files(config_files):
                     _setting,
                     _value
                 )
-
+    _logger.debug(
+        "Dictionary of storage shares found: %s", _storage_shares
+    )
     return _storage_shares

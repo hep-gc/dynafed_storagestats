@@ -273,7 +273,7 @@ def add_reports_subparser(subparser):
     parser.add_argument(
         '-e', '--endpoint',
         action='store',
-        default=['all'],
+        default=[],
         dest='endpoint',
         nargs='*',
         help="Choose endpoint(s) to check. " \
@@ -354,7 +354,7 @@ def add_stats_subparser(subparser):
     parser.add_argument(
         '-e', '--endpoint',
         action='store',
-        default=['all'],
+        default=[],
         dest='endpoint',
         nargs='*',
         help="Choose endpoint(s) to check. " \

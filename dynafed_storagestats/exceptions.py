@@ -163,6 +163,18 @@ class ConfigFileErrorNoConfigFilesFound(ConfigFileError):
 
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
+class ConfigFileErrorNoEndpointsFound(ConfigFileError):
+    """
+    Exception error when no endpoints are found in the configuration files.
+    """
+    def __init__(self, config_path, error="NoEndpointsFound", status_code="00?", debug=None):
+
+        self.message = 'No endpoints found in configuration file(s): %s' \
+                       % (config_path)
+        self.debug = debug
+
+        super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
 class MemcachedError(BaseError):
     """
     Base error exception subclass for issues deailng with memcached
