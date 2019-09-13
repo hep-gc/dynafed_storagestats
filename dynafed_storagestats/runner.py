@@ -186,8 +186,8 @@ def stats(ARGS):
         output.to_stdout(storage_endpoints, ARGS)
 
     # Create StAR Storagestats XML files for each storage share.
-    if ARGS.output_xml:
-        output.to_xml(storage_endpoints, ARGS.to_xml, ARGS.output_path)
+    # if ARGS.output_xml:
+    #     output.to_xml(storage_endpoints, ARGS.to_xml, ARGS.output_path)
 
     # Create json file with storagestats
     if ARGS.to_json:
