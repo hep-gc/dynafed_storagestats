@@ -310,7 +310,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         elif force:
             # Update checksum key's value.
             _metadata[hash_type] = checksum
-            print(_metadata)
 
             _logger.info(
                 "[%s]Force flag detected, calling API to upload: %s",
