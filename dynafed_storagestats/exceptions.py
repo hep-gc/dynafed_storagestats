@@ -167,7 +167,7 @@ class ConfigFileErrorNoEndpointsFound(ConfigFileError):
     """
     Exception error when no endpoints are found in the configuration files.
     """
-    def __init__(self, config_path, error="NoEndpointsFound", status_code="00?", debug=None):
+    def __init__(self, config_path, error="NoEndpointsFound", status_code="002", debug=None):
 
         self.message = 'No endpoints found in configuration file(s): %s' \
                        % (config_path)
