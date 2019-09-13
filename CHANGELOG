@@ -234,3 +234,8 @@ v1.0.22
            it now first creates a session and from that the client. This is done
            to make the execution multithreding 'safe'. Otherwise the sessoin is
            global and was causing the execution to fail sometimes.
+  ADDED: "-f/--force" flag for "stats" sub-command to skip checks and force
+         stats check.
+  FIXED: Frequency issue that would constantly give wrong stats. Reason was that
+         the check was checking the connectionstats timestamp rather than the
+         storagestats.

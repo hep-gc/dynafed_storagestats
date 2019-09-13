@@ -57,6 +57,13 @@ def add_general_options(parser):
              "Default: '/etc/ugr/conf.d'."
     )
     parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        default=False,
+        dest='force',
+        help="Force command execution."
+    )
+    parser.add_argument(
         '-v', '--verbose',
         action='store_true',
         default=False,
@@ -165,15 +172,6 @@ def add_checkusms_put_subparser(subparser):
 
     # General options
     add_general_options(parser)
-
-    parser.add_argument(
-        '-f', '--force',
-        action='store_true',
-        default=False,
-        dest='force',
-        help="Force checksum to be put. " \
-             "Default: 'False'."
-    )
 
     # Checksum options
     group_checksum = parser.add_argument_group("Checksum options. Required!")
