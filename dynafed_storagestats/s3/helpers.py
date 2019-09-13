@@ -367,7 +367,7 @@ def cloudwatch(storage_share):
 
 
 def get_cloudwatch_boto_client(storage_share):
-        """Return boto client from storage share object.
+        """Generate unique session Cloudwatch boto client from storage share object.
 
         Arguments:
         storage_share -- dynafed_storagestats StorageShare object.
@@ -376,8 +376,12 @@ def get_cloudwatch_boto_client(storage_share):
         botocore.client.cloudwatch
 
         """
+
+        # Generate a new session. Needed when running in multithreading.
+        _session = boto3.session.Session()
+
         # Generate boto client to query AWS API.
-        _connection = boto3.client(
+        _connection = _session.client(
             'cloudwatch',
             region_name=storage_share.plugin_settings['s3.region'],
             aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
@@ -395,7 +399,7 @@ def get_cloudwatch_boto_client(storage_share):
 
 
 def get_s3_boto_client(storage_share):
-        """Return boto client from storage share object.
+        """Generate unique session S3 boto client from storage share object.
 
         Arguments:
         storage_share -- dynafed_storagestats StorageShare object.
@@ -419,8 +423,11 @@ def get_s3_boto_client(storage_share):
                 domain=storage_share.uri['domain']
             )
 
+        # Generate a new session. Needed when running in multithreading.
+        _session = boto3.session.Session()
+
         # Generate boto client to query S3 endpoint.
-        _connection = boto3.client(
+        _connection = _session.client(
             's3',
             region_name=storage_share.plugin_settings['s3.region'],
             endpoint_url=_api_url,
@@ -473,13 +480,13 @@ def list_objects(storage_share, delta=1, prefix='',
         'Prefix': prefix,
     }
 
-    _logger.debug(
-        "[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s",
-        storage_share.id,
-        _connection._endpoint,
-        storage_share.plugin_settings['storagestats.api'].lower(),
-        _kwargs
-    )
+    # _logger.debug(
+    #     "[%s]Requesting storage stats with: URN: %s API Method: %s Payload: %s",
+    #     storage_share.id,
+    #     _connection._endpoint,
+    #     storage_share.plugin_settings['storagestats.api'].lower(),
+    #     _kwargs
+    # )
 
     # This loop is needed to obtain all objects as the API can only
     # server 1,000 objects per request. The 'NextMarker' tells where

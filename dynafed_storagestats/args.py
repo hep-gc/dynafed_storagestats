@@ -26,9 +26,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     subparser = parser.add_subparsers()
 
-    # Options meant to be used by any sub-command
-    add_general_options(parser)
-
     # Sub-command options argument sub-parsers
     add_checksums_subparser(subparser)
     add_reports_subparser(subparser)
@@ -49,6 +46,30 @@ def add_general_options(parser):
     parser -- Object form argparse.ArgumentParser()
 
     """
+    parser.add_argument(
+        '-c', '--config',
+        action='store',
+        default=['/etc/ugr/conf.d'],
+        dest='config_path',
+        nargs='*',
+        help="Path to UGR's endpoint .conf files or directories. " \
+             "Accepts any number of arguments. " \
+             "Default: '/etc/ugr/conf.d'."
+    )
+    parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        default=False,
+        dest='force',
+        help="Force command execution."
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        default=False,
+        dest='verbose',
+        help="Show on stderr events according to loglevel."
+    )
 
 
 def add_checksums_subparser(subparser):
@@ -89,17 +110,11 @@ def add_checkusms_get_subparser(subparser):
     parser.set_defaults(sub_cmd='get')
 
     # General options
-    parser.add_argument(
-        '-c', '--config',
-        action='store',
-        default=['/etc/ugr/conf.d'],
-        dest='config_path',
-        nargs='*',
-        help="Path to UGR's endpoint .conf files or directories. " \
-             "Accepts any number of arguments. " \
-             "Default: '/etc/ugr/conf.d'."
-    )
-    parser.add_argument(
+    add_general_options(parser)
+
+    # Checksum options
+    group_checksum = parser.add_argument_group("Checksum options. Required!")
+    group_checksum.add_argument(
         '-e', '--endpoint',
         action='store',
         default=False,
@@ -107,16 +122,6 @@ def add_checkusms_get_subparser(subparser):
         help="Choose endpoint containing desired object. " \
              "Required."
     )
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        default=False,
-        dest='verbose',
-        help="Show on stderr events according to loglevel."
-    )
-
-    # Checksum options
-    group_checksum = parser.add_argument_group("Checksum options")
     group_checksum.add_argument(
         '-t', '--hash_type',
         action='store',
@@ -135,24 +140,7 @@ def add_checkusms_get_subparser(subparser):
     )
 
     # Logging options
-    group_logging = parser.add_argument_group("Logging options")
-    group_logging.add_argument(
-        '--logfile',
-        action='store',
-        default='/tmp/dynafed_storagestats.log',
-        dest='logfile',
-        help="Set logfile's path. " \
-             "Default: /tmp/dynafed_storagestats.log"
-    )
-    group_logging.add_argument(
-        '--loglevel',
-        action='store',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        default='WARNING',
-        dest='loglevel',
-        help="Set log output level. " \
-        "Default: WARNING."
-    )
+    add_logging_options(parser)
 
     # Output Options
     group_output = parser.add_argument_group("Output options")
@@ -183,42 +171,10 @@ def add_checkusms_put_subparser(subparser):
     parser.set_defaults(sub_cmd='put')
 
     # General options
-    parser.add_argument(
-        '-c', '--config',
-        action='store',
-        default=['/etc/ugr/conf.d'],
-        dest='config_path',
-        nargs='*',
-        help="Path to UGR's endpoint .conf files or directories. " \
-             "Accepts any number of arguments. " \
-             "Default: '/etc/ugr/conf.d'."
-    )
-    parser.add_argument(
-        '-e', '--endpoint',
-        action='store',
-        default=False,
-        dest='endpoint',
-        help="Choose endpoint containing desired object. " \
-             "Required."
-    )
-    parser.add_argument(
-        '-f', '--force',
-        action='store_true',
-        default=False,
-        dest='force',
-        help="Force checksum to be put. " \
-             "Default: 'False'."
-    )
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        default=False,
-        dest='verbose',
-        help="Show on stderr events according to loglevel."
-    )
+    add_general_options(parser)
 
     # Checksum options
-    group_checksum = parser.add_argument_group("Checksum options")
+    group_checksum = parser.add_argument_group("Checksum options. Required!")
     group_checksum.add_argument(
         '--checksum',
         action='store',
@@ -226,6 +182,14 @@ def add_checkusms_put_subparser(subparser):
         dest='checksum',
         help="String with checksum to set. ['adler32', md5] " \
              "Required"
+    )
+    group_checksum.add_argument(
+        '-e', '--endpoint',
+        action='store',
+        default=False,
+        dest='endpoint',
+        help="Choose endpoint containing desired object. " \
+             "Required."
     )
     group_checksum.add_argument(
         '-t', '--hash_type',
@@ -245,24 +209,7 @@ def add_checkusms_put_subparser(subparser):
     )
 
     # Logging options
-    group_logging = parser.add_argument_group("Logging options")
-    group_logging.add_argument(
-        '--logfile',
-        action='store',
-        default='/tmp/dynafed_storagestats.log',
-        dest='logfile',
-        help="Set logfile's path. " \
-             "Default: /tmp/dynafed_storagestats.log"
-    )
-    group_logging.add_argument(
-        '--loglevel',
-        action='store',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        default='WARNING',
-        dest='loglevel',
-        help="Set log output level. " \
-        "Default: WARNING."
-    )
+    add_logging_options(parser)
 
     # Output Options
     group_output = parser.add_argument_group("Output options")
@@ -276,61 +223,13 @@ def add_checkusms_put_subparser(subparser):
     )
 
 
-def add_reports_subparser(subparser):
-    """Add optional arguments for the 'reports' sub-command.
+def add_logging_options(parser):
+    """Add logging optional arguments.
 
     Arguments:
-    subparser -- Object form argparse.ArgumentParser().add_subparsers()
+    parser -- Object form argparse.ArgumentParser()
 
     """
-    # Initiate parser.
-    parser = subparser.add_parser(
-        'reports',
-        help="In development"
-    )
-
-    # Set the sub-command routine to run.
-    parser.set_defaults(cmd='reports')
-
-    # Set the sub-command routine to run.
-    # General options
-    parser.add_argument(
-        '-c', '--config',
-        action='store',
-        default=['/etc/ugr/conf.d'],
-        dest='config_path',
-        nargs='*',
-        help="Path to UGR's endpoint .conf files or directories. " \
-             "Accepts any number of arguments. " \
-             "Default: '/etc/ugr/conf.d'."
-    )
-    parser.add_argument(
-        '--delta',
-        action='store',
-        default=1,
-        dest='delta',
-        type=int,
-        help="Mask for Last Modified Date of files. Integer in days. " \
-             "Default: 1"
-    )
-    parser.add_argument(
-        '-e', '--endpoint',
-        action='store',
-        default=['all'],
-        dest='endpoint',
-        nargs='*',
-        help="Choose endpoint(s) to check. " \
-             "Accepts any number of arguments. "
-             "If not present, all endpoints will be checked."
-    )
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        default=False,
-        dest='verbose',
-        help="Show on stderr events according to loglevel."
-    )
-
     # Logging options
     group_logging = parser.add_argument_group("Logging options")
     group_logging.add_argument(
@@ -350,6 +249,51 @@ def add_reports_subparser(subparser):
         help="Set log output level. " \
         "Default: WARNING."
     )
+
+
+def add_reports_subparser(subparser):
+    """Add optional arguments for the 'reports' sub-command.
+
+    Arguments:
+    subparser -- Object form argparse.ArgumentParser().add_subparsers()
+
+    """
+    # Initiate parser.
+    parser = subparser.add_parser(
+        'reports',
+        help="In development"
+    )
+
+    # Set the sub-command routine to run.
+    parser.set_defaults(cmd='reports')
+
+    # General options
+    add_general_options(parser)
+
+    parser.add_argument(
+        '-e', '--endpoint',
+        action='store',
+        default=[],
+        dest='endpoint',
+        nargs='*',
+        help="Choose endpoint(s) to check. " \
+             "Accepts any number of arguments. "
+             "If not present, all endpoints will be checked."
+    )
+
+    group_reports = parser.add_argument_group("Reports options")
+    group_reports.add_argument(
+        '--delta',
+        action='store',
+        default=1,
+        dest='delta',
+        type=int,
+        help="Mask for Last Modified Date of files. Integer in days. " \
+             "Default: 1"
+    )
+
+    # Logging options
+    add_logging_options(parser)
 
     # Output Options
     group_output = parser.add_argument_group("Output options")
@@ -405,53 +349,21 @@ def add_stats_subparser(subparser):
     parser.set_defaults(cmd='stats')
 
     # General options
-    parser.add_argument(
-        '-c', '--config',
-        action='store',
-        default=['/etc/ugr/conf.d'],
-        dest='config_path',
-        nargs='*',
-        help="Path to UGR's endpoint .conf files or directories. " \
-             "Accepts any number of arguments. " \
-             "Default: '/etc/ugr/conf.d'."
-    )
+    add_general_options(parser)
+
     parser.add_argument(
         '-e', '--endpoint',
         action='store',
-        default=['all'],
+        default=[],
         dest='endpoint',
         nargs='*',
         help="Choose endpoint(s) to check. " \
              "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
     )
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        default=False,
-        dest='verbose',
-        help="Show on stderr events according to loglevel."
-    )
 
     # Logging options
-    group_logging = parser.add_argument_group("Logging options")
-    group_logging.add_argument(
-        '--logfile',
-        action='store',
-        default='/tmp/dynafed_storagestats.log',
-        dest='logfile',
-        help="Set logfile's path. " \
-             "Default: /tmp/dynafed_storagestats.log"
-    )
-    group_logging.add_argument(
-        '--loglevel',
-        action='store',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        default='WARNING',
-        dest='loglevel',
-        help="Set log output level. " \
-        "Default: WARNING."
-    )
+    add_logging_options(parser)
 
     # Memcached Options
     group_memcached = parser.add_argument_group("Memcached Options")
@@ -525,14 +437,14 @@ def add_stats_subparser(subparser):
         help="Set to output stats on stdout."
     )
 
-    group_output.add_argument(
-        '-x', '--xml',
-        action='store',
-        const="dynafed_storagestats.xml",
-        default=False,
-        dest='output_xml',
-        nargs='?',
-        help="Set to output stats to json file. Add argument to set filename." \
-             "Default: dynafed_storagestats.json"
-             "!!In development!!"
-    )
+    # group_output.add_argument(
+    #     '-x', '--xml',
+    #     action='store',
+    #     const="dynafed_storagestats.xml",
+    #     default=False,
+    #     dest='output_xml',
+    #     nargs='?',
+    #     help="Set to output stats to json file. Add argument to set filename." \
+    #          "Default: dynafed_storagestats.json"
+    #          "!!In development!!"
+    # )

@@ -53,37 +53,29 @@ def checksums(ARGS):
 
     # Get list of StorageShare objects from the configuration files.
     _storage_shares = configloader.get_storage_shares(
-        ARGS.config_path
-    )
-
-    # Create a list of StorageEndpoint objects with the StorageShares and
-    # select the one chosen from CLI.
-    _storage_endpoints = configloader.get_storage_endpoints(
-        _storage_shares,
+        ARGS.config_path,
         ARGS.endpoint
     )
 
-    # Extract the requested storage_share.
-    _storage_share = _storage_endpoints[0].storage_shares[0]
+    for _storage_share in _storage_shares:
+        # Process the requested checksum action for file/object.
+        if ARGS.sub_cmd == 'get':
+            _checksum = helpers.process_checksums_get(
+                _storage_share,
+                ARGS.hash_type,
+                ARGS.url
+            )
 
-    # Process the requested checksum action for file/object.
-    if ARGS.sub_cmd == 'get':
-        _checksum = helpers.process_checksums_get(
-            _storage_share,
-            ARGS.hash_type,
-            ARGS.url
-        )
+            print(_checksum)
 
-        print(_checksum)
-
-    elif ARGS.sub_cmd == 'put':
-        helpers.process_checksums_put(
-            _storage_share,
-            ARGS.checksum,
-            ARGS.hash_type,
-            ARGS.url,
-            force=ARGS.force
-        )
+        elif ARGS.sub_cmd == 'put':
+            helpers.process_checksums_put(
+                _storage_share,
+                ARGS.checksum,
+                ARGS.hash_type,
+                ARGS.url,
+                force=ARGS.force
+            )
 
 
 def reports(ARGS):
@@ -97,14 +89,14 @@ def reports(ARGS):
     """
     # Get list of StorageShare objects from the configuration files.
     storage_shares = configloader.get_storage_shares(
-        ARGS.config_path
+        ARGS.config_path,
+        ARGS.endpoint
     )
 
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.
     storage_endpoints = configloader.get_storage_endpoints(
-        storage_shares,
-        ARGS.endpoint
+        storage_shares
     )
 
     # This tuple is necessary for the starmap function to send multiple
@@ -137,32 +129,34 @@ def stats(ARGS):
     """
     # Get list of StorageShare objects from the configuration files.
     storage_shares = configloader.get_storage_shares(
-        ARGS.config_path
+        ARGS.config_path,
+        ARGS.endpoint
     )
 
-    # Obtain current stats, if any, from memcached.
-    _connection_stats, _storage_stats = helpers.get_currentstats(
-        storage_shares,
-        ARGS.memcached_ip,
-        ARGS.memcached_port
-    )
+    # Skip checks of '-f/--force' flag is set.
+    if not ARGS.force:
+        # Obtain current stats, if any, from memcached.
+        _connection_stats, _storage_stats = helpers.get_currentstats(
+            storage_shares,
+            ARGS.memcached_ip,
+            ARGS.memcached_port
+        )
 
-    if _connection_stats is not None:
-        # Flag storage shares that have been marked offline by Dynafed.
-        helpers.check_connectionstats(storage_shares, _connection_stats)
+        if _connection_stats is not None:
+            # Flag storage shares that have been marked offline by Dynafed.
+            helpers.check_connectionstats(storage_shares, _connection_stats)
 
-        # Flag storage shares that are under-due their period.
-        helpers.check_frequency(storage_shares, _connection_stats)
+        if _storage_stats is not None:
+            # Flag storage shares that are under-due their period.
+            helpers.check_frequency(storage_shares, _storage_stats)
 
-    if _storage_stats is not None:
-        # Update storage_share objects with information obtaines from memcache.
-        helpers.update_storage_share_storagestats(storage_shares, _storage_stats)
+            # Update storage_share objects with information obtained from memcache.
+            helpers.update_storage_share_storagestats(storage_shares, _storage_stats)
 
     # Create a list of StorageEndpoint objects with the StorageShares to check,
     # based on user input or unique URL's.
     storage_endpoints = configloader.get_storage_endpoints(
-        storage_shares,
-        ARGS.endpoint
+        storage_shares
     )
 
     # This tuple is necessary for the starmap function to send multiple
@@ -186,8 +180,8 @@ def stats(ARGS):
         output.to_stdout(storage_endpoints, ARGS)
 
     # Create StAR Storagestats XML files for each storage share.
-    if ARGS.output_xml:
-        output.to_xml(storage_endpoints, ARGS.to_xml, ARGS.output_path)
+    # if ARGS.output_xml:
+    #     output.to_xml(storage_endpoints, ARGS.to_xml, ARGS.output_path)
 
     # Create json file with storagestats
     if ARGS.to_json:

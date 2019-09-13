@@ -229,3 +229,13 @@ v1.0.20
   ADDED: 'minio_prometheus' api for S3 endpoints.
 v1.0.21
   ADDED: requirement of module 'prometheus_client'
+v1.0.22
+  CHANGED: For s3 boto3 clients, rather than creating the client right away,
+           it now first creates a session and from that the client. This is done
+           to make the execution multithreding 'safe'. Otherwise the sessoin is
+           global and was causing the execution to fail sometimes.
+  ADDED: "-f/--force" flag for "stats" sub-command to skip checks and force
+         stats check.
+  FIXED: Frequency issue that would constantly give wrong stats. Reason was that
+         the check was checking the connectionstats timestamp rather than the
+         storagestats.
