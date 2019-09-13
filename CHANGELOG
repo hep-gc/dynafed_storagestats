@@ -234,3 +234,12 @@ v1.0.22
            it now first creates a session and from that the client. This is done
            to make the execution multithreding 'safe'. Otherwise the sessoin is
            global and was causing the execution to fail sometimes.
+  ADDED: "-f/--force" flag for "stats" sub-command to skip checks and force
+         stats check.
+  FIXED: Frequency issue that would constantly give wrong stats. Reason was that
+         the check was checking the connectionstats timestamp rather than the
+         storagestats.
+  CHANGED: How storage endpoints are read from the configuration files, moved
+           this selection process from get_storage_endpoints() to
+           get_storage_shares().
+  ADDED: Added checks and exception handling for when no endpoints are found.

@@ -60,7 +60,7 @@ def check_frequency(storage_share_objects, stats):
     Arguments:
     storage_share_objects -- list of dynafed_storagestats StorageShare objects.
     stats -- dictionary of storage_shares and their status obtained from
-             get_cached_connection_stats with return_as='expanded_dictionary'.
+             get_cached_storage_stats with return_as='expanded_dictionary'.
 
     """
     ############# Creating loggers ################
