@@ -659,7 +659,6 @@ def minio_prometheus(storage_share):
     finally:
         if _response:
             try:
-                print(_response)
                 _metrics = _response.text
 
             except ValueError:
