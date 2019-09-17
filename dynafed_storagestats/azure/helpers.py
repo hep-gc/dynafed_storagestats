@@ -97,7 +97,7 @@ def list_blobs(storage_share, delta=1, prefix='',
                 else:
                     try:
                         for _blob in _blobs:
-                            _total_bytes += _blob.properties.content_length
+                            _total_bytes += int(_blob.properties.content_length)
                             _total_files += 1
                     # Investigate
                     except azure.common.AzureHttpError:
@@ -126,7 +126,7 @@ def list_blobs(storage_share, delta=1, prefix='',
 
     # Process the result for the storage stats.
     if request == 'storagestats':
-        storage_share.stats['bytesused'] = _total_bytes
+        storage_share.stats['bytesused'] = int(_total_bytes)
 
         # Obtain or set default quota and calculate freespace.
         if storage_share.plugin_settings['storagestats.quota'] == 'api':
@@ -140,7 +140,7 @@ def list_blobs(storage_share, delta=1, prefix='',
             )
 
         else:
-            storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+            storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
             storage_share.stats['filecount'] = _total_files
             storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 

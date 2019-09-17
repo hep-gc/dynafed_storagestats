@@ -105,7 +105,7 @@ def list_files(storage_share):
             # Check that we did not get an error code:
             if _response.status_code < 400:
                 storage_share.stats['bytesused'], storage_share.stats['filecount'] = xml.add_xml_getcontentlength(_response.content)
-                storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+                storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
                 print("quota: %s, type: %s" %(storage_share.stats['quota'], type(storage_share.stats['quota'])))
                 print("bytesused: %s, type: %s" %(storage_share.stats['bytesused'], type(storage_share.stats['bytesused'])))
                 storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']

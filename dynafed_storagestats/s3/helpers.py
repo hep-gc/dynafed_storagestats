@@ -176,22 +176,24 @@ def ceph_admin(storage_share):
                 # dict with a new bucket.
                 # We deal with that by setting _stats 0.
                 if _stats['usage']:
-                    storage_share.stats['bytesused'] = _stats['usage']['rgw.main']['size_utilized']
-                    storage_share.stats['filecount'] = _stats['usage']['rgw.main']['num_objects']
+                    storage_share.stats['bytesused'] = int(_stats['usage']['rgw.main']['size_utilized'])
+                    storage_share.stats['filecount'] = int(_stats['usage']['rgw.main']['num_objects'])
 
                 else:
                     storage_share.stats['bytesused'] = 0
                     storage_share.stats['filecount'] = 0
 
+                # Now fill the othe rstats.
                 if storage_share.plugin_settings['storagestats.quota'] != 'api':
-                    storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+                    storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
                     storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
                 else:
                     if _stats['bucket_quota']['enabled'] is True:
-                        storage_share.stats['quota'] = _stats['bucket_quota']['max_size']
+                        storage_share.stats['quota'] = int(_stats['bucket_quota']['max_size'])
                         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
+                    # In case no quota is set in ceph, use default of 1TB.
                     elif _stats['bucket_quota']['enabled'] is False:
                         storage_share.stats['quota'] = dynafed_storagestats.helpers.convert_size_to_bytes("1TB")
                         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
@@ -362,87 +364,87 @@ def cloudwatch(storage_share):
         )
 
     else:
-        storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+        storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
 def get_cloudwatch_boto_client(storage_share):
-        """Generate unique session Cloudwatch boto client from storage share object.
+    """Generate unique session Cloudwatch boto client from storage share object.
 
-        Arguments:
-        storage_share -- dynafed_storagestats StorageShare object.
+    Arguments:
+    storage_share -- dynafed_storagestats StorageShare object.
 
-        Returns:
-        botocore.client.cloudwatch
+    Returns:
+    botocore.client.cloudwatch
 
-        """
+    """
 
-        # Generate a new session. Needed when running in multithreading.
-        _session = boto3.session.Session()
+    # Generate a new session. Needed when running in multithreading.
+    _session = boto3.session.Session()
 
-        # Generate boto client to query AWS API.
-        _connection = _session.client(
-            'cloudwatch',
-            region_name=storage_share.plugin_settings['s3.region'],
-            aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
-            aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
-            use_ssl=True,
-            verify=True,
-            config=Config(
-                signature_version=storage_share.plugin_settings['s3.signature_ver'],
-                connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
-                retries=dict(max_attempts=0)
-            ),
-        )
+    # Generate boto client to query AWS API.
+    _connection = _session.client(
+        'cloudwatch',
+        region_name=storage_share.plugin_settings['s3.region'],
+        aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
+        aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
+        use_ssl=True,
+        verify=True,
+        config=Config(
+            signature_version=storage_share.plugin_settings['s3.signature_ver'],
+            connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
+            retries=dict(max_attempts=0)
+        ),
+    )
 
-        return _connection
+    return _connection
 
 
 def get_s3_boto_client(storage_share):
-        """Generate unique session S3 boto client from storage share object.
+    """Generate unique session S3 boto client from storage share object.
 
-        Arguments:
-        storage_share -- dynafed_storagestats StorageShare object.
+    Arguments:
+    storage_share -- dynafed_storagestats StorageShare object.
 
-        Returns:
-        botocore.client.S3
+    Returns:
+    botocore.client.S3
 
-        """
-        # Generate the API's URL to contact.
-        if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
-        or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
+    """
+    # Generate the API's URL to contact.
+    if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
+    or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
 
-            _api_url = '{scheme}://{netloc}'.format(
-                scheme=storage_share.uri['scheme'],
-                netloc=storage_share.uri['netloc']
-            )
-
-        else:
-            _api_url = '{scheme}://{domain}'.format(
-                scheme=storage_share.uri['scheme'],
-                domain=storage_share.uri['domain']
-            )
-
-        # Generate a new session. Needed when running in multithreading.
-        _session = boto3.session.Session()
-
-        # Generate boto client to query S3 endpoint.
-        _connection = _session.client(
-            's3',
-            region_name=storage_share.plugin_settings['s3.region'],
-            endpoint_url=_api_url,
-            aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
-            aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
-            use_ssl=True,
-            verify=storage_share.plugin_settings['ssl_check'],
-            config=Config(
-                signature_version=storage_share.plugin_settings['s3.signature_ver'],
-                connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
-                retries=dict(max_attempts=0)
-            ),
+        _api_url = '{scheme}://{netloc}'.format(
+            scheme=storage_share.uri['scheme'],
+            netloc=storage_share.uri['netloc']
         )
 
-        return _connection
+    else:
+        _api_url = '{scheme}://{domain}'.format(
+            scheme=storage_share.uri['scheme'],
+            domain=storage_share.uri['domain']
+        )
+
+    # Generate a new session. Needed when running in multithreading.
+    _session = boto3.session.Session()
+
+    # Generate boto client to query S3 endpoint.
+    _connection = _session.client(
+        's3',
+        region_name=storage_share.plugin_settings['s3.region'],
+        endpoint_url=_api_url,
+        aws_access_key_id=storage_share.plugin_settings['s3.pub_key'],
+        aws_secret_access_key=storage_share.plugin_settings['s3.priv_key'],
+        use_ssl=True,
+        verify=storage_share.plugin_settings['ssl_check'],
+        config=Config(
+            signature_version=storage_share.plugin_settings['s3.signature_ver'],
+            connect_timeout=int(storage_share.plugin_settings['conn_timeout']),
+            retries=dict(max_attempts=0)
+        ),
+    )
+
+    return _connection
 
 
 def list_objects(storage_share, delta=1, prefix='',
@@ -523,7 +525,7 @@ def list_objects(storage_share, delta=1, prefix='',
                 break
             else:
                 for _file in _response['Contents']:
-                    _total_bytes += _file['Size']
+                    _total_bytes += int(_file['Size'])
                     _total_files += 1
 
         elif request == 'filelist':
@@ -550,7 +552,7 @@ def list_objects(storage_share, delta=1, prefix='',
 
     # Process the result for the storage stats.
     if request == 'storagestats':
-        storage_share.stats['bytesused'] = _total_bytes
+        storage_share.stats['bytesused'] = int(_total_bytes)
 
         # Obtain or set default quota and calculate freespace.
         if storage_share.plugin_settings['storagestats.quota'] == 'api':
@@ -564,7 +566,7 @@ def list_objects(storage_share, delta=1, prefix='',
             )
 
         else:
-            storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+            storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
             storage_share.stats['filecount'] = _total_files
             storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
@@ -685,7 +687,7 @@ def minio_prometheus(storage_share):
 
                 # If the quota is overridden in the settings:
                     if storage_share.plugin_settings['storagestats.quota'] != 'api':
-                        storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+                        storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
                         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
