@@ -243,3 +243,6 @@ v1.0.22
            this selection process from get_storage_endpoints() to
            get_storage_shares().
   ADDED: Added checks and exception handling for when no endpoints are found.
+v1.0.23
+  ADDED: '--version' flag.
+  FIXED: Some numerical stats were failing to be integer type.
