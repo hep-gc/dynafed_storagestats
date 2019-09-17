@@ -231,7 +231,7 @@ def process_rfc4331_response(response, storage_share):
             )
 
     else:
-        storage_share.stats['quota'] = storage_share.plugin_settings['storagestats.quota']
+        storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
         # Calculate free space using pre-set quota.
         storage_share.stats['bytesfree'] = (storage_share.stats['quota']
                                             - storage_share.stats['bytesused'])
