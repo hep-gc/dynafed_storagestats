@@ -26,6 +26,15 @@ def parse_args():
     parser = argparse.ArgumentParser()
     subparser = parser.add_subparsers()
 
+    # Version
+    parser.add_argument(
+        '--version',
+        action='store_true',
+        default=False,
+        dest='version',
+        help="Print current installed version."
+    )
+
     # Sub-command options argument sub-parsers
     add_checksums_subparser(subparser)
     add_reports_subparser(subparser)

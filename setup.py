@@ -1,19 +1,34 @@
+#!/usr/bin/env python3
 """Defines setup for pip."""
 
 from os import path
 from io import open
+import re
+import sys
 
 from setuptools import setup, find_packages
 
 PWD = path.abspath(path.dirname(__file__))
+PACKAGE_NAME = 'dynafed_storagestats'
+
+# Obtain version from version.py
+try:
+    filepath = PWD + '/' + PACKAGE_NAME +'/version.py'
+
+    with open( filepath ) as file:
+        __version__ ,= re.findall( '__version__ = "(.*)"', file.read() )
+
+except Exception as error:
+    sys.stderr.write( "Warning: Could not open '%s' due %s\n" % ( filepath, error ) )
+    sys.exit(1)
 
 # Get the long description from the README file
 with open(path.join(PWD, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='dynafed_storagestats',
-    version='1.0.22',
+    name=PACKAGE_NAME,
+    version=__version__,
     description='Dynafed Storage Stats Module',
     long_description=long_description,
     long_description_content_type='text/markdown',

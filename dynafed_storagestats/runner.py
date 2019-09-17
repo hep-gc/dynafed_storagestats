@@ -11,6 +11,8 @@ from dynafed_storagestats import configloader
 from dynafed_storagestats import helpers
 from dynafed_storagestats import output
 
+from dynafed_storagestats import __version__
+
 ########
 # Main #
 ########
@@ -20,20 +22,26 @@ def main():
     # Generate Help/Usage and ARGS.
     ARGS = args.parse_args()
 
-    # Setup logger
-    helpers.setup_logger(
-        logfile=ARGS.logfile,
-        loglevel=ARGS.loglevel,
-        verbose=ARGS.verbose,
-    )
 
-    # Run the specified sub-command.
-    if ARGS.cmd == 'reports':
-        reports(ARGS)
-    elif ARGS.cmd == 'stats':
-        stats(ARGS)
-    elif ARGS.cmd == 'checksums':
-        checksums(ARGS)
+    if ARGS.version:
+        print(__version__)
+
+    else:
+        # Setup logger
+        helpers.setup_logger(
+            logfile=ARGS.logfile,
+            loglevel=ARGS.loglevel,
+            verbose=ARGS.verbose,
+        )
+
+        # Run the specified sub-command.
+        if ARGS.cmd == 'reports':
+            reports(ARGS)
+        elif ARGS.cmd == 'stats':
+            stats(ARGS)
+        elif ARGS.cmd == 'checksums':
+            checksums(ARGS)
+
 
 
 ################
