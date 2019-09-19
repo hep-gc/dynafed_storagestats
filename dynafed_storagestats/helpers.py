@@ -629,7 +629,7 @@ def process_endpoint_list_results(storage_share_objects):
             )
 
 
-def process_storagereports(storage_endpoint, args):
+def process_filelist_reports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
 
     Runs get_filelist() method for the first StorageShare in the list of the
