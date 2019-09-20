@@ -249,6 +249,8 @@ v1.0.23
 v1.0.24
   ADDED: '--rucio' flag to 'reports filelist' that sets the prefix='rucio' and
          delta='1' used for rucio consistency check filedumps.
-  ADDED: '--wlcg' flag to 'reports storage' that generates a jsonf file according
-         to WLCG's storage accounting format from spcified site schema file.
+  ADDED: '--wlcg' flag to 'reports storage' that generates a json file according
+         to WLCG's storage accounting format from specified site schema file.
   CHANGE: The reports file list now removes the chosen prefix from the paths.
+v1.0.25
+  ADDED: Requirement of PyYAML.

@@ -49,6 +49,7 @@ setup(
         'lxml',
         'prometheus_client',
         'python-memcached',
+        'PyYAML',
         'requests',
         'requests_aws4auth'
     ],
