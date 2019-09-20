@@ -409,10 +409,17 @@ def add_reports_storage_subparser(subparser):
     # Reports options
     group_reports = parser.add_argument_group("Reports options")
     group_reports.add_argument(
+        '-s','--schema',
+        action='store',
+        default=False,
+        dest='schema',
+        help="YAML file containing site schema. Required." \
+    )
+    group_reports.add_argument(
         '--wlcg',
         action='store_true',
         default=False,
-        dest='wlgc',
+        dest='wlcg',
         help="Produces WLCG JSON output file. Requires setup file." \
     )
 
