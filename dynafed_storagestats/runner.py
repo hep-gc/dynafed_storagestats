@@ -99,64 +99,70 @@ def reports(ARGS):
 
     if ARGS.sub_cmd == 'filelist':
         # Get list of StorageShare objects from the configuration files.
-        storage_shares = configloader.get_storage_shares(
+        _storage_shares = configloader.get_storage_shares(
             ARGS.config_path,
             ARGS.endpoint
         )
 
         # Create a list of StorageEndpoint objects with the StorageShares to check,
         # based on user input or unique URL's.
-        storage_endpoints = configloader.get_storage_endpoints(
-            storage_shares
+        _storage_endpoints = configloader.get_storage_endpoints(
+            _storage_shares
         )
 
         # This tuple is necessary for the starmap function to send multiple
         # arguments to the process_storagestats function.
-        storage_endpoints_list_and_args_tuple = [
-            (storage_endpoint, ARGS) for storage_endpoint in storage_endpoints
+        _storage_endpoints_list_and_args_tuple = [
+            (_storage_endpoint, ARGS) for _storage_endpoint in _storage_endpoints
         ]
 
         # Process each storage endpoints' shares using multithreading.
         # Number of threads to use.
-        pool = ThreadPool(len(storage_endpoints_list_and_args_tuple))
-        pool.starmap(
+        _pool = ThreadPool(len(_storage_endpoints_list_and_args_tuple))
+        _pool.starmap(
             helpers.process_filelist_reports,
-            storage_endpoints_list_and_args_tuple
+            _storage_endpoints_list_and_args_tuple
         )
 
     elif ARGS.sub_cmd == 'storage':
         # Check that all required arguments were given.
         helpers.check_required_reports_storage_args(ARGS)
 
+        # Obtain site schema from schema file.
+        _schema = helpers.get_site_schema(ARGS.schema)
+
+        # Obtain the endpoints to check from the schema file:
+        ARGS.endpoint = helpers.get_dynafed_storage_endpoints_from_schema(_schema)
+
         # Get list of StorageShare objects from the configuration files.
-        storage_shares = configloader.get_storage_shares(
+        _storage_shares = configloader.get_storage_shares(
             ARGS.config_path,
             ARGS.endpoint
         )
 
         # Create a list of StorageEndpoint objects with the StorageShares to check,
         # based on user input or unique URL's.
-        storage_endpoints = configloader.get_storage_endpoints(
-            storage_shares
+        _storage_endpoints = configloader.get_storage_endpoints(
+            _storage_shares
         )
 
         # This tuple is necessary for the starmap function to send multiple
         # arguments to the process_storagestats function.
-        storage_endpoints_list_and_args_tuple = [
-            (storage_endpoint, ARGS) for storage_endpoint in storage_endpoints
+        _storage_endpoints_list_and_args_tuple = [
+            (_storage_endpoint, ARGS) for _storage_endpoint in _storage_endpoints
         ]
 
         # Process each storage endpoints' shares using multithreading.
         # Number of threads to use.
-        pool = ThreadPool(len(storage_endpoints_list_and_args_tuple))
-        pool.starmap(
+        _pool = ThreadPool(len(_storage_endpoints_list_and_args_tuple))
+        _pool.starmap(
             helpers.process_storage_reports,
-            storage_endpoints_list_and_args_tuple
+            _storage_endpoints_list_and_args_tuple
         )
 
         # Create the requested report
         if ARGS.wlcg:
-            dynafed_storagestats.reports.create_wlcg_storage_report(ARGS)
+            dynafed_storagestats.reports.create_wlcg_storage_report(_schema, _storage_shares)
 
 
 def stats(ARGS):
