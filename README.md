@@ -180,6 +180,10 @@ fernando@ffgalindo:/tmp/dd»
 ---
 
 ##### Reports
+
+The reports sub-command has two sub-commands itself:
+
+###### *filelist*
 **Note: Only works with Azure and S3 endpoints**
 
 This sub-command is intended to be used to obtain file reports from the storage
@@ -196,17 +200,20 @@ prefix that are a day older from endpoints 'entpoint1' and 'endpoint2'. The
 filename is the endpoint's ID name in the endpoints.conf file.
 
 ```bash
-dynafed-storage reports -c ~/lab/dynafed_storagestats/tests/local/ -o /tmp/delete --delta 1 -p rucio -e endpoint1 endpoint2
+dynafed-storage reports filelist -c /etc/ugr/conf.d -o /tmp --rucio -e endpoint1 endpoint2
 ```
 
-**reports help:**
+**reports filelist help:**
 ```bash
-dynafed-storage reports --help
-usage: dynafed-storage reports [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]] [-f]
-                               [-v] [-e [ENDPOINT [ENDPOINT ...]]]
-                               [--delta DELTA] [--logfile LOGFILE]
-                               [--loglevel {DEBUG,INFO,WARNING,ERROR}]
-                               [-o OUTPUT_PATH] [-p PREFIX]
+dynafed-storage reports filelist -h
+usage: dynafed-storage reports filelist [-h]
+                                        [-c [CONFIG_PATH [CONFIG_PATH ...]]]
+                                        [-f] [-v]
+                                        [-e [ENDPOINT [ENDPOINT ...]]]
+                                        [--logfile LOGFILE]
+                                        [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                                        [--delta DELTA] [--rucio]
+                                        [-o OUTPUT_PATH] [-p PREFIX]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -221,22 +228,26 @@ optional arguments:
                         arguments. If not present, all endpoints will be
                         checked.
 
-Reports options:
-  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
-                        Default: 1
-
 Logging options:
   --logfile LOGFILE     Set logfiles path. Default:
                         /tmp/dynafed_storagestats.log
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
 
+Reports options:
+  --delta DELTA         Mask for Last Modified Date of files. Integer in days.
+                        Default: 1
+  --rucio               Use to create rucio file dumps for consitency checks.
+                        Same as: --delta 1 --prefix rucio
+
 Output options:
   -o OUTPUT_PATH, --output-dir OUTPUT_PATH
                         Set output directory. Default: '.'
   -p PREFIX, --path PREFIX, --prefix PREFIX
                         Set the prefix/path from where to start the recursive
-                        list.Default: ''
+                        list. The prefix is excluded from the resulting paths.
+                        Default: ''
+
 
 ```
 **Important Note: DEBUG level might print an enormous amount of data as it will
@@ -244,9 +255,68 @@ log the contents obtained from requests. In the case of the generic methods this
 will print all the stats for each file being parsed. It is recommended to use
 this level with only the endpoint one wants to troubleshoot.**
 
+###### *storage*
+
+The purpose of this sub-command is to create storage accounting reports according
+to different formats that experiments might require.
+
+At the moment only WLCG's JSON storage accounting file is available.
+
+In order to create it, the user will have to create a 'site-schema' YAML file
+containing the site information. Please check in the 'samples' folder for
+examples on how to create these file. The '-s/--schema' flag is required and
+should point to this site-schema file.
+
+Usage example:
+This will create file '/tmp/space-usage.json'
+
+```bash
+dynafed-storage reports storage --wlcg -c /etc/ugr/conf.d -s wlcg-schema.yml -o /tmp
+```
+
+**reports storage help:**
+```bash
+dynafed-storage reports storage -h
+usage: dynafed-storage reports storage [-h]
+                                       [-c [CONFIG_PATH [CONFIG_PATH ...]]]
+                                       [-f] [-v]
+                                       [-e [ENDPOINT [ENDPOINT ...]]]
+                                       [--logfile LOGFILE]
+                                       [--loglevel {DEBUG,INFO,WARNING,ERROR}]
+                                       [-s SCHEMA] [--wlcg] [-o OUTPUT_PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
+                        Path to UGRs endpoint .conf files or directories.
+                        Accepts any number of arguments. Default:
+                        '/etc/ugr/conf.d'.
+  -f, --force           Force command execution.
+  -v, --verbose         Show on stderr events according to loglevel.
+  -e [ENDPOINT [ENDPOINT ...]], --endpoint [ENDPOINT [ENDPOINT ...]]
+                        Choose endpoint(s) to check. Accepts any number of
+                        arguments. If not present, all endpoints will be
+                        checked.
+
+Logging options:
+  --logfile LOGFILE     Set logfiles path. Default:
+                        /tmp/dynafed_storagestats.log
+  --loglevel {DEBUG,INFO,WARNING,ERROR}
+                        Set log output level. Default: WARNING.
+
+Reports options:
+  -s SCHEMA, --schema SCHEMA
+                        YAML file containing site schema. Required.
+  --wlcg                Produces WLCG JSON output file. Requires setup file.
+
+Output options:
+  -o OUTPUT_PATH, --output-dir OUTPUT_PATH
+                        Set output directory. Default: '.'
+```
+
 ---
 
-##### Stats
+##### stats
 
 This sub-command is intended to be run periodically as a cron job in order to
 upload the stats into memcached so that Dynafed can use it to be aware of the
