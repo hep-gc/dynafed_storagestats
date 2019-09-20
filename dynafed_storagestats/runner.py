@@ -6,6 +6,7 @@ import logging
 
 from multiprocessing.dummy import Pool as ThreadPool
 
+import dynafed_storagestats.reports
 from dynafed_storagestats import args
 from dynafed_storagestats import configloader
 from dynafed_storagestats import helpers
@@ -152,6 +153,10 @@ def reports(ARGS):
             helpers.process_storage_reports,
             storage_endpoints_list_and_args_tuple
         )
+
+        # Create the requested report
+        if ARGS.wlcg:
+            dynafed_storagestats.reports.create_wlcg_storage_report(ARGS)
 
 
 def stats(ARGS):
