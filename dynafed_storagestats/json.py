@@ -76,7 +76,7 @@ def format_wlcg(storage_endpoints, hostname="localhost"):
         # 'servicetype': "tbd",
         "implementation": "dynafed",
         # 'implementationversion': "tbd",
-        "latesupdate": int(datetime.datetime.now().timestamp()),
+        "latestupdate": int(datetime.datetime.now().timestamp()),
         "storageservicecapacity": {
             "totalsize": _dynafed_totalsize,
             "usedsize": _dynafed_usedsize,

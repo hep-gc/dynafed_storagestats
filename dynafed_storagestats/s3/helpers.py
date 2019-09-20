@@ -2,6 +2,7 @@
 
 import datetime
 import logging
+import os
 
 import boto3
 import botocore.vendored.requests.exceptions as botoRequestsExceptions
@@ -448,7 +449,7 @@ def get_s3_boto_client(storage_share):
 
 
 def list_objects(storage_share, delta=1, prefix='',
-                 report_file='/tmp/filelist_report.txt',
+                 report_file='/tmp/filelist_report',
                  request='storagestats'
                  ):
     """Contact S3 endpoint using list_objects API.
@@ -538,7 +539,11 @@ def list_objects(storage_share, delta=1, prefix='',
                 for _file in _response['Contents']:
                     # Output files older than the specified delta.
                     if dynafed_storagestats.time.mask_timestamp_by_delta(_file['LastModified'], delta):
-                        report_file.write("%s\n" % _file['Key'])
+                        # Remove the prefix:
+                        _filepath = os.path.relpath(_file['Key'], prefix)
+                        # Write to file
+                        report_file.write("%s\n" % _filepath)
+                        # File counter
                         _total_files += 1
 
         # Exit if no "NextMarker" as list is now over.

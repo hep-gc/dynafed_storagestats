@@ -61,7 +61,7 @@ def add_general_options(parser):
         default=['/etc/ugr/conf.d'],
         dest='config_path',
         nargs='*',
-        help="Path to UGR's endpoint .conf files or directories. " \
+        help="Path to UGRs endpoint .conf files or directories. " \
              "Accepts any number of arguments. " \
              "Default: '/etc/ugr/conf.d'."
     )
@@ -98,6 +98,7 @@ def add_checksums_subparser(subparser):
     # Set the sub-command routine to run.
     parser.set_defaults(cmd='checksums')
 
+    # Add Sub-sub commands
     add_checkusms_get_subparser(subparser)
     add_checkusms_put_subparser(subparser)
 
@@ -246,7 +247,7 @@ def add_logging_options(parser):
         action='store',
         default='/tmp/dynafed_storagestats.log',
         dest='logfile',
-        help="Set logfile's path. " \
+        help="Set logfiles path. " \
              "Default: /tmp/dynafed_storagestats.log"
     )
     group_logging.add_argument(
@@ -270,11 +271,33 @@ def add_reports_subparser(subparser):
     # Initiate parser.
     parser = subparser.add_parser(
         'reports',
-        help="In development"
+        help="Generate report files."
     )
+    subparser = parser.add_subparsers()
 
     # Set the sub-command routine to run.
     parser.set_defaults(cmd='reports')
+
+    # Add Sub-sub commands
+    add_reports_filelist_subparser(subparser)
+    add_reports_storage_subparser(subparser)
+
+
+def add_reports_filelist_subparser(subparser):
+    """Add optional arguments for the 'reports filelist' sub-command.
+
+    Arguments:
+    subparser -- Object form argparse.ArgumentParser().add_subparsers()
+
+    """
+    # Initiate parser.
+    parser = subparser.add_parser(
+        'filelist',
+        help="Generate file-list related report."
+    )
+
+    # Set the sub-command routine to run.
+    parser.set_defaults(sub_cmd='filelist')
 
     # General options
     add_general_options(parser)
@@ -290,6 +313,10 @@ def add_reports_subparser(subparser):
              "If not present, all endpoints will be checked."
     )
 
+    # Logging options
+    add_logging_options(parser)
+
+    # Reports options
     group_reports = parser.add_argument_group("Reports options")
     group_reports.add_argument(
         '--delta',
@@ -300,9 +327,14 @@ def add_reports_subparser(subparser):
         help="Mask for Last Modified Date of files. Integer in days. " \
              "Default: 1"
     )
-
-    # Logging options
-    add_logging_options(parser)
+    group_reports.add_argument(
+        '--rucio',
+        action='store_true',
+        default=False,
+        dest='rucio',
+        help="Use to create rucio file dumps for consitency checks. " \
+             "Same as: --delta 1 --prefix rucio"
+    )
 
     # Output Options
     group_output = parser.add_argument_group("Output options")
@@ -336,8 +368,87 @@ def add_reports_subparser(subparser):
         action='store',
         default='',
         dest='prefix',
-        help="Set the prefix/path from where to start the recursive list." \
-             "Default: ''"
+        help="Set the prefix/path from where to start the recursive list. " \
+             "The prefix is excluded from the resulting paths. Default: ''"
+    )
+
+
+def add_reports_storage_subparser(subparser):
+    """Add optional arguments for the 'reports storage' sub-command.
+
+    Arguments:
+    subparser -- Object form argparse.ArgumentParser().add_subparsers()
+
+    """
+    # Initiate parser.
+    parser = subparser.add_parser(
+        'storage',
+        help="Generate storage related report."
+    )
+
+    # Set the sub-command routine to run.
+    parser.set_defaults(sub_cmd='storage')
+
+    # General options
+    add_general_options(parser)
+
+    parser.add_argument(
+        '-e', '--endpoint',
+        action='store',
+        default=[],
+        dest='endpoint',
+        nargs='*',
+        help="Choose endpoint(s) to check. " \
+             "Accepts any number of arguments. "
+             "If not present, all endpoints will be checked."
+    )
+
+    # Logging options
+    add_logging_options(parser)
+
+    # Reports options
+    group_reports = parser.add_argument_group("Reports options")
+    group_reports.add_argument(
+        '-s','--schema',
+        action='store',
+        default=False,
+        dest='schema',
+        help="YAML file containing site schema. Required." \
+    )
+    group_reports.add_argument(
+        '--wlcg',
+        action='store_true',
+        default=False,
+        dest='wlcg',
+        help="Produces WLCG JSON output file. Requires setup file." \
+    )
+
+    # Output Options
+    group_output = parser.add_argument_group("Output options")
+    # group_output.add_argument(
+    #     '--debug',
+    #     action='store_true',
+    #     default=False,
+    #     dest='debug',
+    #     help="Declare to enable debug output on stdout."
+    # )
+
+    # group_output.add_argument(
+    #     '-f', '--filename',
+    #     action='store',
+    #     default='report.txt',
+    #     dest='report_filename',
+    #     help="Set output filename. " \
+    #          "Default: 'report_filename'"
+    # )
+
+    group_output.add_argument(
+        '-o', '--output-dir',
+        action='store',
+        default='.',
+        dest='output_path',
+        help="Set output directory. " \
+             "Default: '.'"
     )
 
 

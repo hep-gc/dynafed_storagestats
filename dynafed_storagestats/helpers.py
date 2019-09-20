@@ -3,6 +3,7 @@
 import logging, logging.handlers
 import os
 import sys
+import yaml
 
 
 import dynafed_storagestats.exceptions
@@ -129,6 +130,32 @@ def check_required_checksum_args(args):
     if not args.url:
         _logger.critical("[CRITICAL]No file/object URL provided. Please use '-u [url]'")
         print("[CRITICAL]No file/object URL provided. Please use '-u [url]'")
+        _exit = True
+
+    if _exit:
+        sys.exit(1)
+
+
+def check_required_reports_storage_args(args):
+    """Check that the client included required arguments for the reports storage command.
+
+    Since there are certain arguments that are required for the reports storage
+    command to work, we make sure here they are located. If not, the client will
+    get an error message and the process will exit.
+
+    Arguments:
+    args -- argparse object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    _exit = False
+
+    if not args.schema:
+        _logger.critical("No schema file provided. Please use '-s [file]'")
+        print("[CRITICAL]No schema file provided. Please use '-s [file]'")
         _exit = True
 
     if _exit:
@@ -474,6 +501,90 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
         return _dictonary_of_stats
 
 
+def get_dynafed_storage_endpoints_from_schema(schema):
+    """Extract the names of the dynafed storage endpoints from the given schema.
+
+    Arguments:
+    schema: Dict with site schema following the samples/schema.sample file.
+
+    Returns:
+    List of strings
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    _dynafed_endpoints = []
+
+    _logger.info('Extracting dynafed storage endpoints from schema.')
+
+    for _schema_storage_service in schema['storageservice']:
+        for _schema_storage_share in _schema_storage_service['storageshares']:
+            for _dynafed_endpoint in _schema_storage_share['dynafedendpoints']:
+
+                _logger.info('Found dynafed storage endpoint: %s',
+                    _dynafed_endpoint
+                )
+
+                _dynafed_endpoints.append(_dynafed_endpoint)
+
+    _logger.debug(
+        'List of dynafed endpoints to return: %s',
+        _dynafed_endpoints
+    )
+
+    return _dynafed_endpoints
+
+
+def get_site_schema(schema_file):
+    """Get schema from YAML file
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    try:
+        _logger.info(
+            "Trying to open schema file: %s",
+            schema_file
+        )
+
+        with open(schema_file, 'r') as _stream:
+            try:
+                _schema = yaml.safe_load(_stream)
+            except yaml.YAMLError as ERROR:
+                _logger.critical(
+                    "Failed to read YAML stream from file: %s. %s",
+                    schema_file,
+                    ERROR
+                )
+                print(
+                    "[CRITICAL]Failed to read YAML stream from file: %s. %s" % (
+                    schema_file,
+                    ERROR
+                    )
+                )
+                sys.exit(1)
+
+    except IOError as ERROR:
+        _logger.critical(
+            "%s",
+            ERROR
+        )
+        print("[CRITICAL]%s" % (ERROR))
+        sys.exit(1)
+
+    else:
+        _logger.debug(
+            "Obtained the following schema: %s",
+            _schema
+        )
+
+        return _schema
+
+
 def process_checksums_get(storage_share, hash_type, url):
     """Run StorageShare get_object_checksum() method to get checksum of file/object.
 
@@ -629,7 +740,7 @@ def process_endpoint_list_results(storage_share_objects):
             )
 
 
-def process_storagereports(storage_endpoint, args):
+def process_filelist_reports(storage_endpoint, args):
     """Run StorageShare.get_filelist() for storage shares in StorageEndpoint.
 
     Runs get_filelist() method for the first StorageShare in the list of the
@@ -649,7 +760,11 @@ def process_storagereports(storage_endpoint, args):
     _logger = logging.getLogger(__name__)
     ###############################################
 
-    _filepath = args.output_path + '/' + storage_endpoint.storage_shares[0].id + '.txt'
+    _filepath = args.output_path + '/' + storage_endpoint.storage_shares[0].id + '.filelist'
+
+    if args.rucio:
+        args.delta = 1
+        args.prefix = 'rucio'
 
     try:
         _logger.info(
@@ -743,6 +858,68 @@ def process_storagereports(storage_endpoint, args):
             _filepath
         )
         os.remove(_filepath)
+
+
+def process_storage_reports(storage_endpoint, args):
+    """Create storage report from info gathered from get_storagestats().
+
+    Runs get_storagestats() method for the first StorageShare in the list of the
+    StorageEndpoint It then calls process_endpoint_list_results() to copy the
+    results if there are multiple StorageShares. Then the stats are formatted
+    according to the requested report type. Also handles the exceptions to
+    failures in obtaining the stats.
+
+    Arguments:
+    storage_endpoint -- dynafed_storagestats StorageEndpoint.
+    args -- args -- argparse object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    try:
+        if storage_endpoint.storage_shares[0].stats['check'] is True:
+            _logger.info("[%s]Contacting endpoint.", storage_endpoint.storage_shares[0].id)
+            storage_endpoint.storage_shares[0].get_storagestats()
+
+        elif storage_endpoint.storage_shares[0].stats['check'] == "EndpointOffline":
+            _logger.error(
+                "[%s][%s]Bypassing stats check.",
+                storage_endpoint.storage_shares[0].id,
+                storage_endpoint.storage_shares[0].stats['check']
+            )
+
+            raise dynafed_storagestats.exceptions.OfflineEndpointError(
+                status_code="400",
+                error="EndpointOffline"
+            )
+
+        else:
+            _logger.error(
+                "[%s][%s]Bypassing stats check.",
+                storage_endpoint.storage_shares[0].id,
+                storage_endpoint.storage_shares[0].stats['check']
+            )
+
+    except dynafed_storagestats.exceptions.OfflineEndpointError as ERR:
+        _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
+        storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
+        storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
+
+    except dynafed_storagestats.exceptions.Warning as WARN:
+        _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
+        storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
+        storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
+
+    except dynafed_storagestats.exceptions.Error as ERR:
+        _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
+        storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
+        storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
+
+    finally:
+        # Copy results if there are multiple endpoints under one URL.
+        process_endpoint_list_results(storage_endpoint.storage_shares)
 
 
 def process_storagestats(storage_endpoint, args):
