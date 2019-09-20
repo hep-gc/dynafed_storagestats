@@ -323,6 +323,14 @@ def add_reports_filelist_subparser(subparser):
         help="Mask for Last Modified Date of files. Integer in days. " \
              "Default: 1"
     )
+    group_reports.add_argument(
+        '--rucio',
+        action='store_true',
+        default=False,
+        dest='rucio',
+        help="Use to create rucio file dumps for consitency checks. " \
+             "Same as: --delta 1 --prefix rucio"
+    )
 
     # Logging options
     add_logging_options(parser)
