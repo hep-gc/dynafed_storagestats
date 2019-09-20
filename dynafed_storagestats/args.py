@@ -113,7 +113,7 @@ def add_checkusms_get_subparser(subparser):
     # Initiate parser.
     parser = subparser.add_parser(
         'get',
-        help="Get object/file checksums.."
+        help="Get object/file checksums."
     )
 
     # Set the sub-command routine to run.
@@ -137,6 +137,7 @@ def add_checkusms_get_subparser(subparser):
         action='store',
         default=False,
         dest='hash_type',
+        type=str.lower,
         help="Type of checksum hash. ['adler32', md5] " \
              "Required."
     )
@@ -190,6 +191,7 @@ def add_checkusms_put_subparser(subparser):
         action='store',
         default=False,
         dest='checksum',
+        type=str.lower,
         help="String with checksum to set. ['adler32', md5] " \
              "Required"
     )
@@ -206,6 +208,7 @@ def add_checkusms_put_subparser(subparser):
         action='store',
         default=False,
         dest='hash_type',
+        type=str.lower,
         help="Type of checksum hash. ['adler32', md5] " \
              "Required."
     )
