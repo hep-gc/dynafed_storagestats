@@ -367,8 +367,8 @@ def add_reports_filelist_subparser(subparser):
         action='store',
         default='',
         dest='prefix',
-        help="Set the prefix/path from where to start the recursive list." \
-             "Default: ''"
+        help="Set the prefix/path from where to start the recursive list. " \
+             "The prefix is excluded from the resulting paths. Default: ''"
     )
 
 
