@@ -1,13 +1,16 @@
 storageservice:
   - name: "your.dynafed.com"
     storageshares:
+      # Example storage share. Change names, path and endpoints as needed.
       - name: "ATLASDATADISK"
         path:
           - "dynafed/atlas/atlasdatadisk"
         dynafedendpoints:
+          # Add here the endpoints' UGR ID's
           - "ENDPOINT01_ID"
           - "ENDPOINT02_ID"
 
+      # Example to show how to add more storage shares.
       - name: "ATLASSCRATCHDISK"
         path:
           - "dynafed/atlas/atlasscratchdisk"
