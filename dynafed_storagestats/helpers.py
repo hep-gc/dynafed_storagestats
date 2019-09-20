@@ -3,6 +3,7 @@
 import logging, logging.handlers
 import os
 import sys
+import yaml
 
 
 import dynafed_storagestats.exceptions
@@ -134,6 +135,7 @@ def check_required_checksum_args(args):
     if _exit:
         sys.exit(1)
 
+
 def check_required_reports_storage_args(args):
     """Check that the client included required arguments for the reports storage command.
 
@@ -152,7 +154,7 @@ def check_required_reports_storage_args(args):
     _exit = False
 
     if not args.schema:
-        _logger.critical("[CRITICAL]No schema file provided. Please use '-s [file]'")
+        _logger.critical("No schema file provided. Please use '-s [file]'")
         print("[CRITICAL]No schema file provided. Please use '-s [file]'")
         _exit = True
 
@@ -497,6 +499,49 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
             }
 
         return _dictonary_of_stats
+
+
+def get_site_schema(schema_file):
+    """Get schema from YAML file
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    try:
+        _logger.info(
+            "Trying to open schema file: %s",
+            schema_file
+        )
+
+        with open(schema_file, 'r') as _stream:
+            try:
+                _schema = yaml.safe_load(_stream)
+            except yaml.YAMLError as ERROR:
+                _logger.critical(
+                    "Failed to read YAML stream from file: %s. %s",
+                    schema_file,
+                    ERROR
+                )
+                print(
+                    "[CRITICAL]Failed to read YAML stream from file: %s. %s" % (
+                    schema_file,
+                    ERROR
+                    )
+                )
+                sys.exit(1)
+
+    except IOError as ERROR:
+        _logger.critical(
+            "%s",
+            ERROR
+        )
+        print("[CRITICAL]%s" % (ERROR))
+        sys.exit(1)
+
+    else:
+        return _schema
 
 
 def process_checksums_get(storage_share, hash_type, url):
