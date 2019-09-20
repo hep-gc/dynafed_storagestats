@@ -1,0 +1,16 @@
+storageservice:
+  - name: "your.dynafed.com"
+    storageshares:
+      - name: "ATLASDATADISK"
+        path:
+          - "dynafed/atlas/atlasdatadisk"
+        dynafedendpoints:
+          - "ENDPOINT01_ID"
+          - "ENDPOINT02_ID"
+
+      - name: "ATLASSCRATCHDISK"
+        path:
+          - "dynafed/atlas/atlasscratchdisk"
+        dynafedendpoints:
+          - "ENDPOINT03_ID"
+          - "ENDPOINT04_ID"
