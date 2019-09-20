@@ -61,7 +61,7 @@ def add_general_options(parser):
         default=['/etc/ugr/conf.d'],
         dest='config_path',
         nargs='*',
-        help="Path to UGR's endpoint .conf files or directories. " \
+        help="Path to UGRs endpoint .conf files or directories. " \
              "Accepts any number of arguments. " \
              "Default: '/etc/ugr/conf.d'."
     )
@@ -247,7 +247,7 @@ def add_logging_options(parser):
         action='store',
         default='/tmp/dynafed_storagestats.log',
         dest='logfile',
-        help="Set logfile's path. " \
+        help="Set logfiles path. " \
              "Default: /tmp/dynafed_storagestats.log"
     )
     group_logging.add_argument(
