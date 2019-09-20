@@ -6,7 +6,6 @@ import sys
 
 
 import dynafed_storagestats.exceptions
-import dynafed_storagestats.reports
 from dynafed_storagestats import memcache
 from dynafed_storagestats import output
 from dynafed_storagestats import time
@@ -835,9 +834,6 @@ def process_storage_reports(storage_endpoint, args):
     finally:
         # Copy results if there are multiple endpoints under one URL.
         process_endpoint_list_results(storage_endpoint.storage_shares)
-
-    if args.wlcg:
-        dynafed_storagestats.reports.create_wlcg_storage_report(args)
 
 
 def process_storagestats(storage_endpoint, args):
