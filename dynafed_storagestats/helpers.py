@@ -649,7 +649,11 @@ def process_filelist_reports(storage_endpoint, args):
     _logger = logging.getLogger(__name__)
     ###############################################
 
-    _filepath = args.output_path + '/' + storage_endpoint.storage_shares[0].id + '.txt'
+    _filepath = args.output_path + '/' + storage_endpoint.storage_shares[0].id + '.filelist'
+
+    if args.rucio:
+        args.delta = 1
+        args.prefix = 'rucio'
 
     try:
         _logger.info(
