@@ -541,6 +541,11 @@ def get_site_schema(schema_file):
         sys.exit(1)
 
     else:
+        _logger.debug(
+            "Obtained the following schema: %s",
+            _schema
+        )
+        
         return _schema
 
 
