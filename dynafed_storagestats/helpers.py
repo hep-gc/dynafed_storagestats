@@ -135,6 +135,31 @@ def check_required_checksum_args(args):
     if _exit:
         sys.exit(1)
 
+def check_required_reports_storage_args(args):
+    """Check that the client included required arguments for the reports storage command.
+
+    Since there are certain arguments that are required for the reports storage
+    command to work, we make sure here they are located. If not, the client will
+    get an error message and the process will exit.
+
+    Arguments:
+    args -- argparse object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    _exit = False
+
+    if not args.schema:
+        _logger.critical("[CRITICAL]No schema file provided. Please use '-s [file]'")
+        print("[CRITICAL]No schema file provided. Please use '-s [file]'")
+        _exit = True
+
+    if _exit:
+        sys.exit(1)
+
 
 def convert_size_to_bytes(size):
     """Convert given size to bytes.

@@ -95,25 +95,25 @@ def reports(ARGS):
     ARGS -- argparse object from dynafed_storagestats.args.parse_args()
 
     """
-    # Get list of StorageShare objects from the configuration files.
-    storage_shares = configloader.get_storage_shares(
-        ARGS.config_path,
-        ARGS.endpoint
-    )
-
-    # Create a list of StorageEndpoint objects with the StorageShares to check,
-    # based on user input or unique URL's.
-    storage_endpoints = configloader.get_storage_endpoints(
-        storage_shares
-    )
-
-    # This tuple is necessary for the starmap function to send multiple
-    # arguments to the process_storagestats function.
-    storage_endpoints_list_and_args_tuple = [
-        (storage_endpoint, ARGS) for storage_endpoint in storage_endpoints
-    ]
 
     if ARGS.sub_cmd == 'filelist':
+        # Get list of StorageShare objects from the configuration files.
+        storage_shares = configloader.get_storage_shares(
+            ARGS.config_path,
+            ARGS.endpoint
+        )
+
+        # Create a list of StorageEndpoint objects with the StorageShares to check,
+        # based on user input or unique URL's.
+        storage_endpoints = configloader.get_storage_endpoints(
+            storage_shares
+        )
+
+        # This tuple is necessary for the starmap function to send multiple
+        # arguments to the process_storagestats function.
+        storage_endpoints_list_and_args_tuple = [
+            (storage_endpoint, ARGS) for storage_endpoint in storage_endpoints
+        ]
 
         # Process each storage endpoints' shares using multithreading.
         # Number of threads to use.
@@ -124,6 +124,27 @@ def reports(ARGS):
         )
 
     elif ARGS.sub_cmd == 'storage':
+        # Check that all required arguments were given.
+        helpers.check_required_reports_storage_args(ARGS)
+
+        # Get list of StorageShare objects from the configuration files.
+        storage_shares = configloader.get_storage_shares(
+            ARGS.config_path,
+            ARGS.endpoint
+        )
+
+        # Create a list of StorageEndpoint objects with the StorageShares to check,
+        # based on user input or unique URL's.
+        storage_endpoints = configloader.get_storage_endpoints(
+            storage_shares
+        )
+
+        # This tuple is necessary for the starmap function to send multiple
+        # arguments to the process_storagestats function.
+        storage_endpoints_list_and_args_tuple = [
+            (storage_endpoint, ARGS) for storage_endpoint in storage_endpoints
+        ]
+
         # Process each storage endpoints' shares using multithreading.
         # Number of threads to use.
         pool = ThreadPool(len(storage_endpoints_list_and_args_tuple))
