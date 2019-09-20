@@ -254,3 +254,6 @@ v1.0.24
   CHANGE: The reports file list now removes the chosen prefix from the paths.
 v1.0.25
   ADDED: Requirement of PyYAML.
+v1.0.26
+  ADDED: type=str.lower to make sure checksums and checksums types are always
+         lowercase.
