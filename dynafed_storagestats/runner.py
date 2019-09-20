@@ -124,7 +124,13 @@ def reports(ARGS):
         )
 
     elif ARGS.sub_cmd == 'storage':
-        print('hello')
+        # Process each storage endpoints' shares using multithreading.
+        # Number of threads to use.
+        pool = ThreadPool(len(storage_endpoints_list_and_args_tuple))
+        pool.starmap(
+            helpers.process_storage_reports,
+            storage_endpoints_list_and_args_tuple
+        )
 
 
 def stats(ARGS):
