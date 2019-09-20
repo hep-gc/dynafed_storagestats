@@ -501,6 +501,42 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
         return _dictonary_of_stats
 
 
+def get_dynafed_storage_endpoints_from_schema(schema):
+    """Extract the names of the dynafed storage endpoints from the given schema.
+
+    Arguments:
+    schema: Dict with site schema following the samples/schema.sample file.
+
+    Returns:
+    List of strings
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    _dynafed_endpoints = []
+
+    _logger.info('Extracting dynafed storage endpoints from schema.')
+
+    for _schema_storage_service in schema['storage_service']:
+        for _schema_storage_shares in _schema_storage_service['storage_shares']:
+            for _dynafed_endpoint in _schema_storage_shares['dynafed_endpoints']:
+
+                _logger.info('Found dynafed storage endpoint: %s',
+                    _dynafed_endpoint['id']
+                )
+
+                _dynafed_endpoints.append(_dynafed_endpoint['id'])
+
+    _logger.debug(
+        'List of dynafed endpoints to return: %s',
+        _dynafed_endpoints
+    )
+
+    return _dynafed_endpoints
+
+
 def get_site_schema(schema_file):
     """Get schema from YAML file
 
@@ -545,7 +581,7 @@ def get_site_schema(schema_file):
             "Obtained the following schema: %s",
             _schema
         )
-        
+
         return _schema
 
 
