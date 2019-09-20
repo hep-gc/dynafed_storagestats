@@ -4,5 +4,6 @@ python-dateutil>=2.7.5
 lxml>=4.2.1
 python-memcached>=1.59
 prometheus-client>=0.7.1
+PyYAML>=5.0
 requests>=2.12.5
 requests_aws4auth>=0.9
