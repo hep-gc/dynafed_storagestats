@@ -162,7 +162,11 @@ def reports(ARGS):
 
         # Create the requested report
         if ARGS.wlcg:
-            dynafed_storagestats.reports.create_wlcg_storage_report(_schema, _storage_shares)
+            dynafed_storagestats.reports.create_wlcg_storage_report(
+                _storage_shares,
+                _schema,
+                ARGS.output_path
+            )
 
 
 def stats(ARGS):
