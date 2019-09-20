@@ -6,6 +6,7 @@ import sys
 
 
 import dynafed_storagestats.exceptions
+import dynafed_storagestats.reports
 from dynafed_storagestats import memcache
 from dynafed_storagestats import output
 from dynafed_storagestats import time
@@ -747,6 +748,71 @@ def process_filelist_reports(storage_endpoint, args):
             _filepath
         )
         os.remove(_filepath)
+
+
+def process_storage_reports(storage_endpoint, args):
+    """Create storage report from info gathered from get_storagestats().
+
+    Runs get_storagestats() method for the first StorageShare in the list of the
+    StorageEndpoint It then calls process_endpoint_list_results() to copy the
+    results if there are multiple StorageShares. Then the stats are formatted
+    according to the requested report type. Also handles the exceptions to
+    failures in obtaining the stats.
+
+    Arguments:
+    storage_endpoint -- dynafed_storagestats StorageEndpoint.
+    args -- args -- argparse object.
+
+    """
+    ############# Creating loggers ################
+    _logger = logging.getLogger(__name__)
+    ###############################################
+
+    try:
+        if storage_endpoint.storage_shares[0].stats['check'] is True:
+            _logger.info("[%s]Contacting endpoint.", storage_endpoint.storage_shares[0].id)
+            storage_endpoint.storage_shares[0].get_storagestats()
+
+        elif storage_endpoint.storage_shares[0].stats['check'] == "EndpointOffline":
+            _logger.error(
+                "[%s][%s]Bypassing stats check.",
+                storage_endpoint.storage_shares[0].id,
+                storage_endpoint.storage_shares[0].stats['check']
+            )
+
+            raise dynafed_storagestats.exceptions.OfflineEndpointError(
+                status_code="400",
+                error="EndpointOffline"
+            )
+
+        else:
+            _logger.error(
+                "[%s][%s]Bypassing stats check.",
+                storage_endpoint.storage_shares[0].id,
+                storage_endpoint.storage_shares[0].stats['check']
+            )
+
+    except dynafed_storagestats.exceptions.OfflineEndpointError as ERR:
+        _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
+        storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
+        storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
+
+    except dynafed_storagestats.exceptions.Warning as WARN:
+        _logger.warning("[%s]%s", storage_endpoint.storage_shares[0].id, WARN.debug)
+        storage_endpoint.storage_shares[0].debug.append("[WARNING]" + WARN.debug)
+        storage_endpoint.storage_shares[0].status.append("[WARNING]" + WARN.error_code)
+
+    except dynafed_storagestats.exceptions.Error as ERR:
+        _logger.error("[%s]%s", storage_endpoint.storage_shares[0].id, ERR.debug)
+        storage_endpoint.storage_shares[0].debug.append("[ERROR]" + ERR.debug)
+        storage_endpoint.storage_shares[0].status.append("[ERROR]" + ERR.error_code)
+
+    finally:
+        # Copy results if there are multiple endpoints under one URL.
+        process_endpoint_list_results(storage_endpoint.storage_shares)
+
+    if args.wlcg:
+        dynafed_storagestats.reports.create_wlcg_storage_report(args)
 
 
 def process_storagestats(storage_endpoint, args):
