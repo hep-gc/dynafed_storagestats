@@ -313,6 +313,10 @@ def add_reports_filelist_subparser(subparser):
              "If not present, all endpoints will be checked."
     )
 
+    # Logging options
+    add_logging_options(parser)
+
+    # Reports options
     group_reports = parser.add_argument_group("Reports options")
     group_reports.add_argument(
         '--delta',
@@ -331,9 +335,6 @@ def add_reports_filelist_subparser(subparser):
         help="Use to create rucio file dumps for consitency checks. " \
              "Same as: --delta 1 --prefix rucio"
     )
-
-    # Logging options
-    add_logging_options(parser)
 
     # Output Options
     group_output = parser.add_argument_group("Output options")
@@ -405,6 +406,16 @@ def add_reports_storage_subparser(subparser):
     # Logging options
     add_logging_options(parser)
 
+    # Reports options
+    group_reports = parser.add_argument_group("Reports options")
+    group_reports.add_argument(
+        '--wlcg',
+        action='store_true',
+        default=False,
+        dest='wlgc',
+        help="Produces WLCG JSON output file. Requires setup file." \
+    )
+
     # Output Options
     group_output = parser.add_argument_group("Output options")
     # group_output.add_argument(
@@ -431,14 +442,6 @@ def add_reports_storage_subparser(subparser):
         dest='output_path',
         help="Set output directory. " \
              "Default: '.'"
-    )
-    group_output.add_argument(
-        '-p', '--path', '--prefix',
-        action='store',
-        default='',
-        dest='prefix',
-        help="Set the prefix/path from where to start the recursive list." \
-             "Default: ''"
     )
 
 
