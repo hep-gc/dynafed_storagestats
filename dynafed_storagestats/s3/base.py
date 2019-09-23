@@ -2,15 +2,16 @@
 
 import logging
 from urllib.parse import urlsplit
-import os
 import sys
 
 import dynafed_storagestats.base
 import dynafed_storagestats.s3.helpers as s3helpers
+from dynafed_storagestats.exceptions import ChecksumWarningMissingChecksum
 
-#############
-## Classes ##
-#############
+#
+# Classes
+#
+
 
 class S3StorageShare(dynafed_storagestats.base.StorageShare):
     """StorageShare sub-class for S3.
@@ -38,7 +39,12 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 'default': 'generic',
                 'required': False,
                 'status_code': '070',
-                'valid': ['ceph-admin', 'cloudwatch', 'generic', 'list-objects', 'minio_prometheus'],
+                'valid': [
+                    'ceph-admin',
+                    'cloudwatch',
+                    'generic',
+                    'list-objects',
+                    'minio_prometheus'],
             },
             's3.priv_key': {
                 'required': True,
@@ -69,14 +75,13 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
         # Obtain bucket name
         if self.plugin_settings['s3.alternate'].lower() == 'true'\
-        or self.plugin_settings['s3.alternate'].lower() == 'yes':
+                or self.plugin_settings['s3.alternate'].lower() == 'yes':
             self.uri['bucket'] = self.uri['path'].rpartition("/")[-1]
 
         else:
             self.uri['bucket'], self.uri['domain'] = self.uri['netloc'].partition('.')[::2]
 
         self.star_fields['storage_share'] = self.uri['bucket']
-
 
     def get_object_checksum(self, hash_type, object_url):
         """Run process to obtain checksum from object's metadata if it exists.
@@ -89,9 +94,9 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         String Checksum if found, an exception is raised otherwise.
 
         """
-        ############# Creating loggers ################
+        # Creating loggers
         _logger = logging.getLogger(__name__)
-        ###############################################
+        # =============================================
 
         _logger.info(
             '[%s]Obtaining object metadata: "%s"',
@@ -116,21 +121,20 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             return _metadata[hash_type]
 
         except KeyError as ERR:
-            raise dynafed_storagestats.exceptions.ChecksumWarningMissingChecksum(
+            raise ChecksumWarningMissingChecksum(
                 error='MissingChecksum',
                 status_code='999',
                 debug=str(ERR),
                 storage_share=self
             )
 
-
     def get_object_metadata(self, object_url):
         """Check if the object contains checksum metadata and return it.
 
         Uses boto s3 client method "head_object" to obtain the metadata dict
-        of the given object form the provided URL. A connectoin error will cause
-        the process to exit, while a warning or a failure to find any metadata
-        will return and empty dict.
+        of the given object form the provided URL. A connectoin error will
+        cause the process to exit, while a warning or a failure to find any
+        metadata will return and empty dict.
 
         Arguments:
         object_url -- URL location for requested object.
@@ -139,9 +143,9 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         Dict containing metadata from S3 object API call result.
 
         """
-        ############# Creating loggers ################
+        # Creating loggers
         _logger = logging.getLogger(__name__)
-        ###############################################
+        # =============================================
         # We obtain the object's path.
         _object_path = urlsplit(object_url).path
 
@@ -223,7 +227,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             except KeyError:
                 return {}
 
-
     def get_storagestats(self):
         """Contact endpoint using requested method."""
 
@@ -232,12 +235,12 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             s3helpers.ceph_admin(self)
 
         # Getting the storage stats AWS S3 API
-        #elif self.plugin_settings['storagestats.api'].lower() == 'aws-cloudwatch':
+        # elif self.plugin_settings['storagestats.api'].lower() == 'aws-cloudwatch':
 
         # Getting the storage stats using AWS-Boto3 list-objects API, should
         # work for any compatible S3 endpoint.
         elif self.plugin_settings['storagestats.api'].lower() == 'generic' \
-        or   self.plugin_settings['storagestats.api'].lower() == 'list-objects':
+                or self.plugin_settings['storagestats.api'].lower() == 'list-objects':
             s3helpers.list_objects(self)
 
         # Getting the storage stats using AWS Cloudwatch
@@ -247,7 +250,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         # Getting the storage stats from Minio's Prometheus URL
         elif self.plugin_settings['storagestats.api'].lower() == 'minio_prometheus':
             s3helpers.minio_prometheus(self)
-
 
     def get_filelist(self, delta=1, prefix='', report_file='/tmp/filelist_report.txt'):
         """Contact endpoint and generate a file-list.
@@ -263,7 +265,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             report_file=report_file,
             request='filelist'
         )
-
 
     def put_object_checksum(self, checksum, hash_type, object_url, force=False):
         """Run process to add checksum from object's metadata if it is missing.
@@ -285,9 +286,9 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         object_url -- String with URL location for requested object.
 
         """
-        ############# Creating loggers ################
+        # Creating loggers
         _logger = logging.getLogger(__name__)
-        ###############################################
+        # =============================================
 
         _metadata = self.get_object_metadata(object_url)
 
@@ -330,7 +331,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 _metadata
             )
 
-
     def put_object_metadata(self, metadata, object_url):
         """Use boto3 copy_object to add metadata to object in S3 storage.
 
@@ -339,9 +339,9 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         object_url -- URL location for requested object.
 
         """
-        ############# Creating loggers ################
+        # Creating loggers
         _logger = logging.getLogger(__name__)
-        ###############################################
+        # =============================================
 
         # We obtain the object's path.
         _object_path = urlsplit(object_url).path
@@ -382,11 +382,10 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 self.id,
                 metadata
             )
+            s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
 
-            _result = s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
-
-        except AssertError as INFO:
-            _logger.info("[%s]Empty metadata. Skipping API request.")
+        except AssertionError as INFO:
+            _logger.info("[%s]Empty metadata. Skipping API request.", INFO)
 
         except dynafed_storagestats.exceptions.Warning as WARN:
             _logger.warning("[%s]%s", self.id, WARN.debug)
@@ -416,12 +415,11 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             # there is nothing else to do.
             sys.exit(1)
 
-
     def validate_schema(self):
         """Translate s3 into http/https."""
-        ############# Creating loggers ################
+        # Creating loggers
         _logger = logging.getLogger(__name__)
-        ###############################################
+        # =============================================
 
         _logger.debug(
             "[%s]Validating URN schema: %s",

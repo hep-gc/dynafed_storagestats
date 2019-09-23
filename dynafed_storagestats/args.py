@@ -61,8 +61,8 @@ def add_general_options(parser):
         default=['/etc/ugr/conf.d'],
         dest='config_path',
         nargs='*',
-        help="Path to UGRs endpoint .conf files or directories. " \
-             "Accepts any number of arguments. " \
+        help="Path to UGRs endpoint .conf files or directories. "
+             "Accepts any number of arguments. "
              "Default: '/etc/ugr/conf.d'."
     )
     parser.add_argument(
@@ -129,7 +129,7 @@ def add_checkusms_get_subparser(subparser):
         action='store',
         default=False,
         dest='endpoint',
-        help="Choose endpoint containing desired object. " \
+        help="Choose endpoint containing desired object. "
              "Required."
     )
     group_checksum.add_argument(
@@ -137,8 +137,8 @@ def add_checkusms_get_subparser(subparser):
         action='store',
         default=False,
         dest='hash_type',
-        type=str.lower,
-        help="Type of checksum hash. ['adler32', md5] " \
+        type=str.capitalize,
+        help="Type of checksum hash. ['adler32', md5] "
              "Required."
     )
     group_checksum.add_argument(
@@ -146,7 +146,7 @@ def add_checkusms_get_subparser(subparser):
         action='store',
         default=False,
         dest='url',
-        help="URL of object/file to request checksum of. " \
+        help="URL of object/file to request checksum of. "
              "Required."
     )
 
@@ -192,7 +192,7 @@ def add_checkusms_put_subparser(subparser):
         default=False,
         dest='checksum',
         type=str.lower,
-        help="String with checksum to set. ['adler32', md5] " \
+        help="String with checksum to set. ['adler32', md5] "
              "Required"
     )
     group_checksum.add_argument(
@@ -200,7 +200,7 @@ def add_checkusms_put_subparser(subparser):
         action='store',
         default=False,
         dest='endpoint',
-        help="Choose endpoint containing desired object. " \
+        help="Choose endpoint containing desired object. "
              "Required."
     )
     group_checksum.add_argument(
@@ -208,8 +208,8 @@ def add_checkusms_put_subparser(subparser):
         action='store',
         default=False,
         dest='hash_type',
-        type=str.lower,
-        help="Type of checksum hash. ['adler32', md5] " \
+        type=str.capitalize,
+        help="Type of checksum hash. ['adler32', md5] "
              "Required."
     )
     group_checksum.add_argument(
@@ -217,7 +217,7 @@ def add_checkusms_put_subparser(subparser):
         action='store',
         default=False,
         dest='url',
-        help="URL of object/file to request checksum of. " \
+        help="URL of object/file to request checksum of. "
              "Required."
     )
 
@@ -250,7 +250,7 @@ def add_logging_options(parser):
         action='store',
         default='/tmp/dynafed_storagestats.log',
         dest='logfile',
-        help="Set logfiles path. " \
+        help="Set logfiles path. "
              "Default: /tmp/dynafed_storagestats.log"
     )
     group_logging.add_argument(
@@ -259,7 +259,7 @@ def add_logging_options(parser):
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
         default='WARNING',
         dest='loglevel',
-        help="Set log output level. " \
+        help="Set log output level. "
         "Default: WARNING."
     )
 
@@ -311,7 +311,7 @@ def add_reports_filelist_subparser(subparser):
         default=[],
         dest='endpoint',
         nargs='*',
-        help="Choose endpoint(s) to check. " \
+        help="Choose endpoint(s) to check. "
              "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
     )
@@ -327,7 +327,7 @@ def add_reports_filelist_subparser(subparser):
         default=1,
         dest='delta',
         type=int,
-        help="Mask for Last Modified Date of files. Integer in days. " \
+        help="Mask for Last Modified Date of files. Integer in days. "
              "Default: 1"
     )
     group_reports.add_argument(
@@ -335,7 +335,7 @@ def add_reports_filelist_subparser(subparser):
         action='store_true',
         default=False,
         dest='rucio',
-        help="Use to create rucio file dumps for consitency checks. " \
+        help="Use to create rucio file dumps for consitency checks. "
              "Same as: --delta 1 --prefix rucio"
     )
 
@@ -363,7 +363,7 @@ def add_reports_filelist_subparser(subparser):
         action='store',
         default='.',
         dest='output_path',
-        help="Set output directory. " \
+        help="Set output directory. "
              "Default: '.'"
     )
     group_output.add_argument(
@@ -371,7 +371,7 @@ def add_reports_filelist_subparser(subparser):
         action='store',
         default='',
         dest='prefix',
-        help="Set the prefix/path from where to start the recursive list. " \
+        help="Set the prefix/path from where to start the recursive list. "
              "The prefix is excluded from the resulting paths. Default: ''"
     )
 
@@ -401,7 +401,7 @@ def add_reports_storage_subparser(subparser):
         default=[],
         dest='endpoint',
         nargs='*',
-        help="Choose endpoint(s) to check. " \
+        help="Choose endpoint(s) to check. "
              "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
     )
@@ -412,18 +412,18 @@ def add_reports_storage_subparser(subparser):
     # Reports options
     group_reports = parser.add_argument_group("Reports options")
     group_reports.add_argument(
-        '-s','--schema',
+        '-s', '--schema',
         action='store',
         default=False,
         dest='schema',
-        help="YAML file containing site schema. Required." \
+        help="YAML file containing site schema. Required."
     )
     group_reports.add_argument(
         '--wlcg',
         action='store_true',
         default=False,
         dest='wlcg',
-        help="Produces WLCG JSON output file. Requires setup file." \
+        help="Produces WLCG JSON output file. Requires setup file."
     )
 
     # Output Options
@@ -450,7 +450,7 @@ def add_reports_storage_subparser(subparser):
         action='store',
         default='.',
         dest='output_path',
-        help="Set output directory. " \
+        help="Set output directory. "
              "Default: '.'"
     )
 
@@ -480,7 +480,7 @@ def add_stats_subparser(subparser):
         default=[],
         dest='endpoint',
         nargs='*',
-        help="Choose endpoint(s) to check. " \
+        help="Choose endpoint(s) to check. "
              "Accepts any number of arguments. "
              "If not present, all endpoints will be checked."
     )
@@ -495,7 +495,7 @@ def add_stats_subparser(subparser):
         action='store',
         default='127.0.0.1',
         dest='memcached_ip',
-        help="IP or hostname of memcached instance." \
+        help="IP or hostname of memcached instance."
              "Default: 127.0.0.1"
     )
     group_memcached.add_argument(
@@ -503,7 +503,7 @@ def add_stats_subparser(subparser):
         action='store',
         default='11211',
         dest='memcached_port',
-        help="Port of memcached instance. " \
+        help="Port of memcached instance. "
              "Default: 11211"
     )
 
@@ -530,7 +530,7 @@ def add_stats_subparser(subparser):
         default=False,
         dest='to_json',
         nargs='?',
-        help="Set to output stats to json file. Add argument to set filename." \
+        help="Set to output stats to json file. Add argument to set filename."
              "Default: dynafed_storagestats.json"
              "!!In development!!"
     )
@@ -539,7 +539,7 @@ def add_stats_subparser(subparser):
         action='store',
         default='.',
         dest='output_path',
-        help="Set output directory for flags -j, -x and -p. " \
+        help="Set output directory for flags -j, -x and -p. "
              "Default: '.'"
     )
     group_output.add_argument(
@@ -549,7 +549,7 @@ def add_stats_subparser(subparser):
         default=False,
         dest='to_plaintext',
         nargs='?',
-        help="Set to output stats to plain txt file. Add argument to set filename." \
+        help="Set to output stats to plain txt file. Add argument to set filename."
              "Default: dynafed_storagestats.txt"
     )
     group_output.add_argument(
