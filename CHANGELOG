@@ -261,3 +261,4 @@ v1.0.27
   CHANGED: Keys from the received 'Metadata' dictionary from an object are
            converted to lowercase to fix discrepancy in capitalization from
            different S3 implementations.
+  FIXED: Exception name from AssertError to AssertionError.

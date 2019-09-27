@@ -389,8 +389,12 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
             _result = s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
 
-        except AssertError as INFO:
-            _logger.info("[%s]Empty metadata. Skipping API request.")
+        except AssertionError as INFO:
+            _logger.info(
+                "[%s]Empty metadata. Skipping API request. %s",
+                self.id,
+                INFO
+            )
 
         except dynafed_storagestats.exceptions.Warning as WARN:
             _logger.warning("[%s]%s", self.id, WARN.debug)
