@@ -251,9 +251,13 @@ v1.0.24
          delta='1' used for rucio consistency check filedumps.
   ADDED: '--wlcg' flag to 'reports storage' that generates a json file according
          to WLCG's storage accounting format from specified site schema file.
-  CHANGE: The reports file list now removes the chosen prefix from the paths.
+  CHANGED: The reports file list now removes the chosen prefix from the paths.
 v1.0.25
   ADDED: Requirement of PyYAML.
 v1.0.26
   ADDED: type=str.lower to make sure checksums and checksums types are always
          lowercase.
+v1.0.27
+  CHANGED: Keys from the received 'Metadata' dictionary from an object are
+           converted to lowercase to fix discrepancy in capitalization from
+           different S3 implementations.
