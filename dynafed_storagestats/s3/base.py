@@ -128,9 +128,11 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         """Check if the object contains checksum metadata and return it.
 
         Uses boto s3 client method "head_object" to obtain the metadata dict
-        of the given object form the provided URL. A connectoin error will cause
+        of the given object form the provided URL. A connection error will cause
         the process to exit, while a warning or a failure to find any metadata
         will return and empty dict.
+
+        The metadata dictionary keys are returned in lowercase.
 
         Arguments:
         object_url -- URL location for requested object.
@@ -218,7 +220,9 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
             )
 
             try:
-                return _result['Metadata']
+                # We set all keys to lowercase.
+                _metadata = {k.lower(): v for k, v in _result['Metadata'].items()}
+                return _metadata
 
             except KeyError:
                 return {}
@@ -385,8 +389,12 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
             _result = s3helpers.run_boto_client(_connection, 'copy_object', _kwargs)
 
-        except AssertError as INFO:
-            _logger.info("[%s]Empty metadata. Skipping API request.")
+        except AssertionError as INFO:
+            _logger.info(
+                "[%s]Empty metadata. Skipping API request. %s",
+                self.id,
+                INFO
+            )
 
         except dynafed_storagestats.exceptions.Warning as WARN:
             _logger.warning("[%s]%s", self.id, WARN.debug)
