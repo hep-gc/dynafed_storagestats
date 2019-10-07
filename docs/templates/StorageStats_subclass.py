@@ -15,9 +15,9 @@ class NewTypeStorageStats (StorageStats):
         Extend or replace any object attributes specific to the type of
         storage endpoint. Below are the most common ones, but add as necessary.
         """
-        ############# Creating loggers ################
+        # Creating logger
         logger = logging.getLogger(__name__)
-        ###############################################
+        
         # First we call the super function to initialize the initial atributes
         # given by the StorageStats class.
         super().__init__(*args, **kwargs)
@@ -54,9 +54,9 @@ class NewTypeStorageStats (StorageStats):
             Ideally we need to assing values to the following attributes, either
             obtained from the endpoint, from the endpoints.conf file or defaults
             """
-            ############# Creating loggers ################
+            # Creating logger
             logger = logging.getLogger(__name__)
-            ###############################################
+            
             self.stats['bytesfree'] = 0
             self.stats['bytesused'] = 0
             self.stats['quota'] = 0
@@ -69,9 +69,9 @@ class NewTypeStorageStats (StorageStats):
             protocol schema in the URN that requires some logic to figure out.
             Example below if for the DAVStorageStats.
             """
-            ############# Creating loggers ################
+            # Creating logger
             logger = logging.getLogger(__name__)
-            ###############################################
+            
 
             schema_translator = {
                 'dav': 'http',

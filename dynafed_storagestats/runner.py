@@ -2,8 +2,6 @@
 
 """Runner to gather storage share information."""
 
-import logging
-
 from multiprocessing.dummy import Pool as ThreadPool
 
 import dynafed_storagestats.reports
@@ -14,6 +12,7 @@ from dynafed_storagestats import output
 
 from dynafed_storagestats import __version__
 
+
 ########
 # Main #
 ########
@@ -22,7 +21,6 @@ def main():
     """Runner to gather storage share information."""
     # Generate Help/Usage and ARGS.
     ARGS = args.parse_args()
-
 
     if ARGS.version:
         print(__version__)
@@ -44,10 +42,10 @@ def main():
             checksums(ARGS)
 
 
-
 ################
 # Sub-Commands #
 ################
+
 def checksums(ARGS):
     """Execute the 'checksums' sub-command.
 
@@ -228,7 +226,7 @@ def stats(ARGS):
         storage_endpoints_list_and_args_tuple
     )
 
-    #### Output #####
+    # Output #
 
     # Print all StorageEndpoints's StorageShares stats to the standard output.
     if ARGS.output_stdout:

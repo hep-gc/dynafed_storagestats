@@ -8,9 +8,10 @@ from urllib.parse import urlsplit
 import dynafed_storagestats.helpers
 import dynafed_storagestats.exceptions
 
-#############
-## Classes ##
-#############
+
+############
+# Classes ##
+############
 
 class StorageEndpoint():
     """Base class representing unique URL storage endpoint.
@@ -157,9 +158,9 @@ class StorageShare():
         Handles exceptions arising from missing/incorrect settings and logging.
 
         """
-        ############# Creating loggers ################
+        # Creating logger
         _logger = logging.getLogger(__name__)
-        ###############################################
+
 
         _logger.info("[%s]Validating configured settings.", self.id)
 
@@ -264,9 +265,9 @@ class StorageShare():
         to deal with the different schema's to be checked.
 
         """
-        ############# Creating loggers ################
+        # Creating logger
         _logger = logging.getLogger(__name__)
-        ###############################################
+
 
         _logger.debug(
             "[%s]Validating URN schema: %s",

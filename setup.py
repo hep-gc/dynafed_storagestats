@@ -13,13 +13,13 @@ PACKAGE_NAME = 'dynafed_storagestats'
 
 # Obtain version from version.py
 try:
-    filepath = PWD + '/' + PACKAGE_NAME +'/version.py'
+    filepath = PWD + '/' + PACKAGE_NAME + '/version.py'
 
-    with open( filepath ) as file:
-        __version__ ,= re.findall( '__version__ = "(.*)"', file.read() )
+    with open(filepath) as file:
+        __version__ = re.findall('__version__ = "(.*)"', file.read())
 
 except Exception as error:
-    sys.stderr.write( "Warning: Could not open '%s' due %s\n" % ( filepath, error ) )
+    sys.stderr.write("Warning: Could not open '%s' due %s\n" % (filepath, error))
     sys.exit(1)
 
 # Get the long description from the README file

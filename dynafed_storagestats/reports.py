@@ -5,7 +5,7 @@
 import json
 import logging
 import time
-import sys
+
 
 #############
 # Functions #
@@ -15,9 +15,6 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
     """Creates json file according to the WLCG storage report format.
 
     """
-    ############# Creating loggers ################
-    _logger = logging.getLogger(__name__)
-    ###############################################
 
     _output_file = output + '/space-usage.json'
 
@@ -36,7 +33,7 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
 
                 for _endpoint in dynafed_endpoints:
                     if _endpoint.id == _id:
-                        bytes_used +=_endpoint.stats['bytesused']
+                        bytes_used += _endpoint.stats['bytesused']
                         total_size += _endpoint.stats['quota']
 
             _schema_storage_share.update(

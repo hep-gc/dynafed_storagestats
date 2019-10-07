@@ -1,15 +1,16 @@
 """Helper functions used by the other modules."""
 
-import logging, logging.handlers
+import logging
+import logging.handlers
 import os
 import sys
 import yaml
-
 
 import dynafed_storagestats.exceptions
 from dynafed_storagestats import memcache
 from dynafed_storagestats import output
 from dynafed_storagestats import time
+
 
 #############
 # Functions #
@@ -29,9 +30,8 @@ def check_connectionstats(storage_share_objects, stats):
              get_cached_connection_stats with return_as='expanded_dictionary'.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     for _storage_share in storage_share_objects:
         try:
@@ -64,9 +64,8 @@ def check_frequency(storage_share_objects, stats):
              get_cached_storage_stats with return_as='expanded_dictionary'.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     for _storage_share in storage_share_objects:
         _logger.info(
@@ -109,9 +108,8 @@ def check_required_checksum_args(args):
     args -- argparse object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _exit = False
 
@@ -121,10 +119,8 @@ def check_required_checksum_args(args):
         _exit = True
 
     if not args.hash_type:
-        _logger.critical("[CRITICAL]No checksum hash type selected. Please use " \
-            "'-t [hash type]'")
-        print("[CRITICAL]No checksum has type selected. Please use " \
-            "'-t [hash type]'")
+        _logger.critical("[CRITICAL]No checksum hash type selected. Please use '-t [hash type]'")
+        print("[CRITICAL]No checksum has type selected. Please use '-t [hash type]'")
         _exit = True
 
     if not args.url:
@@ -147,9 +143,8 @@ def check_required_reports_storage_args(args):
     args -- argparse object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _exit = False
 
@@ -173,9 +168,6 @@ def convert_size_to_bytes(size):
     Bytes as integer.
 
     """
-    ############# Creating loggers ################
-
-    ###############################################
 
     _multipliers = {
         'kib': 1024,
@@ -201,7 +193,7 @@ def convert_size_to_bytes(size):
     try:
         return int(size)
 
-    except ValueError: # for example "1024x"
+    except ValueError:  # for example "1024x"
         print('Malformed input for setting: "storagestats.quota"')
         exit()
 
@@ -223,21 +215,20 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     Dictionary
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     # We try to obtain connection stats from memcache.
     try:
         _connection_stats = get_cached_connection_stats(
-                              return_as='expanded_dictionary',
-                              memcached_ip=memcached_ip,
-                              memcached_port=memcached_port
-                            )
+            return_as='expanded_dictionary',
+            memcached_ip=memcached_ip,
+            memcached_port=memcached_port
+        )
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
         _logger.error(
-            "%s Memcache Server %s did not return data. All storage_shares will be " \
+            "%s Memcache Server %s did not return data. All storage_shares will be "
             "assumed 'Online'.",
             ERR.debug,
             memcached_ip + ':' + memcached_port
@@ -253,11 +244,10 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     # Now we try to obtain storage stats from memcache.
     try:
         _storage_stats = get_cached_storage_stats(
-                           storage_share_objects,
-                           return_as='expanded_dictionary',
-                           memcached_ip=memcached_ip,
-                           memcached_port=memcached_port
-
+            storage_share_objects,
+            return_as='expanded_dictionary',
+            memcached_ip=memcached_ip,
+            memcached_port=memcached_port
         )
 
     except dynafed_storagestats.exceptions.MemcachedError as ERR:
@@ -276,7 +266,6 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
 
     # else:
     #     _storage_shares_current_stats += _storage_stats
-
 
     return _connection_stats, _storage_stats
 
@@ -309,9 +298,8 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
     array OR dictionary OR string
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _logger.info(
         "Checking memcached server %s:%s for StorageShares connection stats.",
@@ -362,7 +350,7 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
     _connection_stats = _connection_stats.rsplit('&&')
 
     for _element in _connection_stats:
-        #When the connection status is OK the last element is empty. So we add an 'OK'
+        # When the connection status is OK the last element is empty. So we add an 'OK'
         if _element.split("%%")[-1] == '':
             _element = _element + 'OK'
 
@@ -431,9 +419,9 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
     array OR dictionary OR string
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
+
     _logger.info(
         "Checking memcached server %s:%s for StorageShares storage stats.",
         memcached_ip,
@@ -511,9 +499,8 @@ def get_dynafed_storage_endpoints_from_schema(schema):
     List of strings
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _dynafed_endpoints = []
 
@@ -523,7 +510,8 @@ def get_dynafed_storage_endpoints_from_schema(schema):
         for _schema_storage_share in _schema_storage_service['storageshares']:
             for _dynafed_endpoint in _schema_storage_share['dynafedendpoints']:
 
-                _logger.info('Found dynafed storage endpoint: %s',
+                _logger.info(
+                    'Found dynafed storage endpoint: %s',
                     _dynafed_endpoint
                 )
 
@@ -541,9 +529,8 @@ def get_site_schema(schema_file):
     """Get schema from YAML file
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     try:
         _logger.info(
@@ -562,8 +549,8 @@ def get_site_schema(schema_file):
                 )
                 print(
                     "[CRITICAL]Failed to read YAML stream from file: %s. %s" % (
-                    schema_file,
-                    ERROR
+                        schema_file,
+                        ERROR
                     )
                 )
                 sys.exit(1)
@@ -605,9 +592,8 @@ def process_checksums_get(storage_share, hash_type, url):
     String containing checksum or 'None'.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     try:
         _checksum = storage_share.get_object_checksum(hash_type, url)
@@ -656,9 +642,8 @@ def process_checksums_put(storage_share, checksum, hash_type, url, force=False):
     url -- string containing url to the desired file/object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     try:
 
@@ -692,9 +677,8 @@ def process_endpoint_list_results(storage_share_objects):
     storage_share_objects -- list of dynafed_storagestats StorageShare objects.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     # If there is only one storage_share, there is nothing to do!
     if len(storage_share_objects) >= 1:
@@ -756,9 +740,8 @@ def process_filelist_reports(storage_endpoint, args):
     args -- args -- argparse object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _filepath = args.output_path + '/' + storage_endpoint.storage_shares[0].id + '.filelist'
 
@@ -795,20 +778,20 @@ def process_filelist_reports(storage_endpoint, args):
     except FileNotFoundError as ERR:
         _logger.critical(
             "[%s]Failed to create file. Path does not exist: %s",
-             storage_endpoint.storage_shares[0].id,
-             args.output_path
+            storage_endpoint.storage_shares[0].id,
+            args.output_path
         )
 
     except PermissionError as ERR:
         _logger.critical(
             "[%s]Failed to create file. Permission denied to write at: %s",
-             storage_endpoint.storage_shares[0].id,
-             args.output_path
+            storage_endpoint.storage_shares[0].id,
+            args.output_path
         )
 
     except AttributeError as ERR:
         _logger.error(
-            "[%s]Report creation is not supported for plugin type '%s'. " \
+            "[%s]Report creation is not supported for plugin type '%s'. "
             "Skipping storage endpoint.",
             storage_endpoint.storage_shares[0].id,
             storage_endpoint.storage_shares[0].plugin
@@ -874,9 +857,8 @@ def process_storage_reports(storage_endpoint, args):
     args -- args -- argparse object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     try:
         if storage_endpoint.storage_shares[0].stats['check'] is True:
@@ -936,9 +918,8 @@ def process_storagestats(storage_endpoint, args):
     args -- args -- argparse object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     try:
         if storage_endpoint.storage_shares[0].stats['check'] is True:
@@ -986,7 +967,7 @@ def process_storagestats(storage_endpoint, args):
         for storage_share in storage_endpoint.storage_shares:
             # Mark the status as OK if there are no status messages or format the list
             # as a CSV string.
-            if len(storage_share.status) is 0:
+            if len(storage_share.status) == 0:
                 storage_share.status = '[OK][OK][200]'
             else:
                 storage_share.status = ','.join(storage_share.status)
@@ -1063,9 +1044,8 @@ def update_storage_share_storagestats(storage_share_objects, stats):
              get_cached_storage_stats with return_as='expanded_dictionary'.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     for _storage_share in storage_share_objects:
         try:

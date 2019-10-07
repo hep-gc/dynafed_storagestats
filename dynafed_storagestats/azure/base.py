@@ -3,9 +3,10 @@
 import dynafed_storagestats.base
 import dynafed_storagestats.azure.helpers as azurehelpers
 
-#############
-## Classes ##
-#############
+
+############
+# Classes #
+############
 
 class AzureStorageShare(dynafed_storagestats.base.StorageShare):
     """StorageShare sub-class for Azure.
@@ -45,17 +46,14 @@ class AzureStorageShare(dynafed_storagestats.base.StorageShare):
         self.uri['account'], self.uri['domain'] = self.uri['netloc'].partition('.')[::2]
         self.uri['container'] = self.uri['path'].strip('/')
 
-
     def get_storagestats(self):
         """Contact endpoint using requested method."""
-        ############# Creating loggers ################
 
-        ###############################################
-
-        if self.plugin_settings['storagestats.api'].lower() == 'generic' \
-        or self.plugin_settings['storagestats.api'].lower() == 'list-blobs':
+        if (
+            self.plugin_settings['storagestats.api'].lower() == 'generic'
+            or self.plugin_settings['storagestats.api'].lower() == 'list-blobs'
+        ):
             azurehelpers.list_blobs(self)
-
 
     def get_filelist(self, delta=1, prefix='', report_file='/tmp/filelist_report.txt'):
         """Contact endpoint and generate a file-list.
