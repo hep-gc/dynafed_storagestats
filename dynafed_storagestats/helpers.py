@@ -506,16 +506,15 @@ def get_dynafed_storage_endpoints_from_schema(schema):
 
     _logger.info('Extracting dynafed storage endpoints from schema.')
 
-    for _schema_storage_service in schema['storageservice']:
-        for _schema_storage_share in _schema_storage_service['storageshares']:
-            for _dynafed_endpoint in _schema_storage_share['dynafedendpoints']:
+    for _schema_storage_share in schema['storageservice']['storageshares']:
+        for _dynafed_endpoint in _schema_storage_share['dynafedendpoints']:
 
-                _logger.info(
-                    'Found dynafed storage endpoint: %s',
-                    _dynafed_endpoint
-                )
+            _logger.info(
+                'Found dynafed storage endpoint: %s',
+                _dynafed_endpoint
+            )
 
-                _dynafed_endpoints.append(_dynafed_endpoint)
+            _dynafed_endpoints.append(_dynafed_endpoint)
 
     _logger.debug(
         'List of dynafed endpoints to return: %s',
