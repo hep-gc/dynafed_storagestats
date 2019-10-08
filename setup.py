@@ -16,7 +16,7 @@ try:
     filepath = PWD + '/' + PACKAGE_NAME + '/version.py'
 
     with open(filepath) as file:
-        __version__ = re.findall('__version__ = "(.*)"', file.read())
+        __version__, = re.findall('__version__ = "(.*)"', file.read())
 
 except Exception as error:
     sys.stderr.write("Warning: Could not open '%s' due %s\n" % (filepath, error))
