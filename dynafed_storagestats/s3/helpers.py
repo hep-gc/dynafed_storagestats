@@ -18,9 +18,11 @@ import dynafed_storagestats.exceptions
 import dynafed_storagestats.helpers
 import dynafed_storagestats.time
 
-###############
-## Functions ##
-###############
+
+##############
+# Functions #
+##############
+
 
 def ceph_admin(storage_share):
     """Contact S3 endpoint using Ceph's Admin API.
@@ -34,13 +36,14 @@ def ceph_admin(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     # Generate the API's URL to contact.
-    if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
-    or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
+    if (
+        storage_share.plugin_settings['s3.alternate'].lower() == 'true'
+        or storage_share.plugin_settings['s3.alternate'].lower() == 'yes'
+    ):
 
         _api_url = '{scheme}://{netloc}/admin/bucket?format=json'.format(
             scheme=storage_share.uri['scheme'],
@@ -93,7 +96,7 @@ def ceph_admin(storage_share):
         # Save time when data was obtained.
         storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
-        #Log contents of response
+        # Log contents of response
         _logger.debug(
             "[%s]Endpoint reply: %s",
             storage_share.id,
@@ -124,7 +127,7 @@ def ceph_admin(storage_share):
             # Save time when data was obtained.
             storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
-            #Log contents of response
+            # Log contents of response
             _logger.debug(
                 "[%s]Endpoint reply: %s",
                 storage_share.id,
@@ -224,9 +227,8 @@ def cloudwatch(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _seconds_in_one_day = 86400
 
@@ -346,7 +348,6 @@ def cloudwatch(storage_share):
                     _metrics[_metric]['Statistics'][0]
                 ]
 
-
     # Save the timestamp when data was obtained.
     storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
@@ -412,8 +413,10 @@ def get_s3_boto_client(storage_share):
 
     """
     # Generate the API's URL to contact.
-    if storage_share.plugin_settings['s3.alternate'].lower() == 'true'\
-    or storage_share.plugin_settings['s3.alternate'].lower() == 'yes':
+    if (
+        storage_share.plugin_settings['s3.alternate'].lower() == 'true'
+        or storage_share.plugin_settings['s3.alternate'].lower() == 'yes'
+    ):
 
         _api_url = '{scheme}://{netloc}'.format(
             scheme=storage_share.uri['scheme'],
@@ -463,9 +466,8 @@ def list_objects(storage_share, delta=1, prefix='',
     prefix -- string.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     # Generate boto client to query S3 endpoint.
     _connection = get_s3_boto_client(storage_share)
@@ -589,9 +591,8 @@ def minio_prometheus(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     # Generate the URL to contact
     _api_url = '{scheme}://{netloc}/minio/prometheus/metrics'.format(
@@ -614,7 +615,7 @@ def minio_prometheus(storage_share):
         # Save time when data was obtained.
         storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
-        #Log contents of response
+        # Log contents of response
         _logger.debug(
             "[%s]Endpoint reply: %s",
             storage_share.id,
@@ -643,7 +644,7 @@ def minio_prometheus(storage_share):
             # Save time when data was obtained.
             storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
-            #Log contents of response
+            # Log contents of response
             _logger.debug(
                 "[%s]Endpoint reply: %s",
                 storage_share.id,
@@ -697,71 +698,61 @@ def minio_prometheus(storage_share):
 
 
 def run_boto_client(boto_client, method, kwargs):
-        """Contact S3 endopint using passed object methods and arguments.
+    """Contact S3 endopint using passed object methods and arguments.
 
 
-        Returns:
-        Dict containing reply from S3 endpoint.
+    Returns:
+    Dict containing reply from S3 endpoint.
 
-        """
-        ############# Creating loggers ################
-        _logger = logging.getLogger(__name__)
-        ###############################################
+    """
 
-        _function = getattr(boto_client, method)
+    _function = getattr(boto_client, method)
 
-        try:
-            result = _function(**kwargs)
+    try:
+        result = _function(**kwargs)
 
-        except botoExceptions.ClientError as ERR:
-            raise dynafed_storagestats.exceptions.ConnectionError(
-                error=ERR.__class__.__name__,
-                status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
-                debug=str(ERR),
-            )
+    except botoExceptions.ClientError as ERR:
+        raise dynafed_storagestats.exceptions.ConnectionError(
+            error=ERR.__class__.__name__,
+            status_code=ERR.response['ResponseMetadata']['HTTPStatusCode'],
+            debug=str(ERR),
+        )
 
-        except botoRequestsExceptions.InvalidSchema as ERR:
-            raise dynafed_storagestats.exceptions.ConnectionErrorInvalidSchema(
-                error='InvalidSchema',
-                schema=storage_share.uri['scheme'],
-                debug=str(ERR),
-            )
+    except botoRequestsExceptions.SSLError as ERR:
+        raise dynafed_storagestats.exceptions.ConnectionError(
+            error=ERR.__class__.__name__,
+            status_code="092",
+            debug=str(ERR),
+        )
 
-        except botoRequestsExceptions.SSLError as ERR:
-            raise dynafed_storagestats.exceptions.ConnectionError(
-                error=ERR.__class__.__name__,
-                status_code="092",
-                debug=str(ERR),
-            )
+    except botoRequestsExceptions.RequestException as ERR:
+        raise dynafed_storagestats.exceptions.ConnectionError(
+            error=ERR.__class__.__name__,
+            status_code="400",
+            debug=str(ERR),
+        )
 
-        except botoRequestsExceptions.RequestException as ERR:
-            raise dynafed_storagestats.exceptions.ConnectionError(
-                error=ERR.__class__.__name__,
-                status_code="400",
-                debug=str(ERR),
-            )
+    except botoExceptions.ParamValidationError as ERR:
+        raise dynafed_storagestats.exceptions.ConnectionError(
+            error=ERR.__class__.__name__,
+            status_code="095",
+            debug=str(ERR),
+        )
 
-        except botoExceptions.ParamValidationError as ERR:
-            raise dynafed_storagestats.exceptions.ConnectionError(
-                error=ERR.__class__.__name__,
-                status_code="095",
-                debug=str(ERR),
-            )
+    except botoExceptions.BotoCoreError as ERR:
+        raise dynafed_storagestats.exceptions.ConnectionError(
+            error=ERR.__class__.__name__,
+            status_code="400",
+            debug=str(ERR),
+        )
 
-        except botoExceptions.BotoCoreError as ERR:
-            raise dynafed_storagestats.exceptions.ConnectionError(
-                error=ERR.__class__.__name__,
-                status_code="400",
-                debug=str(ERR),
-            )
-
-        else:
-            return result
+    else:
+        return result
 
 # def ():
 #     """
 #
 #     """
-#     ############# Creating loggers ################
+#     # Creating logger
 #     _logger = logging.getLogger(__name__)
-#     ###############################################
+#

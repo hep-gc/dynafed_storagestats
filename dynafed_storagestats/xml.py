@@ -1,7 +1,8 @@
 """Functions to deal with the formatting and handling  of XML data."""
 
-import datetime
 import copy
+import datetime
+import time
 
 import uuid
 
@@ -9,6 +10,7 @@ from io import BytesIO
 from lxml import etree
 
 import dynafed_storagestats.exceptions
+
 
 #############
 # Functions #
@@ -29,9 +31,6 @@ def add_xml_getcontentlength(content):
     _filecount -- int reprsenting sum of all files processed.
 
     """
-    ############# Creating loggers ################
-
-    ###############################################
 
     _xml = etree.fromstring(content)
     _bytesused = 0
@@ -44,6 +43,7 @@ def add_xml_getcontentlength(content):
 
     return (_bytesused, _filecount)
 
+
 def create_rfc4331_request():
     """Create XML RFC4331 request.
 
@@ -55,9 +55,6 @@ def create_rfc4331_request():
     String in XML format.
 
     """
-    ############# Creating loggers ################
-
-    ###############################################
 
     _root = etree.Element("propfind", xmlns="DAV:")
     _prop = etree.SubElement(_root, "prop")
@@ -87,32 +84,32 @@ def format_StAR(storage_endpoints):
     SR_namespace = "http://eu-emi.eu/namespaces/2011/02/storagerecord"
     SR = "{%s}" % SR_namespace
     NSMAP = {"sr": SR_namespace}
-    xmlroot = etree.Element(SR+"StorageUsageRecords", nsmap=NSMAP)
+    xmlroot = etree.Element(SR + "StorageUsageRecords", nsmap=NSMAP)
 
     for endpoint in storage_endpoints:
         for share in endpoint.storage_shares:
-            data = etree.Element(SR+"StorageUsageRecords", nsmap=NSMAP)
+            data = etree.Element(SR + "StorageUsageRecords", nsmap=NSMAP)
 
             # update XML
-            rec = etree.SubElement(xmlroot, SR+'StorageUsageRecord')
-            rid = etree.SubElement(rec, SR+'RecordIdentity')
-            rid.set(SR+"createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(datetime.datetime.now().timestamp())))
+            rec = etree.SubElement(xmlroot, SR + 'StorageUsageRecord')
+            rid = etree.SubElement(rec, SR + 'RecordIdentity')
+            rid.set(SR + "createTime", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(datetime.datetime.now().timestamp())))
 
             # StAR StorageShare field (Optional)
             if share.star_fields['storage_share']:
-                sshare = etree.SubElement(rec, SR+"StorageShare")
+                sshare = etree.SubElement(rec, SR + "StorageShare")
                 sshare.text = share.star_fields['storageshare']
 
-            #StAR StorageSystem field (Required)
+            # StAR StorageSystem field (Required)
             if share.uri['hostname']:
-                ssys = etree.SubElement(rec, SR+"StorageSystem")
+                ssys = etree.SubElement(rec, SR + "StorageSystem")
                 ssys.text = share.uri['hostname']
 
             # StAR recordID field (Required)
-            recid = share.id+"-"+str(uuid.uuid1())
-            rid.set(SR+"recordId", recid)
+            recid = share.id + "-" + str(uuid.uuid1())
+            rid.set(SR + "recordId", recid)
 
-        #    subjid = etree.SubElement(rec, SR+'SubjectIdentity')
+        #    subjid = etree.SubElement(rec, SR + 'SubjectIdentity')
 
         #    if endpoint.group:
         #      grouproles = endpoint.group.split('/')
@@ -122,66 +119,66 @@ def format_StAR(storage_endpoints):
         #      splitroles = tmprl.split('=')
         #      if (len(splitroles) > 1):
         #        role = splitroles[1]
-        #        grp = etree.SubElement(subjid, SR+"GroupAttribute" )
-        #        grp.set( SR+"attributeType", "role" )
+        #        grp = etree.SubElement(subjid, SR + "GroupAttribute" )
+        #        grp.set( SR + "attributeType", "role" )
         #        grp.text = role
         #      # Now drop this last token, what remains is the vo identifier
         #      grouproles.pop()
         #
         #    # The voname is the first token
         #    voname = grouproles.pop(0)
-        #    grp = etree.SubElement(subjid, SR+"Group")
+        #    grp = etree.SubElement(subjid, SR + "Group")
         #    grp.text = voname
         #
         #    # If there are other tokens, they are a subgroup
         #    if len(grouproles) > 0:
         #      subgrp = '/'.join(grouproles)
-        #      grp = etree.SubElement(subjid, SR+"GroupAttribute" )
-        #      grp.set( SR+"attributeType", "subgroup" )
+        #      grp = etree.SubElement(subjid, SR + "GroupAttribute" )
+        #      grp.set( SR + "attributeType", "subgroup" )
         #      grp.text = subgrp
         #
         #    if endpoint.user:
-        #      usr = etree.SubElement(subjid, SR+"User")
+        #      usr = etree.SubElement(subjid, SR + "User")
         #      usr.text = endpoint.user
 
             # StAR Site field (Optional)
             ## Review
             # if endpoint.site:
-            #     st = etree.SubElement(subjid, SR+"Site")
+            #     st = etree.SubElement(subjid, SR + "Site")
             #     st.text = endpoint.site
 
             # StAR StorageMedia field (Optional)
             # too many e vars here below, wtf?
             ## Review
             # if endpoint.storagemedia:
-            #     e = etree.SubElement(rec, SR+"StorageMedia")
+            #     e = etree.SubElement(rec, SR + "StorageMedia")
             #     e.text = endpoint.storagemedia
 
             # StAR StartTime field (Required)
-            e = etree.SubElement(rec, SR+"StartTime")
+            e = etree.SubElement(rec, SR + "StartTime")
             e.text = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(share.stats['starttime']))
 
             # StAR EndTime field (Required)
-            e = etree.SubElement(rec, SR+"EndTime")
+            e = etree.SubElement(rec, SR + "EndTime")
             e.text = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(share.stats['endtime']))
 
             # StAR FileCount field (Optional)
             if share.stats['filecount']:
-                e = etree.SubElement(rec, SR+"FileCount")
+                e = etree.SubElement(rec, SR + "FileCount")
                 e.text = str(share.stats['filecount'])
 
             # StAR ResourceCapacityUsed (Required)
-            e1 = etree.SubElement(rec, SR+"ResourceCapacityUsed")
+            e1 = etree.SubElement(rec, SR + "ResourceCapacityUsed")
             e1.text = str(share.stats['bytesused'])
 
             # StAR ResourceCapacityAllocated (Optional)
-            e3 = etree.SubElement(rec, SR+"ResourceCapacityAllocated")
+            e3 = etree.SubElement(rec, SR + "ResourceCapacityAllocated")
             e3.text = str(share.stats['quota'])
 
             # if not endpoint.logicalcapacityused:
             #     endpoint.logicalcapacityused = 0
             #
-            # e2 = etree.SubElement(rec, SR+"LogicalCapacityUsed")
+            # e2 = etree.SubElement(rec, SR + "LogicalCapacityUsed")
             # e2.text = str(endpoint.logicalcapacityused)
 
             root = data.getroottree().getroot()
@@ -189,6 +186,7 @@ def format_StAR(storage_endpoints):
             xmlroot.append(sub_element)
 
     return etree.tostring(xmlroot, pretty_print=True, encoding='unicode')
+
 
 def process_rfc4331_response(response, storage_share):
     """Process response from DAV server when using RFC4331 method.
@@ -225,7 +223,7 @@ def process_rfc4331_response(response, storage_share):
         # because no quota is provided, or the endpoint is
         # actually full. We warn for the operator to make a
         # decision.
-        if storage_share.stats['bytesfree'] is 0:
+        if storage_share.stats['bytesfree'] == 0:
             raise dynafed_storagestats.exceptions.DAVZeroQuotaWarning(
                 debug=str(response.content)
             )

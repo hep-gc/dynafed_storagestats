@@ -10,9 +10,10 @@ import dynafed_storagestats.exceptions
 import dynafed_storagestats.helpers
 import dynafed_storagestats.time
 
-###############
-## Functions ##
-###############
+
+##############
+# Functions #
+##############
 
 def list_blobs(storage_share, delta=1, prefix='',
                report_file='/tmp/filelist_report.txt',
@@ -28,9 +29,8 @@ def list_blobs(storage_share, delta=1, prefix='',
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _total_bytes = 0
     _total_files = 0
@@ -47,7 +47,7 @@ def list_blobs(storage_share, delta=1, prefix='',
     _timeout = int(storage_share.plugin_settings['conn_timeout'])
 
     _logger.debug(
-        "[%s]Requesting storage stats with: URN: %s API Method: %s Account: %s Container: %s", \
+        "[%s]Requesting storage stats with: URN: %s API Method: %s Account: %s Container: %s",
         storage_share.id, storage_share.uri['url'],
         storage_share.plugin_settings['storagestats.api'].lower(),
         storage_share.uri['account'],
@@ -89,7 +89,7 @@ def list_blobs(storage_share, delta=1, prefix='',
         else:
             # Check what type of request is asked being used.
             if request == 'storagestats':
-                try: # Make sure we got a list of objects.
+                try:  # Make sure we got a list of objects.
                     _blobs.items
                 except AttributeError:
                     storage_share.stats['bytesused'] = 0
@@ -104,7 +104,7 @@ def list_blobs(storage_share, delta=1, prefix='',
                         pass
 
             elif request == 'filelist':
-                try: # Make sure we got a list of objects.
+                try:  # Make sure we got a list of objects.
                     _blobs.items
                 except AttributeError:
                     break
@@ -145,11 +145,10 @@ def list_blobs(storage_share, delta=1, prefix='',
             storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
-
 # def ():
 #     """
 #
 #     """
-#     ############# Creating loggers ################
+#     # Creating logger
 #     _logger = logging.getLogger(__name__)
-#     ###############################################
+#

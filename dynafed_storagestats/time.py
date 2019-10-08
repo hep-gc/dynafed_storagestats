@@ -2,6 +2,7 @@
 import datetime
 import dateutil.tz
 
+
 #############
 # Functions #
 #############
@@ -46,9 +47,8 @@ def mask_timestamp_by_delta(timestamp, delta=0):
     if delta == 0:
         _mask = now_in_utc()
     else:
-        _mask = now_in_utc().replace(hour=0,minute=0,second=0,microsecond=0) \
-                - datetime.timedelta(days=delta)
-
+        _mask = now_in_utc().replace(hour=0, minute=0, second=0, microsecond=0) \
+            - datetime.timedelta(days=delta)
 
     if timestamp > _mask:
         return False
@@ -57,9 +57,6 @@ def mask_timestamp_by_delta(timestamp, delta=0):
 
 
 def now_in_utc():
-    """Returns aware datetime object of current time in UTC
-
-
-    """
+    """Returns aware datetime object of current time in UTC."""
 
     return datetime.datetime.now(dateutil.tz.tzutc())
