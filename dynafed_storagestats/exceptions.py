@@ -1,8 +1,9 @@
 """Exceptions classes."""
 
-#############
-## Classes ##
-#############
+
+############
+# Classes ##
+############
 
 class BaseException(Exception):
     """
@@ -11,7 +12,7 @@ class BaseException(Exception):
     """
     def __init__(self, error="ERROR", status_code="000", message=None, debug=None):
 
-        self.error_code = "[%s][%s]" %(error, status_code)
+        self.error_code = "[%s][%s]" % (error, status_code)
 
         if message is None:
             # Set some default useful error message
@@ -27,7 +28,7 @@ class BaseException(Exception):
         super().__init__(self.message)
 
 
-### Defining Error Exception Classes ###
+# Defining Error Exception Classes
 
 class BaseError(BaseException):
     """
@@ -163,6 +164,7 @@ class ConfigFileErrorNoConfigFilesFound(ConfigFileError):
 
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
+
 class ConfigFileErrorNoEndpointsFound(ConfigFileError):
     """
     Exception error when no endpoints are found in the configuration files.
@@ -174,6 +176,7 @@ class ConfigFileErrorNoEndpointsFound(ConfigFileError):
         self.debug = debug
 
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
+
 
 class MemcachedError(BaseError):
     """
@@ -361,7 +364,7 @@ class UnsupportedPluginError(ConfigFileError):
         super().__init__(error=error, status_code=status_code, message=self.message, debug=self.debug)
 
 
-### Defining Warning Exception Classes ###
+# Defining Warning Exception Classes
 
 class BaseWarning(BaseException):
     """

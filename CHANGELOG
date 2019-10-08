@@ -262,3 +262,7 @@ v1.0.27
            converted to lowercase to fix discrepancy in capitalization from
            different S3 implementations.
   FIXED: Exception name from AssertError to AssertionError.
+v1.0.28
+  CHANGED: Used flake8 to format the code according to convention.
+  FIXED: wlcg example and output where the top storage service was an array
+         and should not.
