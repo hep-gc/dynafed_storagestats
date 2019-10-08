@@ -9,6 +9,7 @@ from dynafed_storagestats import memcache
 from dynafed_storagestats import json
 from dynafed_storagestats import xml
 
+
 #############
 # Functions #
 #############
@@ -22,11 +23,10 @@ def to_ldif(storage_endpoints, filename, path):
     path -- Path to write the file to file to.
 
     """
-    ############# Creating loggers ################
 
-    ###############################################
     _hostname = os.uname()[1]
     bdii.format_bdii(storage_endpoints, _hostname)
+
 
 def to_json(storage_endpoints, filename, path):
     """Call helper functions to create a JSON file with storage stats.
