@@ -4,6 +4,7 @@ import memcache
 
 import dynafed_storagestats.exceptions
 
+
 #############
 # Functions #
 #############
@@ -30,6 +31,7 @@ def get(index, memcached_ip='127.0.0.1', memcached_port='11211'):
 
     else:
         return _memcached_content
+
 
 def set(index, data, memcached_ip='127.0.0.1', memcached_port='11211', ttl=3600):
     """Upload the data given to an index of a memcached instance.

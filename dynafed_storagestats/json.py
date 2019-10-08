@@ -24,7 +24,7 @@ def format_wlcg(storage_endpoints, hostname="localhost"):
     String in JSON format.
 
     """
-    #Create the json structure in python terms
+    # Create the json structure in python terms
     _dynafed_usedsize = 0
     _dynafed_totalsize = 0
     _skeleton = {}

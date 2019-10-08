@@ -5,9 +5,10 @@ import logging
 import dynafed_storagestats.base
 import dynafed_storagestats.dav.helpers as davhelpers
 
-#############
-## Classes ##
-#############
+
+############
+# Classes #
+###########
 
 class DAVStorageShare(dynafed_storagestats.base.StorageShare):
     """StorageShare sub-class for DAV.
@@ -47,26 +48,22 @@ class DAVStorageShare(dynafed_storagestats.base.StorageShare):
         # Invoke the validate_schema() method
         self.validate_schema()
 
-
     def get_storagestats(self):
         """Contact endpoint using requested method."""
-        ############# Creating loggers ################
 
-        ###############################################
-
-        if self.plugin_settings['storagestats.api'].lower() == 'generic' \
-        or self.plugin_settings['storagestats.api'].lower() == 'list-objects':
+        if (
+            self.plugin_settings['storagestats.api'].lower() == 'generic'
+            or self.plugin_settings['storagestats.api'].lower() == 'list-objects'
+        ):
             davhelpers.list_files(self)
 
         elif self.plugin_settings['storagestats.api'].lower() == 'rfc4331':
             davhelpers.rfc4331(self)
 
-
     def validate_schema(self):
         """Translate dav/davs into http/https."""
-        ############# Creating loggers ################
+        # Creating logger
         _logger = logging.getLogger(__name__)
-        ###############################################
 
         _schema_translator = {
             'dav': 'http',

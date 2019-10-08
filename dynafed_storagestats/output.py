@@ -37,9 +37,6 @@ def to_json(storage_endpoints, filename, path):
     path -- Path to write the JSON file to.
 
     """
-    ############# Creating loggers ################
-
-    ###############################################
 
     _hostname = os.uname()[1]
 
@@ -76,9 +73,8 @@ def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'
     storage_share.stats['starttime']
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _memcached_index = "Ugrstoragestats_" + storage_share.id
 
@@ -138,9 +134,6 @@ def to_plaintext(storage_endpoints, filename, path):
     path -- Path to write the TXT file to.
 
     """
-    ############# Creating loggers ################
-
-    ###############################################
 
     # Initialize total tally
     _dynafed_usedsize = 0
@@ -183,9 +176,6 @@ def to_xml(storage_endpoints, filename, path):
     path -- Path to write the XML file to.
 
     """
-    ############# Creating loggers ################
-
-    ###############################################
 
     # Create output path
     _filepath = path + '/' + filename
@@ -230,21 +220,21 @@ def to_stdout(storage_endpoints, args):
                 _memcached_contents = 'No content found or error connecting to memcached service.'
                 _storage_share.debug.append("[ERROR]" + ERR.debug)
 
-            print('\n#####', _storage_share.id, '#####' \
-                  '\n{0:12}{1}'.format('URL:', _storage_share.uri['url']), \
-                  '\n{0:12}{1}'.format('Protocol:', _storage_share.storageprotocol), \
-                  '\n{0:12}{1}'.format('Time:', _storage_share.stats['starttime']), \
-                  '\n{0:12}{1}'.format('Quota:', _storage_share.stats['quota']), \
-                  '\n{0:12}{1}'.format('Bytes Used:', _storage_share.stats['bytesused']), \
-                  '\n{0:12}{1}'.format('Bytes Free:', _storage_share.stats['bytesfree']), \
-                  '\n{0:12}{1}'.format('FileCount:', _storage_share.stats['filecount']), \
-                  '\n{0:12}{1}'.format('Status:', _storage_share.status), \
-                 )
+            print('\n#####', _storage_share.id, '#####'
+                  '\n{0:12}{1}'.format('URL:', _storage_share.uri['url']),
+                  '\n{0:12}{1}'.format('Protocol:', _storage_share.storageprotocol),
+                  '\n{0:12}{1}'.format('Time:', _storage_share.stats['starttime']),
+                  '\n{0:12}{1}'.format('Quota:', _storage_share.stats['quota']),
+                  '\n{0:12}{1}'.format('Bytes Used:', _storage_share.stats['bytesused']),
+                  '\n{0:12}{1}'.format('Bytes Free:', _storage_share.stats['bytesfree']),
+                  '\n{0:12}{1}'.format('FileCount:', _storage_share.stats['filecount']),
+                  '\n{0:12}{1}'.format('Status:', _storage_share.status),
+                  )
 
-            print('\nMemcached:', \
-                  '\n{0:12}{1}'.format('Index:', _memcached_index), \
-                  '\n{0:12}{1}'.format('Contents:', _memcached_contents), \
-                 )
+            print('\nMemcached:',
+                  '\n{0:12}{1}'.format('Index:', _memcached_index),
+                  '\n{0:12}{1}'.format('Contents:', _memcached_contents),
+                  )
 
             if args.debug:
                 print('\nDebug:')

@@ -11,6 +11,7 @@ from dynafed_storagestats.dav import base as dav
 from dynafed_storagestats.s3 import base as s3
 import dynafed_storagestats.exceptions
 
+
 #############
 # Functions #
 #############
@@ -30,8 +31,8 @@ def factory(plugin):
         'libugrlocplugin_http.so': dav.DAVStorageShare,
         'libugrlocplugin_s3.so': s3.S3StorageShare,
         'libugrlocplugin_azure.so': azure.AzureStorageShare,
-        #'libugrlocplugin_davrucio.so': RucioStorageShare,
-        #'libugrlocplugin_dmliteclient.so': DMLiteStorageShare,
+        # 'libugrlocplugin_davrucio.so': RucioStorageShare,
+        # 'libugrlocplugin_dmliteclient.so': DMLiteStorageShare,
     }
 
     if plugin in _plugin_dict:
@@ -57,9 +58,8 @@ def get_conf_files(config_path):
     List of strings, each being the path to a single file.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _config_files = []
 
@@ -69,8 +69,8 @@ def get_conf_files(config_path):
 
     else:
         _logger.warning(
-            "UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. " \
-            "This is normal if script is run on a host that does not run " \
+            "UGR's '/etc/ugr/ugr.conf' file not found, will be skipped. "
+            "This is normal if script is run on a host that does not run "
             "Dynafed."
         )
 
@@ -84,7 +84,7 @@ def get_conf_files(config_path):
 
         else:
             _logger.error(
-                'Element "%s" provided is an invalid directory or file name ' \
+                'Element "%s" provided is an invalid directory or file name '
                 'and will be ignored.',
                 _element
             )
@@ -113,9 +113,8 @@ def get_storage_endpoints(storage_share_objects):
     List of dynafed_storagestats StorageEnpoint objects.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _storage_endpoints = []
     _urls_dict = {}
@@ -160,9 +159,8 @@ def get_storage_shares(config_path, storage_shares_mask=[]):
     Output of get_storage_share_objects(). (A list of StorageShare objects)
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     # If no config_path specified set it to UGR's default configurations directory.
     _logger.info(
@@ -214,9 +212,8 @@ def get_storage_share_objects(storage_shares):
     List of dyanfed_storagestats StorageShare objects.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _storage_share_objects = []
 
@@ -280,9 +277,8 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
     }
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _storage_shares = {}
     _global_settings = {}
@@ -291,9 +287,9 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
         try:
             _logger.info("Reading file '%s'", os.path.realpath(_config_file))
             _logger.debug(
-                "Endpoint mask: %s", \
+                "Endpoint mask: %s",
                 storage_shares_mask,
-                )
+            )
 
             with open(_config_file, "r") as _file:
                 for _line_number, _line in enumerate(_file):
@@ -304,13 +300,13 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
                             _plugin, _id, _concurrency, _url = _line.split()[1::]
                             if _id in storage_shares_mask or len(storage_shares_mask) == 0:
                                 _storage_shares.setdefault(_id, {})
-                                _storage_shares[_id].update({'id':_id.strip()})
-                                _storage_shares[_id].update({'url':_url.strip()})
-                                _storage_shares[_id].update({'plugin':_plugin.split("/")[-1]})
+                                _storage_shares[_id].update({'id': _id.strip()})
+                                _storage_shares[_id].update({'url': _url.strip()})
+                                _storage_shares[_id].update({'plugin': _plugin.split("/")[-1]})
 
                                 _logger.info(
-                                    "Found storage share '%s' using plugin '%s'. " \
-                                    "Reading configuration.", \
+                                    "Found storage share '%s' using plugin '%s'. "
+                                    "Reading configuration.",
                                     _storage_shares[_id]['id'], _storage_shares[_id]['plugin']
                                 )
 
@@ -320,9 +316,9 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
 
                             # Match an _id in _locid
                             if _locid == '*':
-                            # Add any global settings to its own dictionary.
-                                _setting = _key.split('*'+'.')[-1]
-                                _global_settings.update({_setting:_value.strip()})
+                                # Add any global settings to its own dictionary.
+                                _setting = _key.split('*' + '.')[-1]
+                                _global_settings.update({_setting: _value.strip()})
                                 _logger.info(
                                     "Found global setting '%s': %s.",
                                     _key,
@@ -331,14 +327,14 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
 
                             elif _id == _locid:
                                 if _id in storage_shares_mask or len(storage_shares_mask) == 0:
-                                    _setting = _key.split(_id+'.')[-1]
+                                    _setting = _key.split(_id + '.')[-1]
                                     _storage_shares.setdefault(_id, {})
                                     _storage_shares[_id].setdefault('plugin_settings', {})
-                                    _storage_shares[_id]['plugin_settings'].update({_setting:_value.strip()})
+                                    _storage_shares[_id]['plugin_settings'].update({_setting: _value.strip()})
                                     _logger.debug(
                                         "[%s]Found local ID setting '%s'",
                                         _locid,
-                                        _key.split(_id+'.')[-1],
+                                        _key.split(_id + '.')[-1],
                                     )
 
                             else:
@@ -352,7 +348,7 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
 
                         else:
                             # Ignore any other lines
-                            #print( "I don't know what to do with %s", _line)
+                            # print( "I don't know what to do with %s", _line)
                             pass
 
         except UnicodeDecodeError:
@@ -364,7 +360,7 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
     for _setting, _value in _global_settings.items():
         for storage_share in _storage_shares:
             if _setting not in _storage_shares[storage_share]['plugin_settings']:
-                _storage_shares[storage_share]['plugin_settings'].update({_setting:_value})
+                _storage_shares[storage_share]['plugin_settings'].update({_setting: _value})
                 _logger.debug(
                     "[%s]Applying global setting '%s': %s",
                     _storage_shares[storage_share]['id'],

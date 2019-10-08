@@ -8,9 +8,10 @@ import requests
 from dynafed_storagestats import xml
 import dynafed_storagestats.exceptions
 
-###############
-## Functions ##
-###############
+
+##############
+# Functions ##
+##############
 
 def list_files(storage_share):
     """Contact DAV endpoint to list all files and sum their sizes.
@@ -24,9 +25,8 @@ def list_files(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _api_url = '{scheme}://{netloc}{path}'.format(
         scheme=storage_share.uri['scheme'],
@@ -34,7 +34,7 @@ def list_files(storage_share):
         path=storage_share.uri['path']
     )
 
-    _headers = {'Depth': 'infinity',}
+    _headers = {'Depth': 'infinity'}
     _data = ''
 
     _logger.debug(
@@ -92,7 +92,7 @@ def list_files(storage_share):
         )
 
     except IOError as ERR:
-        #We do some regex magic to get the file path
+        # We do some regex magic to get the file path
         _certfile = str(ERR).split(":")[-1]
         _certfile = _certfile.replace(' ', '')
         raise dynafed_storagestats.exceptions.ConnectionErrorDAVCertPath(
@@ -106,8 +106,8 @@ def list_files(storage_share):
             if _response.status_code < 400:
                 storage_share.stats['bytesused'], storage_share.stats['filecount'] = xml.add_xml_getcontentlength(_response.content)
                 storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
-                print("quota: %s, type: %s" %(storage_share.stats['quota'], type(storage_share.stats['quota'])))
-                print("bytesused: %s, type: %s" %(storage_share.stats['bytesused'], type(storage_share.stats['bytesused'])))
+                print("quota: %s, type: %s" % (storage_share.stats['quota'], type(storage_share.stats['quota'])))
+                print("bytesused: %s, type: %s" % (storage_share.stats['bytesused'], type(storage_share.stats['bytesused'])))
                 storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
             else:
@@ -130,9 +130,8 @@ def rfc4331(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _api_url = '{scheme}://{netloc}{path}'.format(
         scheme=storage_share.uri['scheme'],
@@ -140,7 +139,7 @@ def rfc4331(storage_share):
         path=storage_share.uri['path']
     )
 
-    _headers = {'Depth': '0',}
+    _headers = {'Depth': '0'}
     _data = xml.create_rfc4331_request()
 
     _logger.debug(
@@ -198,7 +197,7 @@ def rfc4331(storage_share):
         )
 
     except IOError as ERR:
-        #We do some regex magic to get the filepath
+        # We do some regex magic to get the filepath
         _certfile = str(ERR).split(":")[-1]
         _certfile = _certfile.replace(' ', '')
         raise dynafed_storagestats.exceptions.ConnectionErrorDAVCertPath(
@@ -219,6 +218,7 @@ def rfc4331(storage_share):
                     debug=_response.text,
                 )
 
+
 def send_dav_request(storage_share, api_url, headers, data):
     """Contact DAV endpoint with given headers and data.
 
@@ -234,9 +234,8 @@ def send_dav_request(storage_share, api_url, headers, data):
     String containing endpoint's response.
 
     """
-    ############# Creating loggers ################
+    # Creating logger
     _logger = logging.getLogger(__name__)
-    ###############################################
 
     _response = requests.request(
         method="PROPFIND",
@@ -253,7 +252,7 @@ def send_dav_request(storage_share, api_url, headers, data):
     # Save time when data was obtained.
     storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
 
-    #Log contents of response
+    # Log contents of response
     _logger.debug(
         "[%s]Endpoint reply: %s",
         storage_share.id,
