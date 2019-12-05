@@ -3,29 +3,6 @@
 import datetime
 
 #############
-## Classes ##
-#############
-
-# class ():
-#     """Base class representing unique URL storage endpoint.
-#
-#     Will be completed with one or several StorageShare objects that share the
-#     same URL, as a list in self.storage_shares.
-#
-#     """
-#
-#     def __init__(self, url):
-#         """Create storage_shares and url attributes.
-#
-#         Arguments:
-#         url -- string.
-#
-#         """
-#         self.storage_shares = []
-#         self.url = url
-
-
-#############
 # Functions #
 #############
 
