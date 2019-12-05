@@ -1,1 +1,59 @@
 ---
+storage:
+  service:
+    hostname: "your.dynafed.com"
+    dynafed_mountpoint: "dynafed"
+    entity_name: "GLUE-ENTITY-NAME" #Exaple "CA-TRIUMF-DYNAFED"
+    service:
+      capability: "data.access.flatfiles"
+      quality_level: "testing"
+      type: "dynafed"
+
+  access_protocol:
+    type: "https"
+    version: "1.1"
+    port: "443"
+
+  endpoint:
+    capability: "data.access.flatfiles"
+    health_state: "ok" #maybe programatically if all se fail?
+    implementation:
+      name: "dynafed"
+      version: "1.5.0" #maybe programatically from package installed?
+    interface:
+      name: "https"
+      version: "1.1"
+      quality_level: "testing"
+      serving_state: "production"
+
+    access_policy:
+      scheme: "basic"
+      rule:
+        - "vo:atlas"
+        - "vo:ops"
+        - "vo:dteam"
+
+  shares:
+    - acess_latency: "online"
+      expiration_mode: "neverexpire"
+      retention_policy: "replica"
+      mountpoint: "atlas/atlasdatadisk"
+      serving_state: "production"
+      capacity:
+        type: "online"
+        retention_policy: "replica"
+      dynafed_storage_endpoints:
+        - ID_ATALSDATADISK01
+        _ ID_ATLASDATADISK02
+
+    - acess_latency: "online"
+      expiration_mode: "neverexpire"
+      retention_policy: "replica"
+      mountpoint: "atlas/atlasscratchdisk"
+      serving_state: "production"
+      capacity:
+        type: "online"
+        retention_policy: "replica"
+      dynafed_storage_endpoints:
+        - ID_ATALSSCRATCHDISK01
+        _ ID_ATLASSCRATCHDISK02
