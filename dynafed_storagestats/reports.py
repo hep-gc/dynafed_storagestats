@@ -3,8 +3,7 @@
 """Functions to generate storage reports."""
 
 import json
-import time
-
+import datetime
 
 #############
 # Functions #
@@ -18,7 +17,7 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
     _output_file = output + '/space-usage.json'
 
     # Getting current timestamp
-    NOW = int(time.time())
+    NOW = int(datetime.datetime.now( ).timestamp( ))
 
     # Calculate the totals space and used space for each of the dynafed endpoints
     # under each storage share.
@@ -55,3 +54,14 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
     # Ouptut json to file.
     with open(_output_file, 'w') as json_file:
         json.dump(schema, json_file, indent=4, sort_keys=True)
+
+
+def create_bdii_storage_report(dynafed_endpoints, schema, output='/tmp'):
+    """Creates json file according to the WLCG storage report format.
+
+    """
+
+    _output_file = output + '/space-usage.json'
+
+    # Getting current timestamp
+    NOW = '{0:%Y-%m-%dT%H:%M:%SZ}'.format(datetime.datetime.utcnow())
