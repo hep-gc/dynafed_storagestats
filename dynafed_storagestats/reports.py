@@ -17,9 +17,13 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
 
     _output_file = output + '/space-usage.json'
 
-    # Getting current timestamp
+    # Getting current timestamp and add it to the storageservice:
     NOW = int(time.time())
-
+    schema['storageservice'].update(
+        {
+            "latestupdate": NOW
+        }
+    )
     # Calculate the totals space and used space for each of the dynafed endpoints
     # under each storage share.
     for _schema_storage_share in schema['storageservice']['storageshares']:
