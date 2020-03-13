@@ -41,6 +41,7 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
             {
                 "implementationversion": _dyanfed_version
             }
+        )
 
     # Add info to the storageservice block:
     schema['storageservice'].update(
