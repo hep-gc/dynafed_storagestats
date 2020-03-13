@@ -3,6 +3,7 @@
 """Functions to generate storage reports."""
 
 import json
+import subprocess
 import time
 
 
@@ -17,10 +18,29 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
 
     _output_file = output + '/space-usage.json'
 
-    # Getting current timestamp and add it to the storageservice:
+    # Getting current timestamp
     NOW = int(time.time())
+
+    # Getting Dynafed version:
+    _process = subprocess.Popen(
+        ['rpm', '--queryformat', '%{VERSION}', '-q', 'dynafed'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+    _stdout, _stderr = _process.communicate()
+    if _stdout is not None:
+        _stdout = _stdout.decode("utf-8")
+
+    if _stderr is not None:
+        _stderr = _stderr.decode("utf-8")
+
+    _dyanfed_version = _stdout
+
+    # Add info to the storageservice block:
     schema['storageservice'].update(
         {
+            "implementation": "dynafed",
+            "implementationversion": _dyanfed_version,
             "latestupdate": NOW
         }
     )

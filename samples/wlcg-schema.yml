@@ -1,8 +1,6 @@
 storageservice:
   name: "your.dynafed.com"
   datastores: []
-  implementation: "dynafed"
-  implementationversion: "1.5.0"
   qualitylevel: "production"
   storageendpoints:
     - name: "https"
