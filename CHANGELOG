@@ -266,3 +266,6 @@ v1.0.28
   CHANGED: Used flake8 to format the code according to convention.
   FIXED: wlcg example and output where the top storage service was an array
          and should not.
+v1.0.29
+  ADDED: Complete wlcg-schema file according to WCLG SRR.
+  ADDED: Dynafed version and update time for the WLCG space-usage.json file.
