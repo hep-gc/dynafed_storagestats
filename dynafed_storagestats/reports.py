@@ -3,9 +3,9 @@
 """Functions to generate storage reports."""
 
 import json
-import subprocess
 import time
 
+from dynafed_storagestats import helpers
 
 #############
 # Functions #
@@ -21,21 +21,10 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
     # Getting current timestamp
     NOW = int(time.time())
 
-    # Getting Dynafed version if not found in the schema:
-    if not schema['storageservice']['implementationversion']:
-        _process = subprocess.Popen(
-            ['rpm', '--queryformat', '%{VERSION}', '-q', 'dynafed'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
-        )
-        _stdout, _stderr = _process.communicate()
-        if _stdout is not None:
-            _stdout = _stdout.decode("utf-8")
+    # Getting Dynafed version.
+    if 'implementationversion' not in schema['storageservice']:
 
-        if _stderr is not None:
-            _stderr = _stderr.decode("utf-8")
-
-        _dyanfed_version = _stdout
+        _dyanfed_version = helpers.get_dynafed_version()
 
         schema['storageservice'].update(
             {
@@ -72,15 +61,6 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
             }
         )
         del _schema_storage_share['dynafedendpoints']
-
-    # Create the json structure
-    # skeleton = {
-    #     'storage_service': {
-    #         'latestupdate': NOW,
-    #         'name': dynafed_hostname,
-    #         'storage_shares': storage_shares
-    #     }
-    # }
 
     # Ouptut json to file.
     with open(_output_file, 'w') as json_file:

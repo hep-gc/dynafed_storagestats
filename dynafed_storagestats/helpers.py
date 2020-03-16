@@ -3,6 +3,8 @@
 import logging
 import logging.handlers
 import os
+import re
+import subprocess
 import sys
 import yaml
 
@@ -522,6 +524,62 @@ def get_dynafed_storage_endpoints_from_schema(schema):
     )
 
     return _dynafed_endpoints
+
+
+def get_dynafed_version():
+    """Use RPM query to extract version number from RPM. Return 0.0.0 if failed.
+
+    Returns:
+    String
+
+    """
+    # Creating logger
+    _logger = logging.getLogger(__name__)
+
+    _logger.info('Checking dynafed RPM package version.')
+
+    _dynafed_version = '0.0.0'
+
+    _process = subprocess.Popen(
+        ['rpm', '--queryformat', '%{VERSION}', '-q', 'dynafed'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+
+    _logger.debug(
+        'RPM query cmd: %s',
+        ' '.join(map(str, _process.args))
+    )
+
+    _stdout, _stderr = _process.communicate()
+    if _stdout is not None:
+        _stdout = _stdout.decode("utf-8")
+
+    if _stderr is not None:
+        _stderr = _stderr.decode("utf-8")
+
+    _logger.debug(
+        'RPM query returns stdout: %s, stderr: %s',
+        _stdout,
+        _stderr
+    )
+
+    # Check if we got a package version of the form 0.0.0.
+    if re.match(r"[0-9]\.[0-9]\.[0-9]", _stdout):
+        _dynafed_version = _stdout
+
+    else:
+        _logger.error(
+            'Failed to obtain dynafed version. RPM query returned: %s',
+            _stdout
+        )
+
+    _logger.info(
+        'Dynafed version: %s',
+        _dynafed_version
+    )
+
+    return _dynafed_version
 
 
 def get_site_schema(schema_file):
