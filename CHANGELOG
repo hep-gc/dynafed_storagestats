@@ -267,6 +267,7 @@ v1.0.28
   FIXED: wlcg example and output where the top storage service was an array
          and should not.
 v1.0.29
+  REMOVED: wglc-min-schema sample file as it was not enough information.
   ADDED: wlcg-schema sample file according to WCLG SRR.
   ADDED: Dynafed version and update time for the WLCG space-usage.json file.
   ADDED: helper get_dynafed_version() function to query rpm from dynafed version.

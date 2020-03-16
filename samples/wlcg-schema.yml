@@ -1,12 +1,13 @@
 storageservice:
   name: "your.dynafed.com"
   datastores: []
-  implementationversion: "1.5.0" //Remove to get automatically from rpm.
-  qualitylevel: "production"
+  implementation: "dynafed"
+  implementationversion: "0.0.0" //Remove to get automatically from rpm.
+  qualitylevel: ["development", "pre-production", "production", "testing"] //Choose one.
   storageendpoints:
     - name: "https"
       interfacetype: "https"
-      qualitylevel: "production"
+      qualitylevel: ["development", "pre-production", "production", "testing"] //Choose one.
       endpointurl: "https://your.dynafed.com"
       assignedshares:
         - "all"
@@ -16,10 +17,10 @@ storageservice:
       assignedendpoints:
         - "all"
       path:
-        - "dynafed/atlas/atlasdatadisk"
-      servingstate: "open"
+        - "/dynafed/atlas/atlasdatadisk"
+      servingstate: ["closed", "draining", "production", "queuing"] //Choose one.
       vos:
-        - "/atlas/Role=production"
+        - "atlas/Role=production"
       dynafedendpoints:
         # Add here the endpoints' UGR ID's
         - "ENDPOINT01_ID"
@@ -30,10 +31,10 @@ storageservice:
       assignedendpoints:
         - "all"
       path:
-        - "dynafed/atlas/atlasscratchdisk"
-      servingstate: "open"
+        - "/dynafed/atlas/atlasscratchdisk"
+      servingstate: ["closed", "draining", "production", "queuing"] //Choose one.
       vos:
-        - "/atlas/Role=production"
+        - "atlas"
       dynafedendpoints:
         - "ENDPOINT03_ID"
         - "ENDPOINT04_ID"
