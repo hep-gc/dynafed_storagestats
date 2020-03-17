@@ -271,3 +271,6 @@ v1.0.29
   ADDED: wlcg-schema sample file according to WCLG SRR.
   ADDED: Dynafed version and update time for the WLCG space-usage.json file.
   ADDED: helper get_dynafed_version() function to query rpm from dynafed version.
+v1.0.30
+  ADDED: Check for memcache before asking endpoints when generating a storage
+         report.

@@ -411,6 +411,25 @@ def add_reports_storage_subparser(subparser):
     # Logging options
     add_logging_options(parser)
 
+    # Memcached Options
+    group_memcached = parser.add_argument_group("Memcached Options")
+    group_memcached.add_argument(
+        '--memhost',
+        action='store',
+        default='127.0.0.1',
+        dest='memcached_ip',
+        help="IP or hostname of memcached instance."
+             "Default: 127.0.0.1"
+    )
+    group_memcached.add_argument(
+        '--memport',
+        action='store',
+        default='11211',
+        dest='memcached_port',
+        help="Port of memcached instance. "
+             "Default: 11211"
+    )
+
     # Reports options
     group_reports = parser.add_argument_group("Reports options")
     group_reports.add_argument(
