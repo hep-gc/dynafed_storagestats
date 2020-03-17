@@ -1,0 +1,40 @@
+storageservice:
+  name: "your.dynafed.com"
+  datastores: []
+  implementation: "dynafed"
+  implementationversion: "0.0.0" //Remove to get automatically from rpm.
+  qualitylevel: ["development", "pre-production", "production", "testing"] //Choose one.
+  storageendpoints:
+    - name: "https"
+      interfacetype: "https"
+      qualitylevel: ["development", "pre-production", "production", "testing"] //Choose one.
+      endpointurl: "https://your.dynafed.com"
+      assignedshares:
+        - "all"
+  storageshares:
+    # Example storage share. Change names, path and endpoints as needed.
+    - name: "ATLASDATADISK"
+      assignedendpoints:
+        - "all"
+      path:
+        - "/dynafed/atlas/atlasdatadisk"
+      servingstate: ["closed", "draining", "production", "queuing"] //Choose one.
+      vos:
+        - "atlas/Role=production"
+      dynafedendpoints:
+        # Add here the endpoints' UGR ID's
+        - "ENDPOINT01_ID"
+        - "ENDPOINT02_ID"
+
+    # Example to show how to add more storage shares.
+    - name: "ATLASSCRATCHDISK"
+      assignedendpoints:
+        - "all"
+      path:
+        - "/dynafed/atlas/atlasscratchdisk"
+      servingstate: ["closed", "draining", "production", "queuing"] //Choose one.
+      vos:
+        - "atlas"
+      dynafedendpoints:
+        - "ENDPOINT03_ID"
+        - "ENDPOINT04_ID"

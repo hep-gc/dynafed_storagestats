@@ -5,6 +5,7 @@
 import json
 import time
 
+from dynafed_storagestats import helpers
 
 #############
 # Functions #
@@ -20,6 +21,24 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
     # Getting current timestamp
     NOW = int(time.time())
 
+    # Getting Dynafed version.
+    if 'implementationversion' not in schema['storageservice']:
+
+        _dyanfed_version = helpers.get_dynafed_version()
+
+        schema['storageservice'].update(
+            {
+                "implementationversion": _dyanfed_version
+            }
+        )
+
+    # Add info to the storageservice block:
+    schema['storageservice'].update(
+        {
+            "implementation": "dynafed",
+            "latestupdate": NOW
+        }
+    )
     # Calculate the totals space and used space for each of the dynafed endpoints
     # under each storage share.
     for _schema_storage_share in schema['storageservice']['storageshares']:
@@ -42,15 +61,6 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
             }
         )
         del _schema_storage_share['dynafedendpoints']
-
-    # Create the json structure
-    # skeleton = {
-    #     'storage_service': {
-    #         'latestupdate': NOW,
-    #         'name': dynafed_hostname,
-    #         'storage_shares': storage_shares
-    #     }
-    # }
 
     # Ouptut json to file.
     with open(_output_file, 'w') as json_file:
