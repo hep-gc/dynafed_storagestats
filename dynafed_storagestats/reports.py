@@ -50,8 +50,8 @@ def create_wlcg_storage_report(dynafed_endpoints, schema, output='/tmp'):
 
             for _endpoint in dynafed_endpoints:
                 if _endpoint.id == _id:
-                    bytes_used += _endpoint.stats['bytesused']
-                    total_size += _endpoint.stats['quota']
+                    bytes_used += int(_endpoint.stats['bytesused'])
+                    total_size += int(_endpoint.stats['quota'])
 
         _schema_storage_share.update(
             {
