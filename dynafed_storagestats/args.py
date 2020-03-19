@@ -545,17 +545,6 @@ def add_stats_subparser(subparser):
         help="Declare to enable uploading storage stats to memcached."
     )
     group_output.add_argument(
-        '-j', '--json',
-        action='store',
-        const="dynafed_storagestats.json",
-        default=False,
-        dest='to_json',
-        nargs='?',
-        help="Set to output stats to json file. Add argument to set filename."
-             "Default: dynafed_storagestats.json"
-             "!!In development!!"
-    )
-    group_output.add_argument(
         '-o', '--output-dir',
         action='store',
         default='.',
