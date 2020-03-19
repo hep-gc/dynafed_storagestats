@@ -256,10 +256,6 @@ def stats(ARGS):
     # if ARGS.output_xml:
     #     output.to_xml(storage_endpoints, ARGS.to_xml, ARGS.output_path)
 
-    # Create json file with storagestats
-    if ARGS.to_json:
-        output.to_json(storage_endpoints, ARGS.to_json, ARGS.output_path)
-
     # Create txt file with storagestats
     if ARGS.to_plaintext:
         output.to_plaintext(storage_endpoints, ARGS.to_plaintext, ARGS.output_path)
