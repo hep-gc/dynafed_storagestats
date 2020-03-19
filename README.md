@@ -398,10 +398,6 @@ Output options:
   --debug               Declare to enable debug output on stdout.
   -m, --memcached       Declare to enable uploading storage stats to
                         memcached.
-  -j [TO_JSON], --json [TO_JSON]
-                        Set to output stats to json file. Add argument to set
-                        filename.Default: dynafed_storagestats.json!!In
-                        development!!
   -o OUTPUT_PATH, --output-dir OUTPUT_PATH
                         Set output directory for flags -j, -x and -p. Default:
                         '.'
