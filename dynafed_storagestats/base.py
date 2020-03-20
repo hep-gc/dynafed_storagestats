@@ -28,6 +28,7 @@ class StorageEndpoint():
         url -- string.
 
         """
+        self.interface_type = 'https'
         self.storage_shares = []
         self.url = url
 
