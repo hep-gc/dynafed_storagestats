@@ -1088,8 +1088,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", logid=False, loglevel=
     # Set the format dpending whether a log id is requested.
     if logid:
         # Add ContextFilter
-        _logid_context = ContextFilter()
-        _logid_context.logid = logid
+        _logid_context = ContextFilter(logid)
         _logger.addFilter(_logid_context)
 
         # Set logger format
