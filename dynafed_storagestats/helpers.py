@@ -22,8 +22,18 @@ class ContextFilter(logging.Filter):
     """
     This is a filter which injects contextual information into the log.
     """
+    def __init__(self, logid):
+        """Create ContextFilter with extra attributes for logging.
+
+        Arguments:
+        logid -- string.
+
+        """
+        self.logid = False
+
+
     def filter(self, record):
-        record.logid = logid
+        record.logid = self.logid
         return True
 
 #############
@@ -1057,6 +1067,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", logid=False, loglevel=
 
     Arguments:
     logfile -- string defining path to write logs to.
+    logid -- string defining an ID to be logged.
     loglevel -- string defining level to log: "DEBUG, INFO, WARNING, ERROR"
     verbose -- boolean. 'True' prints log messages to stderr.
 
