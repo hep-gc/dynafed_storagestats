@@ -29,6 +29,7 @@ def main():
         # Setup logger
         helpers.setup_logger(
             logfile=ARGS.logfile,
+            logid=ARGS.logid,
             loglevel=ARGS.loglevel,
             verbose=ARGS.verbose,
         )

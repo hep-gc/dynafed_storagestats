@@ -15,6 +15,18 @@ from dynafed_storagestats import time
 
 
 #############
+## Classes ##
+#############
+
+class ContextFilter(logging.Filter):
+    """
+    This is a filter which injects contextual information into the log.
+    """
+    def filter(self, record):
+        record.logid = logid
+        return True
+
+#############
 # Functions #
 #############
 
@@ -1040,7 +1052,7 @@ def process_storagestats(storage_endpoint, args):
                     storage_share.status = storage_share.status + "," + "[ERROR]" + ERR.error_code
 
 
-def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", verbose=False):
+def setup_logger(logfile="/tmp/dynafed_storagestats.log", logid=False, loglevel="WARNING", verbose=False):
     """Setup the logger format to be used throughout the script.
 
     Arguments:
@@ -1062,8 +1074,19 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
     _num_loglevel = getattr(logging, loglevel.upper())
     _logger.setLevel(_num_loglevel)
 
-    # Set logger format
-    _log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
+    # Set the format dpending whether a log id is requested.
+    if logid:
+        # Add ContextFilter
+        _logid_context = ContextFilter()
+        _logid_context.logid = logid
+        _logger.addFilter(_logid_context)
+
+        # Set logger format
+        _log_format_file = logging.Formatter('[%(logid)s] - %(asctime)s - [%(levelname)s]%(message)s')
+
+    else:
+        # Set logger format
+        _log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
 
     # Set file where to log and the mode to use and set the format to use.
     _log_handler_file = logging.handlers.TimedRotatingFileHandler(
@@ -1079,7 +1102,11 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", loglevel="WARNING", ve
 
     # Create STDERR hanler if verbose is requested and add it to logger.
     if verbose:
-        log_format_stderr = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
+        if logid:
+            log_format_stderr = logging.Formatter('[%(logid)s] - %(asctime)s - [%(levelname)s]%(message)s')
+        else:
+            log_format_stderr = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
+
         log_handler_stderr = logging.StreamHandler()
         log_handler_stderr.setLevel(_num_loglevel)
         log_handler_stderr.setFormatter(log_format_stderr)
