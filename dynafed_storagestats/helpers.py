@@ -29,7 +29,7 @@ class ContextFilter(logging.Filter):
         logid -- string.
 
         """
-        self.logid = False
+        self.logid = logid
 
 
     def filter(self, record):
