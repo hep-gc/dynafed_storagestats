@@ -256,6 +256,13 @@ def add_logging_options(parser):
              "Default: /tmp/dynafed_storagestats.log"
     )
     group_logging.add_argument(
+        '--logid',
+        action='store',
+        default=False,
+        dest='logid',
+        help='Add this log id to every log line.'
+    )
+    group_logging.add_argument(
         '--loglevel',
         action='store',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
@@ -543,17 +550,6 @@ def add_stats_subparser(subparser):
         default=False,
         dest='output_memcached',
         help="Declare to enable uploading storage stats to memcached."
-    )
-    group_output.add_argument(
-        '-j', '--json',
-        action='store',
-        const="dynafed_storagestats.json",
-        default=False,
-        dest='to_json',
-        nargs='?',
-        help="Set to output stats to json file. Add argument to set filename."
-             "Default: dynafed_storagestats.json"
-             "!!In development!!"
     )
     group_output.add_argument(
         '-o', '--output-dir',

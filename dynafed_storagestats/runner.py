@@ -29,6 +29,7 @@ def main():
         # Setup logger
         helpers.setup_logger(
             logfile=ARGS.logfile,
+            logid=ARGS.logid,
             loglevel=ARGS.loglevel,
             verbose=ARGS.verbose,
         )
@@ -255,10 +256,6 @@ def stats(ARGS):
     # Create StAR Storagestats XML files for each storage share.
     # if ARGS.output_xml:
     #     output.to_xml(storage_endpoints, ARGS.to_xml, ARGS.output_path)
-
-    # Create json file with storagestats
-    if ARGS.to_json:
-        output.to_json(storage_endpoints, ARGS.to_json, ARGS.output_path)
 
     # Create txt file with storagestats
     if ARGS.to_plaintext:
