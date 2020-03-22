@@ -89,6 +89,7 @@ dynafed-storage checksums get -h
 usage: dynafed-storage checksums get [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
                                      [-f] [-v] [-e ENDPOINT] [-t HASH_TYPE]
                                      [-u URL] [--logfile LOGFILE]
+                                     [--logid LOGID]
                                      [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                      [--stdout]
 
@@ -109,8 +110,9 @@ Checksum options. Required!:
   -u URL, --url URL     URL of object/file to request checksum of. Required.
 
 Logging options:
-  --logfile LOGFILE     Set logfile path. Default:
+  --logfile LOGFILE     Set logfiles path. Default:
                         /tmp/dynafed_storagestats.log
+  --logid LOGID         Add this log id to every log line.
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
 
@@ -145,7 +147,7 @@ dynafed-storage checksums put -h
 usage: dynafed-storage checksums put [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]]
                                      [-f] [-v] [--checksum CHECKSUM]
                                      [-e ENDPOINT] [-t HASH_TYPE] [-u URL]
-                                     [--logfile LOGFILE]
+                                     [--logfile LOGFILE] [--logid LOGID]
                                      [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                      [--stdout]
 
@@ -169,12 +171,12 @@ Checksum options. Required!:
 Logging options:
   --logfile LOGFILE     Set logfiles path. Default:
                         /tmp/dynafed_storagestats.log
+  --logid LOGID         Add this log id to every log line.
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
 
 Output options:
-  --stdout              Set to output stats on stdout.
-fernando@ffgalindo:/tmp/dd»                            
+  --stdout              Set to output stats on stdout.                           
 ```
 
 ---
@@ -210,7 +212,7 @@ usage: dynafed-storage reports filelist [-h]
                                         [-c [CONFIG_PATH [CONFIG_PATH ...]]]
                                         [-f] [-v]
                                         [-e [ENDPOINT [ENDPOINT ...]]]
-                                        [--logfile LOGFILE]
+                                        [--logfile LOGFILE] [--logid LOGID]
                                         [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                                         [--delta DELTA] [--rucio]
                                         [-o OUTPUT_PATH] [-p PREFIX]
@@ -231,6 +233,7 @@ optional arguments:
 Logging options:
   --logfile LOGFILE     Set logfiles path. Default:
                         /tmp/dynafed_storagestats.log
+  --logid LOGID         Add this log id to every log line.
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
 
@@ -247,8 +250,6 @@ Output options:
                         Set the prefix/path from where to start the recursive
                         list. The prefix is excluded from the resulting paths.
                         Default: ''
-
-
 ```
 **Important Note: DEBUG level might print an enormous amount of data as it will
 log the contents obtained from requests. In the case of the generic methods this
@@ -276,14 +277,15 @@ dynafed-storage reports storage --wlcg -c /etc/ugr/conf.d -s wlcg-schema.yml -o 
 
 **reports storage help:**
 ```bash
-dynafed-storage reports storage -h
 usage: dynafed-storage reports storage [-h]
                                        [-c [CONFIG_PATH [CONFIG_PATH ...]]]
                                        [-f] [-v]
                                        [-e [ENDPOINT [ENDPOINT ...]]]
-                                       [--logfile LOGFILE]
+                                       [--logfile LOGFILE] [--logid LOGID]
                                        [--loglevel {DEBUG,INFO,WARNING,ERROR}]
-                                       [-s SCHEMA] [--wlcg] [-o OUTPUT_PATH]
+                                       [--memhost MEMCACHED_IP]
+                                       [--memport MEMCACHED_PORT] [-s SCHEMA]
+                                       [--wlcg] [-o OUTPUT_PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -301,8 +303,16 @@ optional arguments:
 Logging options:
   --logfile LOGFILE     Set logfiles path. Default:
                         /tmp/dynafed_storagestats.log
+  --logid LOGID         Add this log id to every log line.
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
+
+Memcached Options:
+  --memhost MEMCACHED_IP
+                        IP or hostname of memcached instance.Default:
+                        127.0.0.1
+  --memport MEMCACHED_PORT
+                        Port of memcached instance. Default: 11211
 
 Reports options:
   -s SCHEMA, --schema SCHEMA
@@ -358,20 +368,18 @@ dynafed-storage stats -c /etc/ugr/conf.d -m -e endpoint1 endpoint2
 
 **stats help:**
 ```bash
-dynafed-storage stats -h
 usage: dynafed-storage stats [-h] [-c [CONFIG_PATH [CONFIG_PATH ...]]] [-f]
                              [-v] [-e [ENDPOINT [ENDPOINT ...]]]
-                             [--logfile LOGFILE]
+                             [--logfile LOGFILE] [--logid LOGID]
                              [--loglevel {DEBUG,INFO,WARNING,ERROR}]
                              [--memhost MEMCACHED_IP]
                              [--memport MEMCACHED_PORT] [--debug] [-m]
-                             [-j [TO_JSON]] [-o OUTPUT_PATH]
-                             [-p [TO_PLAINTEXT]] [--stdout]
+                             [-o OUTPUT_PATH] [-p [TO_PLAINTEXT]] [--stdout]
 
 optional arguments:
   -h, --help            show this help message and exit
   -c [CONFIG_PATH [CONFIG_PATH ...]], --config [CONFIG_PATH [CONFIG_PATH ...]]
-                        Path to UGR's endpoint .conf files or directories.
+                        Path to UGRs endpoint .conf files or directories.
                         Accepts any number of arguments. Default:
                         '/etc/ugr/conf.d'.
   -f, --force           Force command execution.
@@ -382,8 +390,9 @@ optional arguments:
                         checked.
 
 Logging options:
-  --logfile LOGFILE     Set logfile's path. Default:
+  --logfile LOGFILE     Set logfiles path. Default:
                         /tmp/dynafed_storagestats.log
+  --logid LOGID         Add this log id to every log line.
   --loglevel {DEBUG,INFO,WARNING,ERROR}
                         Set log output level. Default: WARNING.
 
@@ -405,7 +414,6 @@ Output options:
                         Set to output stats to plain txt file. Add argument to
                         set filename.Default: dynafed_storagestats.txt
   --stdout              Set to output stats on stdout.
-
 ```
 
 ## Endpoints Configuration
