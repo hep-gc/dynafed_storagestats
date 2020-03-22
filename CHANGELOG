@@ -277,3 +277,5 @@ v1.0.30
 v1.0.31
   ADDED: --logid argument. Whichever string is passed will be logged as the
          first field in a log line.
+v1.0.32
+  CHANGED: Location of logid moved to second column.
