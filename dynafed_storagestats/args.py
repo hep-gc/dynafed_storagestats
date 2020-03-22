@@ -75,13 +75,6 @@ def add_general_options(parser):
         help="Force command execution."
     )
     parser.add_argument(
-        '--logid',
-        action='store',
-        default=False,
-        dest='logid',
-        help='Add this log id to every log line.'
-    )
-    parser.add_argument(
         '-v', '--verbose',
         action='store_true',
         default=False,
@@ -261,6 +254,13 @@ def add_logging_options(parser):
         dest='logfile',
         help="Set logfiles path. "
              "Default: /tmp/dynafed_storagestats.log"
+    )
+    parser.add_argument(
+        '--logid',
+        action='store',
+        default=False,
+        dest='logid',
+        help='Add this log id to every log line.'
     )
     group_logging.add_argument(
         '--loglevel',
