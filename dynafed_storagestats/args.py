@@ -255,7 +255,7 @@ def add_logging_options(parser):
         help="Set logfiles path. "
              "Default: /tmp/dynafed_storagestats.log"
     )
-    parser.add_argument(
+    group_logging.add_argument(
         '--logid',
         action='store',
         default=False,
