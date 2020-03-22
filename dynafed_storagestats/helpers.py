@@ -1102,7 +1102,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", logid=False, loglevel=
         _log_handler_file.addFilter(_logid_context)
 
         # Set logger format
-        _log_format_file = logging.Formatter('[%(logid)s] - %(asctime)s - [%(levelname)s]%(message)s')
+        _log_format_file = logging.Formatter('%(asctime)s - [%(logid)s] - [%(levelname)s]%(message)s')
 
     else:
         # Set logger format
@@ -1120,7 +1120,7 @@ def setup_logger(logfile="/tmp/dynafed_storagestats.log", logid=False, loglevel=
         log_handler_stderr = logging.StreamHandler()
 
         if logid:
-            log_format_stderr = logging.Formatter('[%(logid)s] - %(asctime)s - [%(levelname)s]%(message)s')
+            log_format_stderr = logging.Formatter('%(asctime)s - [%(logid)s] - [%(levelname)s]%(message)s')
             log_handler_stderr.addFilter(_logid_context)
         else:
             log_format_stderr = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
