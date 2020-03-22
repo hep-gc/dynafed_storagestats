@@ -274,3 +274,6 @@ v1.0.29
 v1.0.30
   ADDED: Check for memcache before asking endpoints when generating a storage
          report.
+v1.0.31
+  ADDED: --logid argument. Whichever string is passed will be logged as the
+         first field in a log line.
