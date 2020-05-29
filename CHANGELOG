@@ -279,3 +279,6 @@ v1.0.31
          first field in a log line.
 v1.0.32
   CHANGED: Location of logid moved to second column.
+
+v1.0.33
+  ADDED: New prometheus metric names for minIO version >= RELEASE.2019-12-17T23-26-28Z

@@ -514,6 +514,11 @@ These are the metrics extracted:
   - minio_disk_storage_total_bytes
   - minio_disk_storage_used_bytes
 
+or for newer version >= RELEASE.2019-12-17T23-26-28Z
+  - disk_storage_available
+  - disk_storage_total
+  - disk_storage_used
+
 The quota/total_bytes can be overridden in the configuration file.
 
 ## How it works
