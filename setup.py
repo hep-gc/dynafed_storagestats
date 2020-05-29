@@ -44,7 +44,7 @@ setup(
     packages=find_packages(exclude=['docs', 'scripts', 'tests']),
     python_requires='~=3.4',
     install_requires=[
-        'azure-storage=0.36.0',
+        'azure-storage==0.36.0',
         'boto3',
         'lxml',
         'prometheus_client',
