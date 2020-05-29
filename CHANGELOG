@@ -285,3 +285,5 @@ v1.0.33
 
 v1.0.34
   CHANGED: Requirement of azure to azure-storage=0.36.0
+v1.0.35
+  CHANGED: Forgot to set the version also on setup.py.
