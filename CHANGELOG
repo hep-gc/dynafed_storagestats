@@ -282,3 +282,6 @@ v1.0.32
 
 v1.0.33
   ADDED: New prometheus metric names for minIO version >= RELEASE.2019-12-17T23-26-28Z
+
+v1.0.34
+  CHANGED: Requirement of azure to azure-storage=0.36.0
