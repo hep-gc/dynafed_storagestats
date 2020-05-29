@@ -682,13 +682,16 @@ def minio_prometheus(storage_share):
                 for family in text_string_to_metric_families(_metrics):
                     for sample in family.samples:
 
-                        if sample.name == 'minio_disk_storage_available_bytes':
+                        if sample.name == 'minio_disk_storage_available_bytes'  or \
+                        sample.name == 'disk_storage_available':
                             storage_share.stats['bytesfree'] = int(sample.value)
 
-                        elif sample.name == 'minio_disk_storage_used_bytes':
+                        elif sample.name == 'minio_disk_storage_used_bytes'  or \
+                        sample.name =='disk_storage_used':
                             storage_share.stats['bytesused'] = int(sample.value)
 
-                        elif sample.name == 'minio_disk_storage_total_bytes':
+                        elif sample.name == 'minio_disk_storage_total_bytes' or \
+                        sample.name == 'disk_storage_total':
                             storage_share.stats['quota'] = int(sample.value)
 
                 # If the quota is overridden in the settings:
