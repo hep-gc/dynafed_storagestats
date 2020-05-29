@@ -587,6 +587,11 @@ def minio_prometheus(storage_share):
     minio_disk_storage_total_bytes
     minio_disk_storage_used_bytes
 
+    or for newer version >= RELEASE.2019-12-17T23-26-28Z
+    disk_storage_available
+    disk_storage_total
+    disk_storage_used
+
     Attributes:
     storage_share -- dynafed_storagestats StorageShare object.
 
