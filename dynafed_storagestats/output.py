@@ -12,34 +12,6 @@ from dynafed_storagestats import xml
 # Functions #
 #############
 
-
-def to_json(storage_endpoints, filename, path):
-    """Call helper functions to create a JSON file with storage stats.
-
-    Arguments:
-    storage_endpoints -- list of dynafed_storagestats StorageEndpoint objects.
-    filename -- Name of the JSON file.
-    path -- Path to write the JSON file to.
-
-    """
-
-    _hostname = os.uname()[1]
-
-    # Add if statement in the future if there are more JSON formats to call.
-
-    _json_file = json.format_wlcg(
-        storage_endpoints,
-        _hostname,
-    )
-
-    # Create output path
-    _filepath = path + '/' + filename
-
-    with open(_filepath, 'w') as output:
-        output.write(_json_file)
-        output.close()
-
-
 def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211', ttl_multiplier=10):
     """Upload the StorageShare storage stats to a memcached instance.
 
