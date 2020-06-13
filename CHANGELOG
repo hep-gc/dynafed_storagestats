@@ -291,3 +291,6 @@ v1.0.35
 
 v1.0.36
   ADDED: Documentation on new names on minio-pormetheus docstring.
+
+v1.0.37
+  REMOVED: -j --json and to_json args and functions, as no longer needed.
