@@ -170,7 +170,7 @@ def reports(ARGS):
         _storage_endpoints_list_and_args_tuple = [
             (_storage_endpoint, ARGS) for _storage_endpoint in _storage_endpoints
         ]
-
+##!!! If anything here fails, should not create reports!
         # Process each storage endpoints' shares using multithreading.
         # Number of threads to use.
         _pool = ThreadPool(len(_storage_endpoints_list_and_args_tuple))
