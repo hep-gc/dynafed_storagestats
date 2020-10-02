@@ -294,3 +294,4 @@ v1.0.36
 
 v1.0.37
   REMOVED: -j --json and to_json args and functions, as no longer needed.
+  CHANGED: prints for errors now go to standard error.

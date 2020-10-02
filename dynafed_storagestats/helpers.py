@@ -139,17 +139,17 @@ def check_required_checksum_args(args):
 
     if not args.endpoint:
         _logger.critical("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'")
-        print("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'")
+        print("[CRITICAL]No endpoint selected. Please use '-e [endpoint]'", file=sys.stderr)
         _exit = True
 
     if not args.hash_type:
         _logger.critical("[CRITICAL]No checksum hash type selected. Please use '-t [hash type]'")
-        print("[CRITICAL]No checksum has type selected. Please use '-t [hash type]'")
+        print("[CRITICAL]No checksum has type selected. Please use '-t [hash type]'", file=sys.stderr)
         _exit = True
 
     if not args.url:
         _logger.critical("[CRITICAL]No file/object URL provided. Please use '-u [url]'")
-        print("[CRITICAL]No file/object URL provided. Please use '-u [url]'")
+        print("[CRITICAL]No file/object URL provided. Please use '-u [url]'", file=sys.stderr)
         _exit = True
 
     if _exit:
@@ -174,7 +174,7 @@ def check_required_reports_storage_args(args):
 
     if not args.schema:
         _logger.critical("No schema file provided. Please use '-s [file]'")
-        print("[CRITICAL]No schema file provided. Please use '-s [file]'")
+        print("[CRITICAL]No schema file provided. Please use '-s [file]'", file=sys.stderr)
         _exit = True
 
     if _exit:
@@ -218,7 +218,7 @@ def convert_size_to_bytes(size):
         return int(size)
 
     except ValueError:  # for example "1024x"
-        print('Malformed input for setting: "storagestats.quota"')
+        print('Malformed input for setting: "storagestats.quota"', file=sys.stderr)
         exit()
 
 
@@ -630,7 +630,7 @@ def get_site_schema(schema_file):
                     "[CRITICAL]Failed to read YAML stream from file: %s. %s" % (
                         schema_file,
                         ERROR
-                    )
+                    ), file=sys.stderr
                 )
                 sys.exit(1)
 
@@ -639,7 +639,7 @@ def get_site_schema(schema_file):
             "%s",
             ERROR
         )
-        print("[CRITICAL]%s" % (ERROR))
+        print("[CRITICAL]%s" % (ERROR), file=sys.stderr)
         sys.exit(1)
 
     else:
@@ -695,7 +695,7 @@ def process_checksums_get(storage_share, hash_type, url):
                 storage_share.id,
                 storage_share.storageprotocol,
                 ERR
-            )
+            ), file=sys.stderr
         )
 
         sys.exit(1)
@@ -740,7 +740,7 @@ def process_checksums_put(storage_share, checksum, hash_type, url, force=False):
                 storage_share.id,
                 storage_share.storageprotocol,
                 ERR
-            )
+            ), file=sys.stderr
         )
         sys.exit(1)
 

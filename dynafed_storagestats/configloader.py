@@ -133,7 +133,7 @@ def get_storage_endpoints(storage_share_objects):
         )
     else:
         _logger.critical("No StorageShares to check found in configuration file(s).")
-        print("[CRITICAL]No StorageShares to check found in configuration file(s).")
+        print("[CRITICAL]No StorageShares to check found in configuration file(s).", file=sys.stderr)
         sys.exit(1)
 
     # Generate a StorageEnpoint object from the URL and attach any StorageShares
@@ -174,7 +174,7 @@ def get_storage_shares(config_path, storage_shares_mask=[]):
 
     except dynafed_storagestats.exceptions.ConfigFileErrorNoConfigFilesFound as ERR:
         _logger.critical("%s", ERR.debug)
-        print("[CRITICAL]%s" % (ERR.debug))
+        print("[CRITICAL]%s" % (ERR.debug), file=sys.stderr)
         sys.exit(1)
 
     # Parse the files for Storage Shares, exit if any issues are detected.
@@ -183,7 +183,7 @@ def get_storage_shares(config_path, storage_shares_mask=[]):
 
     except dynafed_storagestats.exceptions.ConfigFileErrorIDMismatch as ERR:
         _logger.critical("[%s]%s", ERR.storage_share, ERR.debug)
-        print("[CRITICAL][%s]%s" % (ERR.storage_share, ERR.debug))
+        print("[CRITICAL][%s]%s" % (ERR.storage_share, ERR.debug), file=sys.stderr)
         sys.exit(1)
 
     # Check that Storage Shares were found, mark error and exit if not.
@@ -195,7 +195,7 @@ def get_storage_shares(config_path, storage_shares_mask=[]):
 
     except dynafed_storagestats.exceptions.ConfigFileErrorNoEndpointsFound as ERR:
         _logger.critical("%s", ERR.debug)
-        print("[CRITICAL]%s" % (ERR.debug))
+        print("[CRITICAL]%s" % (ERR.debug), file=sys.stderr)
         sys.exit(1)
 
     else:
