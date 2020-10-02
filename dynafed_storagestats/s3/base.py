@@ -192,12 +192,12 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                         self.id,
                         ERR.debug,
                         _object_key
-                    )
+                    ), file=sys.stderr
                 )
 
             else:
                 _logger.error("[%s]%s", self.id, ERR.debug)
-                print("[ERROR][%s]%s" % (self.id, ERR.debug))
+                print("[ERROR][%s]%s" % (self.id, ERR.debug), file=sys.stderr)
 
             # We exit because in this case if there is an error in connection,
             # there is nothing else to do.
@@ -410,11 +410,11 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                         self.id,
                         ERR.debug,
                         _object_key
-                    )
+                    ), file=sys.stderr
                 )
             else:
                 _logger.error("[%s]%s", self.id, ERR.debug)
-                print("[ERROR][%s]%s" % (self.id, ERR.debug))
+                print("[ERROR][%s]%s" % (self.id, ERR.debug), file=sys.stderr)
 
             # We exit because in this case if there is an error in connection,
             # there is nothing else to do.
