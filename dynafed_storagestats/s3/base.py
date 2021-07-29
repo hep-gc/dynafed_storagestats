@@ -39,7 +39,8 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
                 'default': 'generic',
                 'required': False,
                 'status_code': '070',
-                'valid': ['ceph-admin', 'cloudwatch', 'generic', 'list-objects', 'minio_prometheus'],
+                'valid': ['ceph-admin', 'cloudwatch', 'generic', 'list-objects',
+                          'minio_prometheus', 'minio_prometheus_v2'],
             },
             's3.priv_key': {
                 'required': True,
@@ -252,6 +253,10 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         # Getting the storage stats from Minio's Prometheus URL
         elif self.plugin_settings['storagestats.api'].lower() == 'minio_prometheus':
             s3helpers.minio_prometheus(self)
+
+        # Getting the storage stats from Minio's V2 Prometheus cluster URL
+        elif self.plugin_settings['storagestats.api'].lower() == 'minio_prometheus_v2':
+            s3helpers.minio_prometheus_v2(self)
 
     def get_filelist(self, delta=1, prefix='', report_file='/tmp/filelist_report.txt'):
         """Contact endpoint and generate a file-list.

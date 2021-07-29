@@ -705,6 +705,137 @@ def minio_prometheus(storage_share):
                         storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
 
 
+def minio_prometheus_v2(storage_share):
+    """Contact Minio's Prometheus URL to obtain storage information.
+
+    Obtains storage stats from Minio's Prometheus URL by extracting these
+    metrics:
+
+    minio_bucket_usage_object_total
+    minio_bucket_usage_total_bytes
+    minio_node_disk_free_bytes
+    minio_node_disk_total_bytes
+
+
+    Attributes:
+    storage_share -- dynafed_storagestats StorageShare object.
+
+    """
+    # Creating logger
+    _logger = logging.getLogger(__name__)
+
+    # Generate the URL to contact
+    _api_url = '{scheme}://{netloc}/minio/v2/metrics/cluster'.format(
+        scheme=storage_share.uri['scheme'],
+        netloc=storage_share.uri['netloc']
+    )
+
+    # We need to initialize "response" to check if it was successful in the
+    # finally statement.
+    _response = False
+
+    try:
+        _response = requests.request(
+            method="GET",
+            url=_api_url,
+            verify=storage_share.plugin_settings['ssl_check'],
+            timeout=int(storage_share.plugin_settings['conn_timeout'])
+        )
+
+        # Save time when data was obtained.
+        storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
+
+        # Log contents of response
+        _logger.debug(
+            "[%s]Endpoint reply: %s",
+            storage_share.id,
+            _response.text
+        )
+
+    except requests.exceptions.InvalidSchema as ERR:
+        raise dynafed_storagestats.exceptions.ConnectionErrorInvalidSchema(
+            error='InvalidSchema',
+            schema=storage_share.uri['scheme'],
+            debug=str(ERR),
+        )
+
+    except requests.exceptions.SSLError as ERR:
+        # If ca_path is custom, try the default in case
+        # a global setting is incorrectly giving the wrong
+        # ca's to check against.
+        try:
+            _response = requests.request(
+                method="GET",
+                url=_api_url,
+                verify=storage_share.plugin_settings['ssl_check'],
+                timeout=int(storage_share.plugin_settings['conn_timeout'])
+            )
+
+            # Save time when data was obtained.
+            storage_share.stats['endtime'] = int(datetime.datetime.now().timestamp())
+
+            # Log contents of response
+            _logger.debug(
+                "[%s]Endpoint reply: %s",
+                storage_share.id,
+                _response.text
+            )
+
+        except requests.exceptions.SSLError as ERR:
+            raise dynafed_storagestats.exceptions.ConnectionError(
+                error=ERR.__class__.__name__,
+                status_code="092",
+                debug=str(ERR),
+            )
+
+    except requests.ConnectionError as ERR:
+        raise dynafed_storagestats.exceptions.ConnectionError(
+            error=ERR.__class__.__name__,
+            debug=str(ERR),
+        )
+
+    finally:
+        if _response:
+            try:
+                _metrics = _response.text
+
+            except ValueError:
+                raise dynafed_storagestats.exceptions.ConnectionErrorS3API(
+                    error="NoContent",
+                    status_code=_response.status_code,
+                    api=storage_share.plugin_settings['storagestats.api'],
+                    debug=_response.text,
+                )
+
+            else:
+                # Extract the metrics.
+                for family in text_string_to_metric_families(_metrics):
+                    for sample in family.samples:
+
+                        # Get total free disk space.
+                        if sample.name == 'minio_node_disk_free_bytes':
+                            storage_share.stats['bytesfree'] = int(sample.value)
+
+                        # Get total disk space
+                        elif sample.name == 'minio_node_disk_total_bytes':
+                            storage_share.stats['quota'] = int(sample.value)
+
+                        # Get bucket bytes usage.
+                        elif sample.name == 'minio_bucket_usage_total_bytes':
+                            if sample.labels['bucket'] == storage_share.uri['bucket']:
+                                storage_share.stats['bytesused'] = int(sample.value)
+
+                        # Get number of objects in the bucket.
+                        elif sample.name == 'minio_bucket_usage_object_total':
+                            if sample.labels['bucket'] == storage_share.uri['bucket']:
+                                storage_share.stats['filecount'] = int(sample.value)
+
+                # If the quota is overridden in the settings:
+                    if storage_share.plugin_settings['storagestats.quota'] != 'api':
+                        storage_share.stats['quota'] = int(storage_share.plugin_settings['storagestats.quota'])
+                        storage_share.stats['bytesfree'] = storage_share.stats['quota'] - storage_share.stats['bytesused']
+
+
 def run_boto_client(boto_client, method, kwargs):
     """Contact S3 endopint using passed object methods and arguments.
 

@@ -521,6 +521,20 @@ or for newer version >= RELEASE.2019-12-17T23-26-28Z
 
 The quota/total_bytes can be overridden in the configuration file.
 
+##### minio_prometheus_v2
+
+Minio endpoints can expose metrics with a Prometheus client. The URL's path
+is assumed to be "/minio/v2/metrics/cluster". This replaces any existing path
+in the endpoint's configuration URL.
+
+These are the metrics extracted:
+  - minio_bucket_usage_object_total
+  - minio_bucket_usage_total_bytes
+  - minio_node_disk_free_bytes
+  - minio_node_disk_total_bytes
+
+The quota/total_bytes can be overridden in the configuration file.
+
 ## How it works
 
 [Simple Flowchart](doc/diagrams/dynafed_storagestats_flowchart.pdf)
