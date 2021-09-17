@@ -295,3 +295,10 @@ v1.0.36
 v1.0.37
   REMOVED: -j --json and to_json args and functions, as no longer needed.
   CHANGED: prints for errors now go to standard error.
+
+v1.0.38
+  ADDED: minio_prometheus_v2 option for compatibility with new minio api.
+
+v.1.0.39
+  CHANGED: How endpoint are identified by "id" in config files. There was an
+           issue with using "in" instead of "==" to mask the requested endpoints.
