@@ -11,6 +11,14 @@ import dynafed_storagestats.helpers
 import dynafed_storagestats.time
 
 
+####################
+# Module Variables #
+####################
+
+# Creating logger
+_logger = logging.getLogger(__name__)
+
+
 ##############
 # Functions #
 ##############
@@ -29,8 +37,6 @@ def list_blobs(storage_share, delta=1, prefix='',
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _total_bytes = 0
     _total_files = 0
@@ -149,6 +155,3 @@ def list_blobs(storage_share, delta=1, prefix='',
 #     """
 #
 #     """
-#     # Creating logger
-#     _logger = logging.getLogger(__name__)
-#

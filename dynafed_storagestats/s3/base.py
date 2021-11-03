@@ -8,6 +8,14 @@ import dynafed_storagestats.base
 import dynafed_storagestats.s3.helpers as s3helpers
 
 
+####################
+# Module Variables #
+####################
+
+# Creating logger
+_logger = logging.getLogger(__name__)
+
+
 ###########
 # Classes #
 ###########
@@ -92,8 +100,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         String Checksum if found, an exception is raised otherwise.
 
         """
-        # Creating logger
-        _logger = logging.getLogger(__name__)
 
         _logger.info(
             '[%s]Obtaining object metadata: "%s"',
@@ -142,8 +148,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         Dict containing metadata from S3 object API call result.
 
         """
-        # Creating logger
-        _logger = logging.getLogger(__name__)
 
         # We obtain the object's path.
         _object_path = urlsplit(object_url).path
@@ -293,8 +297,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         object_url -- String with URL location for requested object.
 
         """
-        # Creating logger
-        _logger = logging.getLogger(__name__)
 
         _metadata = self.get_object_metadata(object_url)
 
@@ -345,8 +347,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
         object_url -- URL location for requested object.
 
         """
-        # Creating logger
-        _logger = logging.getLogger(__name__)
 
         # We obtain the object's path.
         _object_path = urlsplit(object_url).path
@@ -427,8 +427,6 @@ class S3StorageShare(dynafed_storagestats.base.StorageShare):
 
     def validate_schema(self):
         """Translate s3 into http/https."""
-        # Creating logger
-        _logger = logging.getLogger(__name__)
 
         _logger.debug(
             "[%s]Validating URN schema: %s",

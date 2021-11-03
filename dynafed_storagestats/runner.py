@@ -8,6 +8,7 @@ import dynafed_storagestats.reports
 from dynafed_storagestats import args
 from dynafed_storagestats import configloader
 from dynafed_storagestats import helpers
+from dynafed_storagestats import logger
 from dynafed_storagestats import output
 
 from dynafed_storagestats import __version__
@@ -27,7 +28,7 @@ def main():
 
     else:
         # Setup logger
-        helpers.setup_logger(
+        logger.setup_logger(
             logfile=ARGS.logfile,
             logid=ARGS.logid,
             loglevel=ARGS.loglevel,

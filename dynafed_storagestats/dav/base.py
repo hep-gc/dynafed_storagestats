@@ -6,6 +6,14 @@ import dynafed_storagestats.base
 import dynafed_storagestats.dav.helpers as davhelpers
 
 
+####################
+# Module Variables #
+####################
+
+# Creating logger
+_logger = logging.getLogger(__name__)
+
+
 ############
 # Classes #
 ###########
@@ -62,8 +70,6 @@ class DAVStorageShare(dynafed_storagestats.base.StorageShare):
 
     def validate_schema(self):
         """Translate dav/davs into http/https."""
-        # Creating logger
-        _logger = logging.getLogger(__name__)
 
         _schema_translator = {
             'dav': 'http',

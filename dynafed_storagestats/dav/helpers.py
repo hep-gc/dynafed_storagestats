@@ -9,6 +9,14 @@ from dynafed_storagestats import xml
 import dynafed_storagestats.exceptions
 
 
+####################
+# Module Variables #
+####################
+
+# Creating logger
+_logger = logging.getLogger(__name__)
+
+
 ##############
 # Functions ##
 ##############
@@ -25,8 +33,6 @@ def list_files(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _api_url = '{scheme}://{netloc}{path}'.format(
         scheme=storage_share.uri['scheme'],
@@ -130,8 +136,6 @@ def rfc4331(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _api_url = '{scheme}://{netloc}{path}'.format(
         scheme=storage_share.uri['scheme'],
@@ -234,8 +238,6 @@ def send_dav_request(storage_share, api_url, headers, data):
     String containing endpoint's response.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _response = requests.request(
         method="PROPFIND",
