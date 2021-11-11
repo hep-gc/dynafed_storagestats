@@ -296,7 +296,7 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
                     if not _line.startswith("#"):
                         if "glb.locplugin[]" in _line:
                             _plugin, _id, _concurrency, _url = _line.split()[1::]
-                            if _id == storage_shares_mask or len(storage_shares_mask) == 0:
+                            if _id in storage_shares_mask or len(storage_shares_mask) == 0:
                                 _storage_shares.setdefault(_id, {})
                                 _storage_shares[_id].update({'id': _id.strip()})
                                 _storage_shares[_id].update({'url': _url.strip()})
@@ -324,7 +324,7 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
                                 )
 
                             elif _id == _locid:
-                                if _id == storage_shares_mask or len(storage_shares_mask) == 0:
+                                if _id in storage_shares_mask or len(storage_shares_mask) == 0:
                                     _setting = _key.split(_id + '.')[-1]
                                     _storage_shares.setdefault(_id, {})
                                     _storage_shares[_id].setdefault('plugin_settings', {})
