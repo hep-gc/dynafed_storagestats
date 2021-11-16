@@ -131,6 +131,7 @@ def add_checkusms_get_subparser(subparser):
         action='store',
         default=False,
         dest='endpoint',
+        type=list,
         help="Choose endpoint containing desired object. "
              "Required."
     )

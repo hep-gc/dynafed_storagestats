@@ -12,6 +12,14 @@ from dynafed_storagestats.s3 import base as s3
 import dynafed_storagestats.exceptions
 
 
+####################
+# Module Variables #
+####################
+
+# Creating logger
+_logger = logging.getLogger(__name__)
+
+
 #############
 # Functions #
 #############
@@ -58,8 +66,6 @@ def get_conf_files(config_path):
     List of strings, each being the path to a single file.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _config_files = []
 
@@ -113,8 +119,6 @@ def get_storage_endpoints(storage_share_objects):
     List of dynafed_storagestats StorageEnpoint objects.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _storage_endpoints = []
     _urls_dict = {}
@@ -159,8 +163,6 @@ def get_storage_shares(config_path, storage_shares_mask=[]):
     Output of get_storage_share_objects(). (A list of StorageShare objects)
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     # If no config_path specified set it to UGR's default configurations directory.
     _logger.info(
@@ -212,8 +214,6 @@ def get_storage_share_objects(storage_shares):
     List of dyanfed_storagestats StorageShare objects.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _storage_share_objects = []
 
@@ -277,8 +277,6 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
     }
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _storage_shares = {}
     _global_settings = {}
@@ -298,7 +296,7 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
                     if not _line.startswith("#"):
                         if "glb.locplugin[]" in _line:
                             _plugin, _id, _concurrency, _url = _line.split()[1::]
-                            if _id == storage_shares_mask or len(storage_shares_mask) == 0:
+                            if _id in storage_shares_mask or len(storage_shares_mask) == 0:
                                 _storage_shares.setdefault(_id, {})
                                 _storage_shares[_id].update({'id': _id.strip()})
                                 _storage_shares[_id].update({'url': _url.strip()})
@@ -326,7 +324,7 @@ def parse_conf_files(config_files, storage_shares_mask=[]):
                                 )
 
                             elif _id == _locid:
-                                if _id == storage_shares_mask or len(storage_shares_mask) == 0:
+                                if _id in storage_shares_mask or len(storage_shares_mask) == 0:
                                     _setting = _key.split(_id + '.')[-1]
                                     _storage_shares.setdefault(_id, {})
                                     _storage_shares[_id].setdefault('plugin_settings', {})

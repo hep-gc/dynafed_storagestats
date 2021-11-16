@@ -14,27 +14,13 @@ from dynafed_storagestats import output
 from dynafed_storagestats import time
 
 
-#############
-## Classes ##
-#############
+####################
+# Module Variables #
+####################
 
-class ContextFilter(logging.Filter):
-    """
-    This is a filter which injects contextual information into the log.
-    """
-    def __init__(self, logid):
-        """Create ContextFilter with extra attributes for logging.
+# Creating logger
+_logger = logging.getLogger(__name__)
 
-        Arguments:
-        logid -- string.
-
-        """
-        self.logid = logid
-
-
-    def filter(self, record):
-        record.logid = self.logid
-        return True
 
 #############
 # Functions #
@@ -54,8 +40,6 @@ def check_connectionstats(storage_share_objects, stats):
              get_cached_connection_stats with return_as='expanded_dictionary'.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     for _storage_share in storage_share_objects:
         try:
@@ -88,8 +72,6 @@ def check_frequency(storage_share_objects, stats):
              get_cached_storage_stats with return_as='expanded_dictionary'.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     for _storage_share in storage_share_objects:
         _logger.info(
@@ -132,8 +114,6 @@ def check_required_checksum_args(args):
     args -- argparse object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _exit = False
 
@@ -167,8 +147,6 @@ def check_required_reports_storage_args(args):
     args -- argparse object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _exit = False
 
@@ -239,8 +217,6 @@ def get_currentstats(storage_share_objects, memcached_ip='127.0.0.1', memcached_
     Dictionary
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     # We try to obtain connection stats from memcache.
     try:
@@ -322,8 +298,6 @@ def get_cached_connection_stats(return_as='string', memcached_ip='127.0.0.1', me
     array OR dictionary OR string
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _logger.info(
         "Checking memcached server %s:%s for StorageShares connection stats.",
@@ -443,8 +417,6 @@ def get_cached_storage_stats(storage_share_objects, return_as='string', memcache
     array OR dictionary OR string
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _logger.info(
         "Checking memcached server %s:%s for StorageShares storage stats.",
@@ -523,8 +495,6 @@ def get_dynafed_storage_endpoints_from_schema(schema):
     List of strings
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _dynafed_endpoints = []
 
@@ -555,8 +525,6 @@ def get_dynafed_version():
     String
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _logger.info('Checking dynafed RPM package version.')
 
@@ -608,8 +576,6 @@ def get_site_schema(schema_file):
     """Get schema from YAML file
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     try:
         _logger.info(
@@ -671,8 +637,6 @@ def process_checksums_get(storage_share, hash_type, url):
     String containing checksum or 'None'.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     try:
         _checksum = storage_share.get_object_checksum(hash_type, url)
@@ -721,8 +685,6 @@ def process_checksums_put(storage_share, checksum, hash_type, url, force=False):
     url -- string containing url to the desired file/object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     try:
 
@@ -756,8 +718,6 @@ def process_endpoint_list_results(storage_share_objects):
     storage_share_objects -- list of dynafed_storagestats StorageShare objects.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     # If there is only one storage_share, there is nothing to do!
     if len(storage_share_objects) >= 1:
@@ -819,8 +779,6 @@ def process_filelist_reports(storage_endpoint, args):
     args -- args -- argparse object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _filepath = args.output_path + '/' + storage_endpoint.storage_shares[0].id + '.filelist'
 
@@ -936,8 +894,6 @@ def process_storage_reports(storage_endpoint, args):
     args -- args -- argparse object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     try:
         if storage_endpoint.storage_shares[0].stats['check'] is True:
@@ -997,8 +953,6 @@ def process_storagestats(storage_endpoint, args):
     args -- args -- argparse object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     try:
         if storage_endpoint.storage_shares[0].stats['check'] is True:
@@ -1062,77 +1016,6 @@ def process_storagestats(storage_endpoint, args):
                     storage_share.status = storage_share.status + "," + "[ERROR]" + ERR.error_code
 
 
-def setup_logger(logfile="/tmp/dynafed_storagestats.log", logid=False, loglevel="WARNING", verbose=False):
-    """Setup the logger format to be used throughout the script.
-
-    Arguments:
-    logfile -- string defining path to write logs to.
-    logid -- string defining an ID to be logged.
-    loglevel -- string defining level to log: "DEBUG, INFO, WARNING, ERROR"
-    verbose -- boolean. 'True' prints log messages to stderr.
-
-    Returns:
-    logging.Logger object.
-
-    """
-    # To capture warnings emitted by modules.
-    logging.captureWarnings(True)
-
-    # Create file logger.
-    _logger = logging.getLogger("dynafed_storagestats")
-
-    # Set log level to use.
-    _num_loglevel = getattr(logging, loglevel.upper())
-    _logger.setLevel(_num_loglevel)
-
-
-    # Set file where to log and the mode to use and set the format to use.
-    _log_handler_file = logging.handlers.TimedRotatingFileHandler(
-        logfile,
-        when="midnight",
-        backupCount=15,
-    )
-
-    # Set the format dpending whether a log id is requested.
-    if logid:
-        # Add ContextFilter
-        _logid_context = ContextFilter(logid)
-
-        # Add logid filter.
-        _log_handler_file.addFilter(_logid_context)
-
-        # Set logger format
-        _log_format_file = logging.Formatter('%(asctime)s - [%(logid)s] - [%(levelname)s]%(message)s')
-
-    else:
-        # Set logger format
-        _log_format_file = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
-
-    # Set the format to the file handler.
-    _log_handler_file.setFormatter(_log_format_file)
-
-    # Add the file handler.
-    _logger.addHandler(_log_handler_file)
-
-    # Create STDERR handler if verbose is requested and add it to logger.
-    if verbose:
-
-        log_handler_stderr = logging.StreamHandler()
-
-        if logid:
-            log_format_stderr = logging.Formatter('%(asctime)s - [%(logid)s] - [%(levelname)s]%(message)s')
-            log_handler_stderr.addFilter(_logid_context)
-        else:
-            log_format_stderr = logging.Formatter('%(asctime)s - [%(levelname)s]%(message)s')
-
-        log_handler_stderr.setLevel(_num_loglevel)
-        log_handler_stderr.setFormatter(log_format_stderr)
-        # Add handler
-        _logger.addHandler(log_handler_stderr)
-
-    return _logger
-
-
 def update_storage_share_storagestats(storage_share_objects, stats):
     """Fill storage_share's stats with the obtained storage stats from memcache.
 
@@ -1145,8 +1028,6 @@ def update_storage_share_storagestats(storage_share_objects, stats):
              get_cached_storage_stats with return_as='expanded_dictionary'.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     for _storage_share in storage_share_objects:
         try:

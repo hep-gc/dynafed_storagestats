@@ -19,10 +19,17 @@ import dynafed_storagestats.helpers
 import dynafed_storagestats.time
 
 
+####################
+# Module Variables #
+####################
+
+# Creating logger
+_logger = logging.getLogger(__name__)
+
+
 ##############
 # Functions #
 ##############
-
 
 def ceph_admin(storage_share):
     """Contact S3 endpoint using Ceph's Admin API.
@@ -36,8 +43,6 @@ def ceph_admin(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     # Generate the API's URL to contact.
     if (
@@ -227,8 +232,6 @@ def cloudwatch(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _seconds_in_one_day = 86400
 
@@ -466,8 +469,6 @@ def list_objects(storage_share, delta=1, prefix='',
     prefix -- string.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     # Generate boto client to query S3 endpoint.
     _connection = get_s3_boto_client(storage_share)
@@ -596,8 +597,6 @@ def minio_prometheus(storage_share):
     storage_share -- dynafed_storagestats StorageShare object.
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     # Generate the URL to contact
     _api_url = '{scheme}://{netloc}/minio/prometheus/metrics'.format(
@@ -892,6 +891,3 @@ def run_boto_client(boto_client, method, kwargs):
 #     """
 #
 #     """
-#     # Creating logger
-#     _logger = logging.getLogger(__name__)
-#

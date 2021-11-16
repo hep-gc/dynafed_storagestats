@@ -8,6 +8,15 @@ from dynafed_storagestats import memcache
 from dynafed_storagestats import json
 from dynafed_storagestats import xml
 
+
+####################
+# Module Variables #
+####################
+
+# Creating logger
+_logger = logging.getLogger(__name__)
+
+
 #############
 # Functions #
 #############
@@ -30,8 +39,6 @@ def to_memcached(storage_share, memcached_ip='127.0.0.1', memcached_port='11211'
     storage_share.stats['starttime']
 
     """
-    # Creating logger
-    _logger = logging.getLogger(__name__)
 
     _memcached_index = "Ugrstoragestats_" + storage_share.id
 
