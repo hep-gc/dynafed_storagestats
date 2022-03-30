@@ -1,17 +1,27 @@
-__pycache__
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
 
+*.swp
 *.DS_store
 
-# Compiled python modules.
-*.pyc
-<<<<<<< HEAD
 *.conf
-*.log
-conf.d
-=======
 
-# Setuptools distribution folder.
-/dist/
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+venv/
+*.egg-info/
+afw.egg-info/
+.installed.cfg
+*.egg
 
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
@@ -21,4 +31,9 @@ tests/local/*
 
 # Build files
 /build/
->>>>>>> dev
+
+# Pycharm files
+.idea/
+
+# Protected vars
+a
