@@ -252,12 +252,15 @@ class StorageShare():
 
         # If user has specified an SSL CA bundle:
         if self.plugin_settings['ssl_check']:
-            try:
+            # If there is a specific 'storagestats.ca_path' setting then we use that.
+            # Useful to specify a different bundle file when Dynafed/gridsite wants a certificates directory
+            if 'storagestats.ca_path' in self.plugin_settings:
+                self.plugin_settings['ssl_check'] = self.plugin_settings['storagestats.ca_path']
+            # If the ca_path is in the UGR settings we try to use that
+            elif 'ca_path' in self.plugin_settings:
                 self.plugin_settings['ssl_check'] = self.plugin_settings['ca_path']
 
-            except KeyError:
-                # The ssl_check will stay True and standard CA bundle will be used.
-                pass
+            # If neither setting is available then ssl_check will stay True and standard CA bundle will be used.
 
         # Check the quota setting and transform it into bytes if necessary.
         if self.plugin_settings['storagestats.quota'] != "api":

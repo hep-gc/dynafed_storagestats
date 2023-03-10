@@ -131,7 +131,9 @@ def add_checkusms_get_subparser(subparser):
         action='store',
         default=False,
         dest='endpoint',
-        type=list,
+        nargs='+',
+        required=True,
+        type=str,
         help="Choose endpoint containing desired object. "
              "Required."
     )
@@ -140,6 +142,7 @@ def add_checkusms_get_subparser(subparser):
         action='store',
         default=False,
         dest='hash_type',
+        required=True,
         type=str.lower,
         help="Type of checksum hash. ['adler32', md5] "
              "Required."
@@ -148,6 +151,7 @@ def add_checkusms_get_subparser(subparser):
         '-u', '--url',
         action='store',
         default=False,
+        required=True,
         dest='url',
         help="URL of object/file to request checksum of. "
              "Required."
